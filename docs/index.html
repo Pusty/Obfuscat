@@ -1,0 +1,271 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Pàgina inicial</title>
+</head>
+
+<body style="background-color:black;color:white;margin: 0;">
+  <header style="position: fixed;top: 0%;">
+    <canvas id="headerCanvas"  width=0 height=0></canvas>
+    <!--<a href="/"><canvas id="link1" style="position: fixed;left: 0% ;transform: translate(0%, 100%)">|Publications</canvas></a>-->
+    <!--<a href="/"><canvas id="link2" style="position: fixed;right: 0%; transform: translate(0%, 100%)">|About</canvas></a>-->
+  </header>
+  <div id="content" style="position: fixed;top: 50%; left: 50%; transform: translate(-50%, -50%); width:100%;">
+    <center>
+     <canvas id="name" style="">Leeky</canvas><br/>
+     <a href="https://github.com/Pusty"><canvas id="github" style="font-size: 20px;">https://github.com/Pusty</canvas></a><br/>
+     <canvas id="picture" style="">data:image/png;base64,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</canvas>
+      <br/><a href="archive.html"><canvas id="publications" style="font-size: 18px;">|Arxiu</canvas></a><br/>
+     
+    </center>
+  </div>
+  <footer id="footer" style="position: fixed; bottom: 0%; transform: translate(0%, 10%); width:100%;">
+    <center>
+    <a href="mailto:contact@bytecode.re"><canvas id="email" style="color: #555555;font-size: 20px;">|contact@bytecode.re</canvas><br></a>
+    <canvas id="footerCanvas" width=0 height=0></canvas>
+    </center>
+  </footer>
+  
+  <script>
+    var dataObjects = [];
+    var dataMap = {};
+    var dataInverted = {};
+     
+    function drawBytes(id) {
+        var byteArray = dataMap[id];
+        var size = 4;
+        var f = Math.ceil(window.innerWidth/size);
+        var canvas = document.createElement("canvas");
+        canvas.width  = Math.min(Math.ceil(byteArray.length/3)*size,window.innerWidth);
+        canvas.height = Math.min(Math.ceil(Math.ceil(byteArray.length/3)/f)*size,window.innerHeight);
+        var ctx = canvas.getContext("2d"); 
+        function drawTriplet(a,b,c,i) {
+            if (a === undefined) a = 0;
+            if (b === undefined) b = 0;
+            if (c === undefined) c = 0;
+            var color = (c&0xFF).toString(16);
+            if(color.length != 2) color = "0"+color;
+            color = (b&0xFF).toString(16)+color;
+            if(color.length != 4) color = "0"+color;
+            color = (a&0xFF).toString(16)+color;
+            if(color.length != 6) color = "0"+color;
+            color = "#"+color;
+            ctx.fillStyle = color
+            if(dataInverted[id]) ctx.fillRect(canvas.width-size-(i%f)*size,canvas.height-size-Math.floor(i/f)*size,size,size);
+            else                 ctx.fillRect((i%f)*size,Math.floor(i/f)*size,size,size);
+        }
+        var i = 0;
+        for(i=0;i<Math.ceil(byteArray.length/3);i++) {
+            drawTriplet(byteArray[i*3],byteArray[i*3+1],byteArray[i*3+2], i);
+        }
+        document.getElementById(id).innerHTML = canvas.toDataURL();
+        updateText(id); // update rendering
+    }
+      
+    window.onresize = function() {
+        dataObjects.filter(id => dataMap[id] !== undefined).forEach(id => drawBytes(id));
+    }
+    
+    function registerB64(id, data, inverted=false) {
+        if(dataObjects.indexOf(id) == -1) dataObjects.push(id);
+        dataInverted[id] = inverted;
+
+        var b = new Uint8Array(Uint8Array.from(atob(data), c => c.charCodeAt(0)));
+        var zeros = b.length-1;
+        for(zeros=b.length-1;zeros>=0;zeros--)
+            if(b[zeros] != 0) break
+        b = b.slice(0, zeros);
+        dataMap[id] = b;
+        drawBytes(id);
+    }
+     
+    function registerBytes(id, url, inverted=false) {
+        if(dataObjects.indexOf(id) == -1) dataObjects.push(id);
+        dataInverted[id] = inverted;
+        fetch(url).then(response =>  response.arrayBuffer()).then(buffer => { 
+            var b = new Uint8Array(buffer);
+            var zeros = b.length-1;
+            for(zeros=b.length-1;zeros>=0;zeros--)
+                if(b[zeros] != 0) break
+            b = b.slice(0, zeros);
+            dataMap[id] = b;
+            drawBytes(id);
+        });
+    }
+  </script>
+  
+  <script>
+       var canvasObjects = []
+       var canvasHover   = {}
+       var canvasImage   = {}
+       function registerText(id) {
+            var elem = document.getElementById(id);
+            if(canvasObjects.indexOf(id) == -1) canvasObjects.push(id);
+            if(elem.innerHTML.toLowerCase().indexOf("png") != -1) {
+                    var img = new Image();
+                    img.crossOrigin = 'anonymous'
+                    img.onload = function() {
+                        canvasImage[id] = img;
+                    }
+                    img.src=[...elem.childNodes]
+                    .filter(n => n.nodeName === '#text')
+                    .filter(n => n.textContent != '')[0]
+                    .textContent;
+            }else if(elem.innerHTML.indexOf("http") != -1 || elem.innerHTML.indexOf("|") != -1) {
+                    canvasHover[id] = false;
+                    elem.innerHTML = elem.innerHTML.replace("|","");
+                    elem.onmouseover = (e => canvasHover[id]=true);
+                    elem.onmouseout  = (e => canvasHover[id]=false);
+                   /* elem.onclick     = (e => window.location.href=[...elem.childNodes]
+                    .filter(n => n.nodeName === '#text')
+                    .filter(n => n.textContent != '')[0]
+                    .textContent);*/
+            }
+       }
+       function updateText(id) { registerText(id);}
+       
+       function filter(imgData, pixelFunc, filterX = (x => false), filterY = (y => false)) {
+           for(var y=0;y<imgData.height;y++) {
+            if(filterY(y)) continue;
+               for(var x=0;x<imgData.width;x++) {
+                    if(filterX(x)) continue;
+                    pixelFunc(x,y);
+                }
+           }
+       }
+       
+       function applyFlicker(imgData, flicker, flickerDistance) {
+            filter(imgData, (x,y) => {
+                var pxl = (y*imgData.width+x)*4;
+                if(imgData.data[pxl+3]!=0) {
+                    var noise = (y%flickerDistance >= flicker && y%flickerDistance <= flicker+2)?100:40;
+                    var sub   = noise-noise/2;
+                    sub = sub * ((imgData.data[pxl+0])/256)
+                    sub = sub * ((imgData.data[pxl+1])/256)
+                    sub = sub * ((imgData.data[pxl+2])/256)
+                    imgData.data[pxl+0] = (imgData.data[pxl+0]+(Math.round(Math.random()*noise-noise/2-sub)))
+                    imgData.data[pxl+1] = (imgData.data[pxl+1]+(Math.round(Math.random()*noise-noise/2-sub)))
+                    imgData.data[pxl+2] = (imgData.data[pxl+2]+(Math.round(Math.random()*noise-noise/2-sub)))
+                }
+            }, (x => false), (y => false))
+       }
+       
+       function applyWaveOld(imgData, offsetWave) {
+            filter(imgData, (x,y) => {
+                    var pxl = (y*imgData.width+x)*4;
+                    var pxl2 = (y*imgData.width+x+((offsetWave*y)%2))*4;
+                    imgData.data[pxl+0] = imgData.data[pxl2+0];
+                    imgData.data[pxl+1] = imgData.data[pxl2+1];
+                    imgData.data[pxl+2] = imgData.data[pxl2+2];
+                    imgData.data[pxl+3] = imgData.data[pxl2+3];
+            },  (x => x >= imgData.width-offsetWave), (x => false))
+       }
+       
+       function applyWave(imgData, offsetWave) {
+            filter(imgData, (x,y) => {
+                    var pxl = (y*imgData.width+x)*4;
+                    var pxl2 = (y*imgData.width+x+(y%(offsetWave+Math.round(Math.random()*1.5))))*4;
+                    imgData.data[pxl+0] = imgData.data[pxl2+0];
+                    imgData.data[pxl+1] = imgData.data[pxl2+1];
+                    imgData.data[pxl+2] = imgData.data[pxl2+2];
+                    imgData.data[pxl+3] = imgData.data[pxl2+3];
+            },  (x => false), (x => false))
+       }
+       
+       function applyMovement(imgData, offsetPos, offset, flickerDistance) {
+            filter(imgData, (x,y) => {
+                    var pxl = (y*imgData.width+x)*4;
+                    var pxl2 = (y*imgData.width+x+(offset))*4;
+                    imgData.data[pxl+0] = imgData.data[pxl2+0]
+                    imgData.data[pxl+1] = imgData.data[pxl2+1]
+                    imgData.data[pxl+2] = imgData.data[pxl2+2]
+                    imgData.data[pxl+3] = imgData.data[pxl2+3]
+            }, (x => x >= imgData.width-offset), (y => !(y%flickerDistance >= offsetPos && y%flickerDistance <= offsetPos+5)))
+       }
+       
+
+       function r() {
+       
+
+           var ctxArray = canvasObjects.map(c => document.getElementById(c).getContext("2d"));
+           ctxArray.forEach(ctx => ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height));
+           ctxArray.forEach(ctx => {
+            ctx.fillStyle = ctx.canvas.style.color==""?"#FFFFFF":ctx.canvas.style.color;
+           });
+           ctxArray.forEach(ctx => ctx.strokeStyle = "#FFFFFF");
+           //ctxArray.forEach(ctx => ctx.strokeRect(0,0,ctx.canvas.width,ctx.canvas.height));
+           ctxArray.filter(ctx => !(ctx.canvas.id in canvasImage)).forEach(function(ctx) {
+                   var s = ctx.canvas.style.fontSize==""?"27px":ctx.canvas.style.fontSize;
+                   ctx.font = s+" Consolas";
+                   [...ctx.canvas.childNodes].filter(n => n.nodeName === '#text').filter(n => n.textContent != '').map(n => {
+                        var h = ctx.measureText('M').width;
+                        var text = ctx.measureText(n.textContent);
+                        ctx.fillText(n.textContent, text.width*0.05, h*1.3);
+                        if(ctx.canvas.id in canvasHover && canvasHover[ctx.canvas.id]) 
+                            ctx.fillRect(text.width*0.05, h*1.3, text.width, 2);
+                        if(ctx.canvas.width != Math.ceil(text.width*1.1)) { 
+                            ctx.canvas.width  = Math.ceil(text.width*1.1); 
+                            ctx.canvas.height = h*1.7;
+                        }
+                   });
+           });
+           ctxArray.filter(ctx => (ctx.canvas.id in canvasImage)).forEach(function(ctx) {
+                   ctx.drawImage(canvasImage[ctx.canvas.id],0,0);
+                   if(ctx.canvas.width != Math.ceil(canvasImage[ctx.canvas.id].width)) { 
+                        ctx.canvas.width  = Math.ceil(canvasImage[ctx.canvas.id].width); 
+                        ctx.canvas.height = Math.ceil(canvasImage[ctx.canvas.id].height); 
+                   }
+           });
+
+           var effect = Math.round(Math.random()*30);
+           var offsetWave = Math.floor(Math.random()*2)+2;
+           var offsetWaveOld = Math.floor(Math.random()*4)-2;
+           ctxArray.forEach(function(ctx) {
+               
+               var imgData = ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height)
+               var flicker = Math.floor(Math.random()*50);
+               var flickerDistance = Math.floor(Math.random()*((ctx.canvas.height/4)+20))+ctx.canvas.height/4;
+               var offsetPos = Math.floor(Math.random()*50);
+               var offset    = Math.floor(Math.random()*20);
+               if(effect%2 == 0) applyFlicker(imgData, flicker, flickerDistance);
+               if(effect%3 == 0) applyWave(imgData, offsetWave);
+               if(effect%5 == 0) applyMovement(imgData, offsetPos, offset, flickerDistance);
+               //if(effect%3 == 0) applyWaveOld(imgData,offsetWaveOld);
+               
+               ctx.putImageData(imgData,0,0);
+           });
+           
+
+      }
+      
+      setInterval(r, 200);
+  </script>
+  
+  <script>
+   registerText("name");
+   registerText("github");
+   registerText("picture");
+   registerText("publications");
+   
+   // A small game
+   var game = "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WMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARABEAEREREREREdkA2QDZABERERERERERABEAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQARABEAEREAEQARABEREREA2QDZEQDZEQDZ2ADYANkREQAREQARABEAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARABEAEcYAAADGAAAAEQARABERANkAERERAADCAADZAAAA2QARAADZAAARABEAEQAAABEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAEQARAAAAEQDZANjYDw8PDw8PDw8RANkRABEREQARABEAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAAAAAxgAAAAARxgAAEcYAEQARABEREREREREADw8AAAAAAAAAAA8PABHYANkAEREAEQAAEQAAABEAAAAAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAABEAAAAAEQAAABEAEQARABERANgA2A8AADAwMDAwMDAwAAAPAAAREREREREAEREAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxg8PDw8PDw8PDw8PDw8RwwAREdkPADAwMDAwMDAwMDAwMAAPEdgAEREREREAAAARABEAABEAAAAAAAAAAAAAAAAAAAAAEQAAAMgRAAAAAAAADwAAAAAAAAAAAAAADwARANgADwAwMDAwMDAwMDAwMDAwMAAPEREA2BEREREAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAAAAPACAgICAgICAgAQAPABEREQ8AMDAwMAIAAAAAAAAwMDAwMAAPEREAABEREQARABEAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxgAAAA8AICAgICAgICABAA8AERERDwAwMDACAA8PDw8PDwAwMDAwAA8PDxEREREREQARAAAAAAARAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARDwAgICAgICABAQEADwAR2Q8AMDAwAgAPAAARABEPDwAwMDACAAAADw8AEQARABERABEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAAAAAAMYPAAAAACAgAQAAAAAPAAAADwAwMDACAA8RERERDwAAADAwMDACJCQAAA8AERERAAAAABEAABEAAAAAAAAAAAAAAAAAEQAAAAAAABHGAAAAAA8PDw8AICABAA8PDw8RERIPADAwAgAPABHZEQ8AJCQkJDAwMAIkJCQkAA8RABEAEREAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAxhEADwAgIAEADwAAEQDZDwAwMDACAA8AEREPACQkJCQFMDAwAgUkJCQkAA8RABEAAAARAAAAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAADIAAAAAN8PACAgAQAPABERDw8PADAwAgAPABHvDwAkJCQkBQAAMDACAAUkJCQFAA8RABERAAARAAAAAAAAAAAAAAAAAAAAABEAAAAAABEAAAAAAMgAAA8AICABAA8AAA8AAAAAMDACAA8AERIPACQkJAUADwAwMAIAAAUFBQUADwARAAARAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAAAAAEcYAAMgADwAgIAEADwAPACoqKioGMAIADwDTDwAkJCQFAA8PADAwAgAPAAAAAA8AABEAABEAABEAAAAAAAAAAAAAAAAAAAAAAAAAAADGAAAAAAAAAN8PACAgAQAPDwAqKioqKioGAgAPABEPACQkJAUADw8AMDACAA8PDw8PEQAREREAABEAAAAAEQAAAAAAAAAAAAAAAADJAAAAAAAAABEAyAAAyA8AICABAA8PACoqKioqKgYCAA8REQ8AJCQkAA8ADwAwMAIADwAAAAARABEAEREAAAAAEQAAAAAAAAAAAAARAAAAAAAAAAAAAADIAAAAyAAADwAgIAEADw8AKioqKioqBgIADxESDwAkJCQADwAPADAwAgAPABEREREREREAABERAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAyMgPACAgAQAPDwAqKgYAKioGAgAPERIPACQkJCQADw8AMDACAA8REREREREAEREAAAARAAAAAAARAAAAAAAAAAAAAAAAAAARAAAAABEAyAAAAA8AICABAA8AKioGAA8AKioGAA8AEQ8ABSQkJCQADwAwMAIADwARERIRyQDOABERAAAAEQAAAAAAAAAAAAAAAAAAAAAAAAAAyAAAAAAAyADIDwAgIAEADwAqKgYADwAqKgYADxHSEg8ABSQkJCQAADAwAgAPERESEREREQAAyQARAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAyAAAyAAPACAgAQAPACoqBgAPACoqBgAPABHqEg8ABQUkJCQkMDACAA8AEeISEc4REQAAAAARABEAAAAAAAAAAAAAABEAAAAAAAAAAAAAAAAAABHIAA8AICABAA8AKioGAA8AKioGAA8REuoSEg8AAAUFJCQwMAIADw8RERERAMkAERERAAAAAAARAAAAAAAAAAAAAAAAEQAAAAAAyAARAMgAAADIDwAgIAEAACoqKgAPAA8AKioGAA8RE+oTEg8PAAAFMDAwAiQAAA8PyRERAM4AAMkAEQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADIAAAPACAgAQAAKioGAA8ADwAqKgYADxES6RMTEhEPDwAwMDACJCQkAAAPAM4AABEAAAAAEQAAABEAAAAAAAAAAAAAAAAAAAAAAAARAADIABEAyA8AICABAAAqKgYADwAPACoqBgIADxIT6hMTEg8AMDAwMAIFJCQkJAAPAADOABEAyQAAEQAAAAAAAAAAAAAAAAAAAAARAAAAAMgAAAAAyAARDwAgIAEAACoqBgAPAA8AKioGAgAPERIT6BMSDwAwMDACAAAkJCQkBQAPAAAAEQAAAAAAAAAAABEAAAAAAAARAAAAAAAAAAAAAAAAyAAAyAAPACAgAQAqKioADwAREQ8AKioGAgAPDw8PDw8AMDAwAgAPDwAkJCQkBQAPyQARAADJEQARAAAAAAAAAAAAAAAAAADJAAAAAAARAAAAEQDJAA8AICABACoqBgAPABERDwAqKgYwAgAAAAAAADAwMDACAA8ADwAkJCQFAA8AAM4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAAAAAEQDJAADJDwAgIAEAKioGAA8AEREPACoqBjAgIAEwMDAwMDAwAgAPEQARDwAkJAUADwAAAAARAAAAEQAAAAAAAAAAAAAAAAAAAAAAAADIAAAAAAAPDw8PACAgAQAqKgYADw8PDw8AKioGMCAgATAwMDAwAgIADwAREc4PACQkBQAPABERAM4AAADJAAARAAAAAAAAAAAAAAAAAAAAAAARABERAA8AAAAAICABACoqBgAAAAAAAAAqKioGICABAgICAgIAAA8AEQDJDwAkJCQFAA8AAAAAAAAAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAAAyAAADwAgICAgICAgICAgICAgICAgICAgICAgIAEAJCQkAA8PAADOABEPACQkJAUADxHJAAARAAAAAAAAAAAAAAAAAAAAEQAAAAAAAAARAAAAAMgPACAgICAgICAgICAgICAgICAgICAgICAgAQAkJCQkAA8PDw8PDwAkJCQFAA8AAAAAAMkRABEAAAAAAAAAAAAAAAAAAAARAAARAAAAEQAAAA8AAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBACQkJCQkAAAAAAAAJCQkJAUADwAAEREAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAERERDwAAAAAAACoqBgAAAAAAAAAAAAAAKioGAAAAACQkJCQkJCQkJCQkJCQFAA8AAM4AAAAAABEAABEAABEAAAAAAAAAAAAAAAAAAAAAyQAAAMkPDw8PDw8AKioGAA8PDw8PDw8PDwAqKgYADw8PAAUFJCQkJCQkJCQFBQAPAAAAAADOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAEQAADwAqKgYADwAAAAAAAAAPACoqBgAPAAAPAAAFBQUFBQUFBQAADwARABEAAAARAADJAAAAAAAAAAAAAAAAAAAAEQAAAAAAABEAEQARABEPDw8PACoqBgAPDw8PAA8PDw8AKioGAA8PDw8PDwAAAAAAAAAADw8AAM4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAAAAAEQAREQ8AAAAAKioGAAAAAA8ADwAAAAAqKgYAAAAADwAADw8PDw8PDw8AEQAAAM4RAM4AEQAAAAAAEQAAAAAAAAAAAAAAAAAAAAAAABEAEQDOAAARDwAqKioqKioqKgYADwAPACoqKioqKioqBgAPAAAREQARAM4AAADOAAAAAAAAAAAAABEAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAAAAAARABEPACoqKioqKioqBgAPAA8AKioqKioqKioGAA8RABEAzgAAABEAAAAREQARAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAAAARAAARABEAzw8ABgYGBgYGBgYGAA8ADwAGBgYGBgYGBgYADwDOABHOABHOABERyQAAzgAAEQARAMkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAAAAADwAAAAAAAAAAAAAADwAPAAAAAAAAAAAAAAAPAADOABEAABEAAAAAAAAAEQAAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAAAEQAAAAAAEREAEREPDw8PDw8PDw8PDw8PAA8PDw8PDw8PDw8PDw8RAADOABHOABEAEQARAAAAzgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAAAAABEAABEREQARABEAEQAREQARABEAEREAEREAEQARABEAABEAAAAAzgAAzgAAAAAAAAAAAAAAAAARAAAAAAAAAAAAAAAAAAAAAAAAAAAAEQAAABEAEQAAEQAREQAR0AARANAAEREAEREAERERABEAzwARzgARAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEAANAAANAAEQDQEQAREQAREQDQANAA0ADQAM8AzwARAAAAEQAREQAAEQAAEQARAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUABQACgAKAAEAAQAAAAsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsL";
+   
+   
+   // Secret challenge, mail me the password if you solve it! :D
+   var challenge = "jA4iAMcGIABafYwW7X24MHy5ABPoCgG4Tny5ABToAQG4dny5ABXo+ADGBux9Aev+vkB86JYA6J4AxgbLfAHr/kNoYWxsZW5nZQoNPiAAgD7LfAB0+aERfTMGE309YgN1EKEVfTMGFn09C0h1BP4Gy3z+Bst8w4A+y3wAdPm+EX2KRAH2ZAI9pxB1JopEBfZkBD3YEnUbgHwCMXUVgD7LfAF0+YA+y3wCdAe+uHzoHADDvsN86BUAwwoNQ29ycmVjdCEACg1Xcm9uZwAArDwAdAXoRADr9sO/EX20Ac0WdPq0AM0WgPwcdCCA/A50DKroJgCB/xd9fRHr4IH/EX1+2k++DX3oxf/r0TDAqsMIIAgAQExlZWt5ALcAswC0Ds0Qw4sW832Jy8cHWH2D6QK7AIDB4gYB08HqBogXiUcHiU8PjE8DjE8BidiNHvV90eIB04kH/wbzfcPr/vqAPux9AA+EgACDPvF9AHURWFhYix71fYke8X2LHvF96yYWjhbtfYkm732LJvF9g8QZYIsm730Xix7xfY9HB49HA49HBYlnD4sHQI0+9X3R4AHHiwWD+AB1A6H1faPxfYnDjlcBi2cPgU8FAAL/dwX/dwP/dwcWjhbtfYkm732J3IPECWGLJu99F1CwIOYgWPvPAAAAAAAAAAAAAAAAAAAAAAAAVao=";
+   
+
+   registerB64("headerCanvas", game);
+   registerB64("footerCanvas", challenge, true);
+   
+   // old stuff
+   //registerBytes("headerCanvas", 'https://raw.githubusercontent.com/Pusty/realmode-assembly/master/builds/part7.bin');
+   //registerBytes("footerCanvas", 'https://raw.githubusercontent.com/Pusty/realmode-assembly/master/builds/part6.bin', true);
+   
+   //registerText("link1");
+   //registerText("link2");
+   registerText("email");
+  </script>
+</body>
+</html>
