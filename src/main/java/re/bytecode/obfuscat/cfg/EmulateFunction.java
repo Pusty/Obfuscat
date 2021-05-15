@@ -297,10 +297,13 @@ public class EmulateFunction {
 		// Execute blocks until the limit is hit or no further block was found
 		for (int i = 0; i < blockLimit || blockLimit == -1; i++) {
 			Object v = executeBlock();
-			if (currentBlock == null)
+			if (currentBlock == null) {
 				return v;
+			}
 		}
 
+		// TODO: Write Back Array Changes to the original arrays
+		
 		// If no result was found throw an exception
 		throw new RuntimeException("Execution didn't finish in the set amount of blocks");
 	}

@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Test;
 
 import re.bytecode.obfuscat.Obfuscat;
@@ -299,8 +302,8 @@ public class ThumbCodeGenerationTest {
 		assertEquals("Java and Thumb Result don't match", fib.intValue(), returnValue);
 	}
 	
-	public long runTestBuilder(String builder, Object... args) throws Exception {
-		Function func = Obfuscat.buildFunction(builder, null);
+	public long runTestBuilder(String builder, Map<String, Object> pars,  Object... args) throws Exception {
+		Function func = Obfuscat.buildFunction(builder, pars);
 		int[] code = Obfuscat.generateCode("Thumb", func).getData();
 		return test_thumb(code, args);
 	}
@@ -317,18 +320,36 @@ public class ThumbCodeGenerationTest {
 
 	}
 	
-	//@Test
+	@Test
 	public void testHWKeyBuilder() throws Exception {
 		
-		byte[] byteArray = new byte[] {0, 0, 0, 0};
-		runTestBuilder("HWKeyBuilder", byteArray);
+		HashMap<String,Object> args = new HashMap<String,Object>();
+		args.put("length", 7);
+		byte[] byteArray =  new byte[] {0, 0, 0, 0, 0, 0, 0, 12};
+		runTestBuilder("HWKeyBuilder", args, byteArray);
 		
-		byte[] byteArray2 = new byte[] {0, 0, 0, 0};
-		runTestBuilder("HWKeyBuilder", byteArray2);
+		byte[] byteArray2 = new byte[] {0, 0, 0, 0, 0, 0, 0, 12};
+		runTestBuilder("HWKeyBuilder", args, byteArray2);
 		
-		for(int i=0;i<byteArray.length;i++) {
+		for(int i=0;i<7;i++) {
 			assertNotEquals("Byte Array Generation Failed", byteArray[i], byteArray2[i]);
 		}
+		assertEquals("Byte Array Generation Processed Too Much", byteArray[7], byteArray2[7]);
 		
+	}
+	
+	@Test
+	public void testKeyBuilder() throws Exception {
+		
+		byte[] constKey = "POTATO".getBytes();
+		HashMap<String,Object> args = new HashMap<String,Object>();
+		args.put("data",constKey);
+		
+		byte[] byteArray =  new byte[constKey.length];
+		runTestBuilder("KeyBuilder", args, byteArray);
+		
+		for(int i=0;i<byteArray.length;i++) {
+			assertEquals("Byte Array Generation Failed", byteArray[i], constKey[i]);
+		}
 	}
 }

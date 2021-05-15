@@ -6,6 +6,7 @@ import java.util.Map;
 
 import re.bytecode.obfuscat.builder.Builder;
 import re.bytecode.obfuscat.builder.HWKeyBuilder;
+import re.bytecode.obfuscat.builder.KeyBuilder;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
@@ -38,6 +39,7 @@ public class Obfuscat {
 		registerPass("EncodeArithmetic", EncodeArithmeticPass.class);
 		
 		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);
+		registerBuilder("KeyBuilder", KeyBuilder.class);
 	}
 	
 	/**
