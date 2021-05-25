@@ -15,4 +15,9 @@ public class NodeDummy extends Node {
 	public Node replace(Node search, Node replace) {
 		return this;
 	}
+	
+	@Override
+	public Node clone() {
+		return new NodeDummy();
+	}
 }

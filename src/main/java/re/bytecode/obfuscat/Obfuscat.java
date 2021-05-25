@@ -35,6 +35,7 @@ public class Obfuscat {
 		
 		registerGenerator("Thumb", ThumbCodeGenerator.class);
 		registerCustomNode("Thumb", "readInt", ThumbCodeGenerator.ThumbNodeReadInt.class);
+		registerCustomNode("Thumb", "call", ThumbCodeGenerator.ThumbNodeCall.class);
 		
 		registerPass("EncodeArithmetic", EncodeArithmeticPass.class);
 		

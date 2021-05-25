@@ -712,4 +712,10 @@ public class x86CodeGenerator extends CodeGenerator {
 
 	}
 
+	// TODO: not implemented yet
+	@Override
+	public int getNodeInstCount() {
+		return 0;
+	}
+
 }

@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * A node is an abstraction from one "instruction" / operation
  */
-public abstract class Node {
+public abstract class Node implements Cloneable {
 	
 	/**
 	 * Return a list of all nodes recursively references by this node or their children
@@ -83,4 +83,7 @@ public abstract class Node {
 	 * @return the array of children this node references
 	 */
 	public Node[] children() { return null; }
+	
+	@Override
+	public abstract Node clone();
 }

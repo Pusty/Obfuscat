@@ -59,8 +59,15 @@ public class NodeStore extends Node {
 	}
 	
 	@Override
-	protected boolean checkCriteria(Node o) { return ((NodeStore)o).storeSize == this.storeSize && ((NodeStore)o).slot == this.slot ; }
+	protected boolean checkCriteria(Node o) { 
+		return (((NodeStore)o).storeSize == this.storeSize || ((NodeStore)o).storeSize == -1 || this.storeSize == -1) && (((NodeStore)o).slot == this.slot  || ((NodeStore)o).slot == -1 || this.slot == -1);
+	}
 	
 	@Override
 	public Node[] children() { return new Node[] {value}; }
+	
+	@Override
+	public Node clone() {
+		return new NodeStore(storeSize, slot, value.clone());
+	}
 }

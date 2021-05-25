@@ -88,8 +88,13 @@ public class NodeMath2 extends Node {
 	}
 	
 	@Override
-	protected boolean checkCriteria(Node o) { return ((NodeMath2)o).type == this.type ; }
+	protected boolean checkCriteria(Node o) { return ((NodeMath2)o).type == this.type || this.type == MathOperation.ANY || ((NodeMath2)o).type == MathOperation.ANY; }
 	
 	@Override
 	public Node[] children() { return new Node[] {op1, op2}; }
+	
+	@Override
+	public Node clone() {
+		return new NodeMath2(op1.clone(), op2.clone(), type);
+	}
 }

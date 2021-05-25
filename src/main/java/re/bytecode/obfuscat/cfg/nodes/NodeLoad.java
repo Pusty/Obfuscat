@@ -40,7 +40,9 @@ public class NodeLoad extends Node {
 	}
 	
 	@Override
-	protected boolean checkCriteria(Node o) { return ((NodeLoad)o).loadSize == this.loadSize && ((NodeLoad)o).slot == this.slot ; }
+	protected boolean checkCriteria(Node o) { 
+		return (((NodeLoad)o).loadSize == this.loadSize || ((NodeLoad)o).loadSize == -1 || this.loadSize == -1) && (((NodeLoad)o).slot == this.slot  || ((NodeLoad)o).slot == -1 || this.slot == -1);
+	}
 
 	@Override
 	public Node replace(Node search, Node replace) {
@@ -53,5 +55,10 @@ public class NodeLoad extends Node {
 	@Override
 	public void dumify() {
 		
+	}
+	
+	@Override
+	public Node clone() {
+		return new NodeLoad(loadSize, slot);
 	}
 }

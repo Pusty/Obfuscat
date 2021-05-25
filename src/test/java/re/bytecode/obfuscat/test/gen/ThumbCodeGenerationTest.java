@@ -2,6 +2,7 @@ package re.bytecode.obfuscat.test.gen;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -22,11 +23,13 @@ import unicorn.UnicornException;
 public class ThumbCodeGenerationTest {
 
 	// memory address where emulation starts
-	public static final int ADDRESS = 0x1000000;
+	private static final int ADDRESS = 0x1000000;
 	// memory address where the heap starts
-	public static final int HEAP = 0x2000000;
+	private static final int HEAP = 0x2000000;
 	
-	public static final int DEAD_ADDRESS = 0xDEADC0DE;
+	
+	// address reached at end of execution
+	private static final int DEAD_ADDRESS = 0xDEADC0DE;
 	
 	// current position in heap for arrays
 	private static int HEAP_POSITION = HEAP;
@@ -71,6 +74,16 @@ public class ThumbCodeGenerationTest {
 
 			// if((data[0]&0xFF) == 0x00 && (data[1]&0xFF) == 0xBD) u.emu_stop(); // stop at
 			// ret
+		}
+	}
+	
+	
+	private static int INST_COUNT;
+	private static int INST_SIZE;
+	private static class InstructionCountHook implements CodeHook {	
+		int instCounter = 0;
+		public void hook(Unicorn u, long address, int size, Object user_data) {
+			instCounter++;
 		}
 	}
 
@@ -198,10 +211,10 @@ public class ThumbCodeGenerationTest {
 		u.mem_map(HEAP, 0x10000, Unicorn.UC_PROT_ALL);
 		
 		if(args.length > 4) throw new RuntimeException("Thumb can't handle more than 4 arguments"); // TODO: add this to the thumb code generator as well
-		if(args.length >= 1) r4 = convertArgument(u, args[0], false);
-		if(args.length >= 2) r5 = convertArgument(u, args[1], false);
-		if(args.length >= 3) r6 = convertArgument(u, args[2], false);
-		if(args.length >= 4) r7 = convertArgument(u, args[3], false);
+		if(args.length >= 1) r0 = convertArgument(u, args[0], false);
+		if(args.length >= 2) r1 = convertArgument(u, args[1], false);
+		if(args.length >= 3) r2 = convertArgument(u, args[2], false);
+		if(args.length >= 4) r3 = convertArgument(u, args[3], false);
 		
 		writeSystemRegisters(u);
 
@@ -212,6 +225,7 @@ public class ThumbCodeGenerationTest {
 			System.out.print(String.format("%02X", codeData[i]));
 		}
 		System.out.println();
+		INST_SIZE = code.length;
 
 		// write machine code to be emulated to memory
 		u.mem_write(ADDRESS, codeData);
@@ -228,6 +242,9 @@ public class ThumbCodeGenerationTest {
 		u.reg_write(Unicorn.UC_ARM_REG_R5, new Long(r5));
 		u.reg_write(Unicorn.UC_ARM_REG_R6, new Long(r6));
 		u.reg_write(Unicorn.UC_ARM_REG_R7, new Long(r7));
+		
+		// r8 = function address
+		u.reg_write(Unicorn.UC_ARM_REG_R8, new Long(ADDRESS | 1));
 
 		// intercept invalid memory events
 		u.hook_add(new MyWriteInvalidHook(), Unicorn.UC_HOOK_MEM_WRITE_UNMAPPED, null);
@@ -235,6 +252,9 @@ public class ThumbCodeGenerationTest {
 
 		// tracing all instructions
 		// u.hook_add(new MyCodeHook(), 1, 0, null);
+		
+		InstructionCountHook ich = new InstructionCountHook();
+		u.hook_add(ich, 1, 0, null);
 
 		// emulate machine code in infinite time (last param = 0), or when
 		// finishing all the code.
@@ -247,7 +267,9 @@ public class ThumbCodeGenerationTest {
 			} else
 				throw ue;
 		}
-
+		
+		INST_COUNT = ich.instCounter;
+		
 		// now print out some registers
 		// System.out.print(">>> Emulation done. Below is the CPU context\n");
 
@@ -282,6 +304,10 @@ public class ThumbCodeGenerationTest {
 		 */
 
 		u.close();
+		
+		assertTrue("Binary Size is not multiple of Generator "+INST_SIZE, (INST_SIZE % ThumbGenerationUtil.getCodeSize()) == 0);
+		assertTrue("Instruction Executed is not multiple of Generator "+INST_COUNT, (INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
+		
 		return r_r0.intValue();
 	}
 
@@ -298,6 +324,8 @@ public class ThumbCodeGenerationTest {
 
 		int[] code = ThumbGenerationUtil.generateCode(data, functionName);
 
+		//private static int INST_COUNT;
+		//private static int INST_SIZE;
 		long returnValue = test_thumb(code, args);
 		assertEquals("Java and Thumb Result don't match", fib.intValue(), returnValue);
 	}
@@ -305,10 +333,25 @@ public class ThumbCodeGenerationTest {
 	public long runTestBuilder(String builder, Map<String, Object> pars,  Object... args) throws Exception {
 		Function func = Obfuscat.buildFunction(builder, pars);
 		int[] code = Obfuscat.generateCode("Thumb", func).getData();
-		return test_thumb(code, args);
+		long v = test_thumb(code, args);
+		return v;
+	}
+	
+	public long runTestMerged(String fileName, String functionName,  Object... args) throws Exception {
+		byte[] data = SampleLoader.loadFile(fileName);
+		int[] code = ThumbGenerationUtil.generateCodeMerged(data, functionName);
+		
+		Object[] argsAfter = new Object[args.length+1];
+		for(int i=0;i<args.length;i++)
+			argsAfter[i+1] = args[i];
+		argsAfter[0] = 0;
+	
+		long returnValue = test_thumb(code, argsAfter);
+		//System.out.println("Return Value: "+returnValue);
+		return returnValue;
 	}
 
-
+	
 	@Test
 	public void testARMThumb() throws Exception {
 		runTest("Sample1", "entry");
@@ -319,8 +362,8 @@ public class ThumbCodeGenerationTest {
 		runTest("Sample6", "entry");
 
 	}
-	
-	@Test
+
+	//@Test
 	public void testHWKeyBuilder() throws Exception {
 		
 		HashMap<String,Object> args = new HashMap<String,Object>();
@@ -351,5 +394,14 @@ public class ThumbCodeGenerationTest {
 		for(int i=0;i<byteArray.length;i++) {
 			assertEquals("Byte Array Generation Failed", byteArray[i], constKey[i]);
 		}
+	}
+	
+	@Test
+	public void testMerged() throws Exception {
+		byte[] res = new byte[] {-108, -110, -121, -119, -108, -16, -89, 2};
+		byte[] encoded = new byte[] {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48};
+		runTestMerged("Sample7", "rc4", new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, encoded, new byte[256]);
+		for(int i=0;i<encoded.length;i++)
+			assertEquals("RC4 didn't work", encoded[i], res[i]);
 	}
 }

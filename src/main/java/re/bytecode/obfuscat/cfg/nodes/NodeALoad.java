@@ -36,7 +36,7 @@ public class NodeALoad extends Node {
 
 	@Override
 	protected boolean checkCriteria(Node o) {
-		return ((NodeALoad) o).loadSize == this.loadSize;
+		return ((NodeALoad) o).loadSize == this.loadSize || this.loadSize == -1 || ((NodeALoad) o).loadSize == -1;
 	}
 
 	@Override
@@ -65,4 +65,10 @@ public class NodeALoad extends Node {
 		this.index = index.equals(search) ? replace : index.replace(search, replace);
 		return this;
 	}
+	
+	@Override
+	public Node clone() {
+		return new NodeALoad(array.clone(), index.clone(), loadSize);
+	}
+	
 }

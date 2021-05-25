@@ -149,6 +149,10 @@ public class BasicBlock {
 		this.switchBlocks.clear();
 		this.switchBlocks.putAll(newSwitchBlocks);
 		
+		
+		if(returnValue != null)
+			returnValue = returnValue.equals(node)?newNode:returnValue.replace(node, newNode);
+		
 	}
 	
 	
@@ -211,4 +215,39 @@ public class BasicBlock {
 		
 		return block.toString();
 	}
+	
+	/*
+	@Override
+	public BasicBlock clone() {
+		BasicBlock cloned = new BasicBlock();
+
+		// compressing the graph before would make sense
+		
+		outer: for(Node node:this.getNodes()) {
+			if(getReturnValue() != null && getReturnValue().equalsSemantics(node)) continue;
+			for(Entry<BranchCondition, BasicBlock> e:getSwitchBlocks().entrySet()) {
+				if(e.getKey().getOperant1().equalsSemantics(node)) continue outer;
+				if(e.getKey().getOperant2().equalsSemantics(node)) continue outer;
+			}
+			cloned.getNodes().add(node.clone());
+		}
+		
+		
+		Node returnValue = getReturnValue();
+		if(returnValue != null) {
+			returnValue = returnValue.clone();
+			cloned.getNodes().add(returnValue);
+			cloned.setExitBlock(returnValue);
+		}else if(this.isExitBlock())
+			cloned.setExitBlock(null);
+		
+		for(Entry<BranchCondition, BasicBlock> e:getSwitchBlocks().entrySet()) {
+			Node op1 = e.getKey().getOperant1().clone();
+			Node op2 = e.getKey().getOperant2().clone();
+			cloned.getSwitchBlocks().put(new BranchCondition(cloned, op1, op2, e.getKey().getOperation()), e.getValue());
+		}
+		
+		return cloned;
+	}
+	*/
 }

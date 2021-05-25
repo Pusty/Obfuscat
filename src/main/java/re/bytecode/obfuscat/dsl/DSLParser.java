@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 import pusty.f0cr.ClassReader;
@@ -57,7 +58,7 @@ public class DSLParser {
 	public DSLParser() {
 	}
 
-	public Function processFile(byte[] classFile) throws Exception {
+	public Map<String, Function> processFile(byte[] classFile) throws Exception {
 		// System.out.println(classFile.length);
 		ByteArrayInputStream bis = new ByteArrayInputStream(classFile);
 		ClassReader classReader = new ClassReader(bis);
@@ -65,6 +66,8 @@ public class DSLParser {
 
 		// Verify Class (not abstract, interface)
 
+		Map<String, Function> functions = new HashMap<String, Function>();
+		
 		for (MethodInfo method : classReader.getMethodTable().getIndexes()) {
 
 			if (verifyMethod(classReader, method)) {
@@ -73,14 +76,25 @@ public class DSLParser {
 				// System.out.println("Processing: " + method.getName());
 				List<BasicBlock> bbs = processMethod(classReader, method);
 				// System.out.println(bbs);
-				return new Function(method.getName(), bbs, args,
-						method.getCode().getLocalVariableTable().getTable().length, returnValue);
+				String name = (method.getName()+method.getDescriptor());
+				
+				// give each function a unique id
+				String id = method.getName();
+				int ido = 0;
+				while(functions.containsKey(id)) {
+					id = method.getName()+ido;
+					ido++;
+				}
+					
+					
+				functions.put(id, new Function(name, bbs, args,
+						method.getCode().getLocalVariableTable().getTable().length, returnValue));
 			}
 
 			// method.getInfo().printOut();
 
 		}
-		return null;
+		return functions;
 	}
 
 	// Convert a descriptor character to a class
@@ -159,7 +173,10 @@ public class DSLParser {
 			}
 		}
 
-		// TODO: Make custom exceptions for this
+		// ignore non public functions
+		//if(!AccessFlags.isPublic(method.getAccessFlags()))
+		//	return false;
+		
 		if (AccessFlags.isAbstract(method.getAccessFlags()))
 			throw new Exception("Can't translate abstract method " + method.getName());
 
@@ -602,19 +619,57 @@ public class DSLParser {
 						String name = (String) inst.getConstantPool().get(natr.getIdentifier());
 						String type = (String) inst.getConstantPool().get(natr.getEncodedTypeDescriptor());
 						
+						MethodInfo info = classReader.getMethodTable().getMethod(inst.getConstantPool(), name);
+						
+						// NOTE: If the nodes have return values and these are not used / voided , the function call will be optimized out
+						// So functions with side effects need to have the void type or be handled carefully
+						
 						// use "native_" as a method prefix for it to be parsed as a custom node
-						if(!name.startsWith("native_")) throw new RuntimeException("Only 'native' prefix functions supported");
-						name = name.substring("native_".length());
-						
-						Class<?>[] args = convertFunctionDescriptor(type);
-						Node[] argsNode = new Node[args.length];
-						
-						// pop the amount of arguments the function has from the stack
-						for(int i=0;i<argsNode.length;i++)
-							argsNode[argsNode.length-1-i] = stack.pop();
-						
-						// add the custom node
-						stack.push(new NodeCustom(name, argsNode));
+						//if(!name.startsWith("native_")) throw new RuntimeException("Only 'native' prefix functions supported");
+						if(AccessFlags.isPrivate(info.getAccessFlags()) && AccessFlags.isStatic(info.getAccessFlags()) && name.startsWith("native_")) {
+							name = name.substring("native_".length());
+							
+							Class<?>[] args = convertFunctionDescriptor(type);
+							Node[] argsNode = new Node[args.length];
+							
+							// pop the amount of arguments the function has from the stack
+							for(int i=0;i<argsNode.length;i++)
+								argsNode[argsNode.length-1-i] = stack.pop();
+							
+							boolean returnsSomething = convertDescriptor(type.split("\\x29")[1].charAt(0)) != null;
+							
+							// add the custom node
+							NodeCustom custom = new NodeCustom(name, argsNode);
+							if(returnsSomething)
+								stack.push(custom);
+							else
+								currentBlock.getNodes().add(custom);
+							
+						}else if(AccessFlags.isPrivate(info.getAccessFlags()) && AccessFlags.isStatic(info.getAccessFlags())){
+
+							// normal function calls (only works if merged)
+							Class<?>[] args = convertFunctionDescriptor(type);
+							Node[] argsNode = new Node[args.length+1];
+							
+							// pop the amount of arguments the function has from the stack
+							for(int i=0;i<args.length;i++)
+								argsNode[argsNode.length-1-i] = stack.pop();
+							
+							// function id
+							NodeConst functionID = new NodeConst((name+type).hashCode());
+							if (!currentBlock.getNodes().contains(functionID))
+								currentBlock.getNodes().add(functionID);
+							argsNode[0] = functionID;
+							
+							boolean returnsSomething = convertDescriptor(type.split("\\x29")[1].charAt(0)) != null;
+							
+							NodeCustom custom = new NodeCustom("call", argsNode);
+							if(returnsSomething)
+								stack.push(custom);
+							else
+								currentBlock.getNodes().add(custom);
+						}else 
+							 throw new RuntimeException("Normal Function Calling is not supported");
 						
 						break;
 					default:
@@ -632,7 +687,7 @@ public class DSLParser {
 			}
 			
 			if(stack.size() != 0)
-				throw new RuntimeException("Stack after Basic Block isn't empty");
+				throw new RuntimeException("Stack after Basic Block isn't empty "+stack);
 
 			// System.out.println(currentBlock.getNodes());
 
@@ -677,7 +732,7 @@ public class DSLParser {
 		boolean prime = false;
 		for (Integer key : array) {
 			Instruction instRaw = code.getInst().getInstructionMap().get(key);
-		    //System.out.println(key + " - " + instRaw.getName());
+		    // System.out.println(key + " - " + instRaw.getName());
 			if (prime) { // if the last instruction causes a basic block split, then add a marker at this basic block
 				if (!limiters.contains(key))
 					limiters.add(key);
@@ -726,7 +781,7 @@ public class DSLParser {
 		Collections.sort(limiters);
 
 		
-	    //System.out.println(limiters);
+	    // System.out.println(limiters);
 
 		// split the basic blocks
 		ArrayList<DSLBasicBlock> list = new ArrayList<DSLBasicBlock>();

@@ -30,7 +30,9 @@ public enum MathOperation {
 	/** -A **/
 	NEG(1),
 	/** ~A **/
-	NOT(1);
+	NOT(1),
+	/** DUMMY **/
+	ANY(0);
 	
 	
 	private int operands;

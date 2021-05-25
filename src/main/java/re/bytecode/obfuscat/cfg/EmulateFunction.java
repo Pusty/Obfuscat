@@ -9,6 +9,7 @@ import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
+import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath1;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
@@ -216,6 +217,17 @@ public class EmulateFunction {
 			default:
 				throw new RuntimeException("Not implemented");
 			}
+		} else if (node instanceof NodeCustom) {
+			NodeCustom custom = (NodeCustom) node;
+
+			if (custom.getIdentifier().equals("call")) {
+				if (!(function instanceof MergedFunction))
+					throw new RuntimeException("Can't call in unmerged function");
+				
+				output = new EmulateFunction(function).run0(-1, false, input);
+			} else
+				throw new RuntimeException("Not implemented Node " + node);
+
 		} else {
 			// Missing nodes (including custom nodes) throw exceptions
 			throw new RuntimeException("Not implemented Node " + node);
@@ -236,9 +248,13 @@ public class EmulateFunction {
 	 * @return the return value
 	 */
 	public Object run(int blockLimit, Object... args) {
+		return run0(blockLimit, true, args);
+	}
 
+	public Object run0(int blockLimit, boolean check, Object... args) {
+		
 		// Check if the argument length matches
-		if (function.getArguments().length != args.length)
+		if (check && function.getArguments().length != args.length)
 			throw new RuntimeException("Amount of arguments don't match");
 
 		// Argument Checking
@@ -273,7 +289,11 @@ public class EmulateFunction {
 					for (int j = 0; j < ia.length; j++)
 						oa[j] = Integer.valueOf(ia[j]);
 					argV = oa;
-				}
+				} else if (arg == Object[].class) {
+					Object[] oa = ((Object[]) argV);
+					argV = oa;
+				} else
+					throw new RuntimeException("Unsupported Array Type "+argV);
 			}
 
 			// Check Type
@@ -287,23 +307,64 @@ public class EmulateFunction {
 				arg = byte.class;
 			else if (arg.isArray())
 				arg = Array.class;
-			if (function.getArguments()[i] != arg)
+			if (check && function.getArguments()[i] != arg)
 				throw new RuntimeException("Type of Argument " + i + " doesn't match signature");
 
 			// Store converted array as variables in the fitting slots
 			variables.put(i, argV);
 		}
 
+		boolean returnedSomething = false;
+		Object returnedValue = null;
+
 		// Execute blocks until the limit is hit or no further block was found
 		for (int i = 0; i < blockLimit || blockLimit == -1; i++) {
 			Object v = executeBlock();
 			if (currentBlock == null) {
-				return v;
+				returnedSomething = true;
+				returnedValue = v;
+				break;
 			}
 		}
 
-		// TODO: Write Back Array Changes to the original arrays
-		
+		// Write back arrays
+		for (int i = 0; i < args.length; i++) {
+
+			Object argV = args[i];
+			Class<?> arg = argV.getClass();
+			
+
+			if (arg.isArray()) {
+
+				if (arg == byte[].class) {
+					byte[] ba = ((byte[]) argV);
+					Object[] oa = (Object[]) variables.get(i);
+					for (int j = 0; j < ba.length; j++)
+						ba[j] = ((Integer)oa[j]).byteValue();
+				} else if (arg == short[].class) {
+					short[] sa = ((short[]) argV);
+					Object[] oa = (Object[]) variables.get(i);
+					for (int j = 0; j < sa.length; j++)
+						sa[j] = ((Integer)oa[j]).shortValue();
+				} else if (arg == char[].class) {
+					char[] ca = ((char[]) argV);
+					Object[] oa = (Object[]) variables.get(i);
+					for (int j = 0; j < ca.length; j++)
+						ca[j] = (char) ((Integer)oa[j]).shortValue();
+				} else if (arg == int[].class) {
+					int[] ia = ((int[]) argV);
+					Object[] oa = (Object[]) variables.get(i);
+					for (int j = 0; j < ia.length; j++)
+						ia[j] = ((Integer)oa[j]).intValue();
+				}
+			}
+
+		}
+
+		if (returnedSomething) {
+			return returnedValue;
+		}
+
 		// If no result was found throw an exception
 		throw new RuntimeException("Execution didn't finish in the set amount of blocks");
 	}
@@ -376,7 +437,7 @@ public class EmulateFunction {
 				throw new RuntimeException("Not implemented");
 			}
 		}
-		
+
 		// if the block has a unconditional follow up block then jump to it
 		if (!currentBlock.isExitBlock()) {
 			currentBlock = currentBlock.getUnconditionalBranch();

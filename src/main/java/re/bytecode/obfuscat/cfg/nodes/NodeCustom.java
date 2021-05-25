@@ -58,4 +58,12 @@ public class NodeCustom extends Node {
 			args[i] = args[i].equals(search) ? replace : args[i].replace(search, replace);
 		return this;
 	}
+
+	@Override
+	public Node clone() {
+		Node[] argsCopy = new Node[args.length];
+		for(int i=0;i<args.length;i++)
+			argsCopy[i] = args[i].clone();
+		return new NodeCustom(identifier, argsCopy);
+	}
 }

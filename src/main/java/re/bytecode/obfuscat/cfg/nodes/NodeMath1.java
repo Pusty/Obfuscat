@@ -60,8 +60,13 @@ public class NodeMath1 extends Node {
 	}
 	
 	@Override
-	protected boolean checkCriteria(Node o) { return ((NodeMath1)o).type == this.type ; }
+	protected boolean checkCriteria(Node o) { return ((NodeMath1)o).type == this.type || this.type == MathOperation.ANY || ((NodeMath1)o).type == MathOperation.ANY; }
 	
 	@Override
 	public Node[] children() { return new Node[] {op1}; }
+	
+	@Override
+	public Node clone() {
+		return new NodeMath1(op1.clone(), type);
+	}
 }

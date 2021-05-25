@@ -304,5 +304,9 @@ public abstract class CodeGenerator {
 	 */
 	public abstract int getNodeSize();
 
-	// TODO: ADD Fixed Instruction Count per block
+	/**
+	 * The fixed amount of instructions per compiled Node, Conditional Jump and Unconditional Jump/Return and the pretext
+	 * @return the exact amount of executed instructions each individual compiled code piece
+	 */
+	public abstract int getNodeInstCount();
 }

@@ -37,7 +37,7 @@ public class NodeAStore extends Node {
 
 	@Override
 	protected boolean checkCriteria(Node o) {
-		return ((NodeAStore) o).storeSize == this.storeSize;
+		return ((NodeAStore) o).storeSize == this.storeSize || this.storeSize == -1 || ((NodeAStore) o).storeSize == -1;
 	}
 
 	@Override
@@ -73,4 +73,8 @@ public class NodeAStore extends Node {
 		return new Node[] { array, index, value };
 	}
 
+	@Override
+	public Node clone() {
+		return new NodeAStore(array.clone(), index.clone(), value.clone(), storeSize);
+	}
 }

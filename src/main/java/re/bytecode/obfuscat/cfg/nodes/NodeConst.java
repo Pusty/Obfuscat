@@ -41,4 +41,9 @@ public class NodeConst extends Node {
 	@Override
 	public void dumify() {
 	}
+	
+	@Override
+	public Node clone() {
+		return new NodeConst(constObj);
+	}
 }
