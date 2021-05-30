@@ -45,6 +45,7 @@ public class EmulateFunction {
 		variables = new HashMap<Integer, Object>();
 
 	}
+	
 
 	// Execute a node
 	private void executeNode(Node node) {
@@ -52,6 +53,8 @@ public class EmulateFunction {
 		// if this node was already executed this basic block
 		if (nodeMap.containsKey(node))
 			return;
+		
+		executedNodes++;
 
 		// Evaluate the children of this node first if existent
 		Node[] children = node.children();
@@ -175,6 +178,9 @@ public class EmulateFunction {
 			case NEG:
 				output = -((Integer) input[0]);
 				break;
+			case NOP:
+				output = ((Integer) input[0]);
+				break;
 			default:
 				throw new RuntimeException("Not implemented");
 			}
@@ -236,6 +242,17 @@ public class EmulateFunction {
 		// store the evaluated result
 		nodeMap.put(node, output);
 	}
+	
+	public Function getFunction() {
+		return function;
+	}
+	
+	public int getExecutedNodes() {
+		return executedNodes;
+	}
+	
+	
+	private int executedNodes;
 
 	/**
 	 * Run the emulation with a maximum amount of blocks to execute and the
@@ -248,6 +265,7 @@ public class EmulateFunction {
 	 * @return the return value
 	 */
 	public Object run(int blockLimit, Object... args) {
+		executedNodes = 0;
 		return run0(blockLimit, true, args);
 	}
 

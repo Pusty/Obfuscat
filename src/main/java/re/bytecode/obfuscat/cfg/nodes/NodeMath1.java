@@ -38,6 +38,8 @@ public class NodeMath1 extends Node {
 				return "{ !("+op1+") }";
 			case NEG:
 				return "{ ~("+op1+") }";
+			case NOP:
+				return "{ "+op1+" }";
 			default:
 				throw new RuntimeException("Not implemented");
 		}

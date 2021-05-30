@@ -1,10 +1,11 @@
 package re.bytecode.obfuscat.test;
 
+import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.*;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
-import re.bytecode.obfuscat.pass.EncodeArithmeticPass;
+import re.bytecode.obfuscat.pass.SimpleArithmeticEncodePass;
 
 public class TestPass {
 	public static void main(String[] args) throws Exception {
@@ -41,7 +42,7 @@ public class TestPass {
 		b1.setUnconditionalBranch(b3);
 		
 		
-		EncodeArithmeticPass eap = new EncodeArithmeticPass();
+		SimpleArithmeticEncodePass eap = new SimpleArithmeticEncodePass(new Context(System.currentTimeMillis()));
 		eap.processBlock(b1);
 		
 		System.out.println(b1);

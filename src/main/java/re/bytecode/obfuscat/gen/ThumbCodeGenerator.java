@@ -513,6 +513,11 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					data[2] = 0x40;
 					data[3] = 0x42;
 					break;
+				case NOP:
+					// NOP
+					data[2] = 0x00;
+					data[3] = 0xBF;
+					break;
 				default:
 					throw new RuntimeException("Not implemented");
 				}
@@ -681,7 +686,6 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		return 6;
 	}
 
-
 	@Override
 	public void link(List<CompiledBasicBlock> blocks) {
 
@@ -815,84 +819,96 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		pretext[1] = 0xB5;
 
 		int variableCount = this.getFunction().getVariables();
-		if (variableCount > 2032)
+		if (variableCount >= 256)
 			throw new RuntimeException("Too much stack space reserved");
 
-		// sub sp, 0x40 - 90 B0
-		pretext[2] = 0x80 | (variableCount & 0xFF);
-		pretext[3] = 0xB0;
+		int nodeCount = getNodeSlotCount();
+		if (nodeCount >= 256)
+			throw new RuntimeException("Too much stack space reserved " + nodeCount);
+		
+
+
+		
+		int spOffset = (variableCount + nodeCount) * 4;
+		
+		// System.out.println(nodeCount + " - "+ variableCount+ " - "+spOffset);
+
+		// sub sp, #0x1 - AD F2 01 0D
+		pretext[2] = 0xAD;
+		pretext[3] = 0xF2;
+		pretext[4] = spOffset & 0xFF;
+		pretext[5] = 0x0D | (((spOffset >> 8) & 0x7) << 4);
+
+		// add r7, sp, #0x3fc - FF AF
+		pretext[6] = nodeCount & 0xFF;
+		pretext[7] = 0xAF;
 
 		// Copy over arguments from registers to the stack to make them non volatile
 
 		if (getFunction().getArguments().length >= 4) {
 			// STRD R0, [SP,#0] - CD E9 00 01
-			pretext[4] = 0xCD;
-			pretext[5] = 0xE9;
-			pretext[6] = 0x00; // to sp, 0
-			pretext[7] = 0x01; // r0, r1
-			// STRD R2, [SP,#8] - CD E9 02 23
-			pretext[8] = 0xCD;
+			pretext[8] = 0xC7;
 			pretext[9] = 0xE9;
-			pretext[10] = 0x02; // to sp 8
-			pretext[11] = 0x23; // r2, r3
+			pretext[10] = 0x00; // to sp, 0
+			pretext[11] = 0x01; // r0, r1
+
+			// STR R2, [R7, #0x8] - BA 60
+			pretext[12] = 0xBA;
+			pretext[13] = 0x60;
+
+			// STR R3, [R7, #0xC] - FB 60
+			pretext[14] = 0xFB;
+			pretext[15] = 0x60;
 		} else if (getFunction().getArguments().length >= 3) {
 			// STRD R0, [SP,#0] - CD E9 00 01
-			pretext[4] = 0xCD;
-			pretext[5] = 0xE9;
-			pretext[6] = 0x00; // to sp, 0
-			pretext[7] = 0x01; // r0, r1
+			pretext[8] = 0xC7;
+			pretext[9] = 0xE9;
+			pretext[10] = 0x00; // to sp, 0
+			pretext[11] = 0x01; // r0, r1
 
-			// STR R2, [SP, #8] - CD F8 08 20
-			pretext[8] = 0xCD;
-			pretext[9] = 0xF8;
-			pretext[10] = 0x08; // to sp 8
-			pretext[11] = 0x20; // r2
+			// STR R2, [R7, #0x8] - BA 60
+			pretext[12] = 0xBA;
+			pretext[13] = 0x60;
+
+			pretext[14] = 0x00; // NOP
+			pretext[15] = 0xBF;
 		} else if (getFunction().getArguments().length >= 2) {
 			// STRD R0, [SP,#0] - CD E9 00 01
-			pretext[4] = 0xCD;
-			pretext[5] = 0xE9;
-			pretext[6] = 0x00; // to sp, 0
-			pretext[7] = 0x01; // r0, r1
+			pretext[8] = 0xC7;
+			pretext[9] = 0xE9;
+			pretext[10] = 0x00; // to sp, 0
+			pretext[11] = 0x01; // r0, r1
 
-			pretext[8] = 0xAF; // NOP.W
-			pretext[9] = 0xF3;
-			pretext[10] = 0x00;
-			pretext[11] = 0x80;
+			pretext[12] = 0x00; // NOP
+			pretext[13] = 0xBF;
+
+			pretext[14] = 0x00; // NOP
+			pretext[15] = 0xBF;
 		} else if (getFunction().getArguments().length >= 1) {
 			// STR R0, [SP, #0] - CD F8 00 00
-			pretext[4] = 0xCD;
-			pretext[5] = 0xF8;
-			pretext[6] = 0x00; // to sp 0
-			pretext[7] = 0x00; // r0
+			pretext[8] = 0xC7;
+			pretext[9] = 0xF8;
+			pretext[10] = 0x00; // to sp 0
+			pretext[11] = 0x00; // r0
 
-			pretext[8] = 0xAF; // NOP.W
-			pretext[9] = 0xF3;
-			pretext[10] = 0x00;
-			pretext[11] = 0x80;
+			pretext[12] = 0x00; // NOP
+			pretext[13] = 0xBF;
+
+			pretext[14] = 0x00; // NOP
+			pretext[15] = 0xBF;
 		} else if (getFunction().getArguments().length == 0) {
-			pretext[4] = 0xAF; // NOP.W
-			pretext[5] = 0xF3;
-			pretext[6] = 0x00;
-			pretext[7] = 0x80;
-
 			pretext[8] = 0xAF; // NOP.W
 			pretext[9] = 0xF3;
 			pretext[10] = 0x00;
 			pretext[11] = 0x80;
+
+			pretext[12] = 0x00; // NOP
+			pretext[13] = 0xBF;
+
+			pretext[14] = 0x00; // NOP
+			pretext[15] = 0xBF;
 		} else
 			throw new RuntimeException("Only up to 4 arguments supported");
-
-		// mov r7, sp - 6F 46
-		pretext[12] = 0x6F;
-		pretext[13] = 0x46;
-
-		int nodeCount = getNodeSlotCount();
-		if (nodeCount > 2032)
-			throw new RuntimeException("Too much stack space reserved");
-
-		// sub sp, 0x40 - 90 B0
-		pretext[14] = 0x80 | (nodeCount & 0xFF);
-		pretext[15] = 0xB0;
 
 		// 6 instructions
 

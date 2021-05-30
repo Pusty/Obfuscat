@@ -7,12 +7,13 @@ import java.util.Map;
 import re.bytecode.obfuscat.builder.Builder;
 import re.bytecode.obfuscat.builder.HWKeyBuilder;
 import re.bytecode.obfuscat.builder.KeyBuilder;
+import re.bytecode.obfuscat.builder.TestBuilder;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
 import re.bytecode.obfuscat.gen.x86CodeGenerator;
-import re.bytecode.obfuscat.pass.EncodeArithmeticPass;
 import re.bytecode.obfuscat.pass.Pass;
+import re.bytecode.obfuscat.pass.SimpleArithmeticEncodePass;
 import re.bytecode.obfuscat.gen.CustomNodeImpl;
 
 /** Main Class */
@@ -37,10 +38,11 @@ public class Obfuscat {
 		registerCustomNode("Thumb", "readInt", ThumbCodeGenerator.ThumbNodeReadInt.class);
 		registerCustomNode("Thumb", "call", ThumbCodeGenerator.ThumbNodeCall.class);
 		
-		registerPass("EncodeArithmetic", EncodeArithmeticPass.class);
+		registerPass("SimpleArithmeticEncode", SimpleArithmeticEncodePass.class);
 		
 		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);
 		registerBuilder("KeyBuilder", KeyBuilder.class);
+		registerBuilder("Test", TestBuilder.class);
 	}
 	
 	/**
@@ -75,6 +77,25 @@ public class Obfuscat {
 		if(name == null || cl == null) throw new IllegalArgumentException("The pass can't be null");
 		if(passes.containsKey(name)) throw new IllegalArgumentException("A Pass with the name '"+name+"' is already registered");
 		passes.put(name, cl);
+	}
+	
+	public static Function applyPass(Function f, String passName) {
+		if(f == null) throw new IllegalArgumentException("The function can't be null");
+		if(passName == null) throw new IllegalArgumentException("The pass can't be null");
+		if(!passes.containsKey(passName)) throw new IllegalArgumentException("A Pass with the name '"+passName+"' is not registered");
+		
+		Context context = new Context(System.currentTimeMillis());
+		Pass pass;
+		try {
+			Constructor<? extends Pass> c = passes.get(passName).getConstructor(Context.class);
+			pass = c.newInstance(context);
+			pass.processFunction(f);
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException("Constructor for pass not found", e);
+		} catch (Exception e) {
+			throw new RuntimeException("Pass Construction Exception", e);
+		}
+		return f;
 	}
 	
 	/**

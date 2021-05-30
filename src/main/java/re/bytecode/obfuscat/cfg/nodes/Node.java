@@ -86,4 +86,24 @@ public abstract class Node implements Cloneable {
 	
 	@Override
 	public abstract Node clone();
+	
+	
+	private void recursiveIter(List<Node> l, Node n) {
+		if(l.contains(n)) return;
+		l.add(n);
+		Node[] ns = n.children();
+		if(ns != null)
+			for(Node n2:ns)
+				recursiveIter(l, n2);
+	}
+	
+	public int countUnique() {
+		return getAssociated().size();
+	}
+	
+	public List<Node> getAssociated() {
+		List<Node> nodes = new ArrayList<Node>();
+		recursiveIter(nodes, this);
+		return nodes;
+	}
 }

@@ -1,14 +1,24 @@
 package re.bytecode.obfuscat.pass;
 
-import java.util.List;
-
+import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
+import re.bytecode.obfuscat.cfg.Function;
 
 // TODO: Not done yet
 public abstract class Pass {
 	
-	public void processBlocks(List<BasicBlock> blocks) {
-		for(BasicBlock block:blocks)
+	private Context context;
+	
+	public Pass(Context context) {
+		this.context = context;
+	}
+	
+	public Context getContext() {
+		return context;
+	}
+	
+	public void processFunction(Function function) {
+		for(BasicBlock block:function.getBlocks())
 			processBlock(block);
 	}
 	

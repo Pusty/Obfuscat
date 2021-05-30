@@ -5,7 +5,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -26,14 +28,13 @@ public class ThumbCodeGenerationTest {
 	private static final int ADDRESS = 0x1000000;
 	// memory address where the heap starts
 	private static final int HEAP = 0x2000000;
-	
-	
+
 	// address reached at end of execution
 	private static final int DEAD_ADDRESS = 0xDEADC0DE;
-	
+
 	// current position in heap for arrays
 	private static int HEAP_POSITION = HEAP;
-	
+
 	private static class MyWriteInvalidHook implements EventMemHook {
 		public boolean hook(Unicorn u, long address, int size, long value, Object user) {
 			throw new RuntimeException(
@@ -57,9 +58,9 @@ public class ThumbCodeGenerationTest {
 	private static class MyCodeHook implements CodeHook {
 		public void hook(Unicorn u, long address, int size, Object user_data) {
 
-			 byte[] data = u.mem_read(address, 2);
+			byte[] data = u.mem_read(address, 2);
 
-			 if ((data[1] & 0xFF) == 0x90 ) {
+			if ((data[1] & 0xFF) == 0x90) {
 				Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
 				Long r_r0 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R0);
 				Long r_r1 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R1);
@@ -67,8 +68,8 @@ public class ThumbCodeGenerationTest {
 				Long r_r3 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R3);
 				Long r_r4 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R4);
 				// System.out.printf(">>> Tracing instruction at 0x%x\n", address);
-				System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R3 0x%x R4 0x%x \n", r_pc.intValue(), r_r0.intValue(),
-						r_r1.intValue(), r_r2.intValue(), r_r3.intValue(), r_r4.intValue());
+				System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R3 0x%x R4 0x%x \n", r_pc.intValue(),
+						r_r0.intValue(), r_r1.intValue(), r_r2.intValue(), r_r3.intValue(), r_r4.intValue());
 
 			}
 
@@ -76,111 +77,129 @@ public class ThumbCodeGenerationTest {
 			// ret
 		}
 	}
-	
-	
+
 	private static int INST_COUNT;
 	private static int INST_SIZE;
-	private static class InstructionCountHook implements CodeHook {	
-		int instCounter = 0;
+
+	private static class InstructionCountHook implements CodeHook {
 		public void hook(Unicorn u, long address, int size, Object user_data) {
-			instCounter++;
+			INST_COUNT++;
 		}
 	}
 
-	
 	// Convert Arguments to Unicorn Register values
 	private static long convertArgument(Unicorn unicorn, Object arg, boolean write) {
-		
-		long returnValue = 0;
-		
-		
-		
-		Class<?> argT = arg.getClass();
-		if(argT == Integer.class) {
-			returnValue = ((Integer)arg).intValue();
-		}else if(argT == Short.class) {
-			returnValue = (((Short)arg).intValue()&0xFFFF);
-		}else if(argT == Character.class) {
-			returnValue = (long)(((Character)arg).charValue()&0xFFFF);
-		}else if(argT == Byte.class) {
-			returnValue = (long)(((Byte)arg).intValue()&0xFF);;
-		}else if(argT.isArray()) {
-			
-			returnValue = (long)HEAP_POSITION;
-			
-			if(argT == byte[].class) {
-				
-				byte[] ba = ((byte[])arg);
-				
-				if(write) {
-					byte[] data = unicorn.mem_read(HEAP_POSITION, ba.length);
-					for(int j=0;j<ba.length;j++)
-						ba[j] = data[j];
-				}else
-					unicorn.mem_write(HEAP_POSITION, ba);
-				
-				HEAP_POSITION += ba.length;
-			}else if(argT == short[].class) {
-				short[] sa = ((short[])arg);
-				if(write) {
-					byte[] oa = unicorn.mem_read(HEAP_POSITION, sa.length*2);
-					for(int j=0;j<sa.length;j++)
-						sa[j] = (short)((oa[j*2]&0xFF) | ((oa[j*2+1]&0xFF)<<8));
-				}else {
-					byte[] oa = new byte[sa.length*2];
-					for(int j=0;j<sa.length;j++) {
-						oa[j*2] = (byte)(sa[j]&0xFF);
-						oa[j*2+1] = (byte)((sa[j]>>8)&0xFF);
-					}
-					unicorn.mem_write(HEAP_POSITION, oa);
-				}
-				HEAP_POSITION += sa.length*2;
-			}else if(argT == char[].class) {
-				char[] ca = ((char[])arg);
-				if(write) {
-					byte[] oa = unicorn.mem_read(HEAP_POSITION, ca.length*2);
-					for(int j=0;j<ca.length;j++)
-						ca[j] = (char)((oa[j*2]&0xFF) | ((oa[j*2+1]&0xFF)<<8));
-				}else {
-					byte[] oa = new byte[ca.length*2];
-					for(int j=0;j<ca.length;j++) {
-						oa[j*2] = (byte)(ca[j]&0xFF);
-						oa[j*2+1] = (byte)((ca[j]>>8)&0xFF);
-					}
-					unicorn.mem_write(HEAP_POSITION, oa);
-				}
-				HEAP_POSITION += ca.length*2;
-			}else if(argT == int[].class) {
-				int[] ia = ((int[])arg);
-				if(write) {
-					byte[] oa = unicorn.mem_read(HEAP_POSITION, ia.length*4);
-					for(int j=0;j<ia.length;j++)
-						ia[j] = ((oa[j*2]&0xFF) | ((oa[j*2+1]&0xFF)<<8) | ((oa[j*2+2]&0xFF)<<16) | ((oa[j*2+13]&0xFF)<<24));
-				}else {
-					byte[] oa = new byte[ia.length*4];
-					for(int j=0;j<ia.length;j++) {
-						oa[j*4] = (byte)(ia[j]&0xFF);
-						oa[j*4+1] = (byte)((ia[j]>>8)&0xFF);
-						oa[j*4+2] = (byte)((ia[j]>>16)&0xFF);
-						oa[j*4+3] = (byte)((ia[j]>>24)&0xFF);
-					}
-					unicorn.mem_write(HEAP_POSITION, oa);
-				}
-				HEAP_POSITION += ia.length*4;
-			}else
-				throw new RuntimeException("Array type not supported "+arg.getClass());
-			
-			HEAP_POSITION += HEAP_POSITION%4; // align
-		}else {
-			throw new RuntimeException("Can't convert argument of type "+arg.getClass());
-		}
-		
 
-		
+		long returnValue = 0;
+
+		Class<?> argT = arg.getClass();
+		if (argT == Integer.class) {
+			returnValue = ((Integer) arg).intValue();
+		} else if (argT == Short.class) {
+			returnValue = (((Short) arg).intValue() & 0xFFFF);
+		} else if (argT == Character.class) {
+			returnValue = (long) (((Character) arg).charValue() & 0xFFFF);
+		} else if (argT == Byte.class) {
+			returnValue = (long) (((Byte) arg).intValue() & 0xFF);
+			;
+		} else if (argT.isArray()) {
+
+			returnValue = (long) HEAP_POSITION;
+
+			if (argT == byte[].class) {
+
+				byte[] ba = ((byte[]) arg);
+
+				if (write) {
+					byte[] data = unicorn.mem_read(HEAP_POSITION, ba.length);
+					for (int j = 0; j < ba.length; j++)
+						ba[j] = data[j];
+				} else
+					unicorn.mem_write(HEAP_POSITION, ba);
+
+				HEAP_POSITION += ba.length;
+			} else if (argT == short[].class) {
+				short[] sa = ((short[]) arg);
+				if (write) {
+					byte[] oa = unicorn.mem_read(HEAP_POSITION, sa.length * 2);
+					for (int j = 0; j < sa.length; j++)
+						sa[j] = (short) ((oa[j * 2] & 0xFF) | ((oa[j * 2 + 1] & 0xFF) << 8));
+				} else {
+					byte[] oa = new byte[sa.length * 2];
+					for (int j = 0; j < sa.length; j++) {
+						oa[j * 2] = (byte) (sa[j] & 0xFF);
+						oa[j * 2 + 1] = (byte) ((sa[j] >> 8) & 0xFF);
+					}
+					unicorn.mem_write(HEAP_POSITION, oa);
+				}
+				HEAP_POSITION += sa.length * 2;
+			} else if (argT == char[].class) {
+				char[] ca = ((char[]) arg);
+				if (write) {
+					byte[] oa = unicorn.mem_read(HEAP_POSITION, ca.length * 2);
+					for (int j = 0; j < ca.length; j++)
+						ca[j] = (char) ((oa[j * 2] & 0xFF) | ((oa[j * 2 + 1] & 0xFF) << 8));
+				} else {
+					byte[] oa = new byte[ca.length * 2];
+					for (int j = 0; j < ca.length; j++) {
+						oa[j * 2] = (byte) (ca[j] & 0xFF);
+						oa[j * 2 + 1] = (byte) ((ca[j] >> 8) & 0xFF);
+					}
+					unicorn.mem_write(HEAP_POSITION, oa);
+				}
+				HEAP_POSITION += ca.length * 2;
+			} else if (argT == int[].class) {
+				int[] ia = ((int[]) arg);
+				if (write) {
+					byte[] oa = unicorn.mem_read(HEAP_POSITION, ia.length * 4);
+					for (int j = 0; j < ia.length; j++)
+						ia[j] = ((oa[j * 2] & 0xFF) | ((oa[j * 2 + 1] & 0xFF) << 8) | ((oa[j * 2 + 2] & 0xFF) << 16)
+								| ((oa[j * 2 + 13] & 0xFF) << 24));
+				} else {
+					byte[] oa = new byte[ia.length * 4];
+					for (int j = 0; j < ia.length; j++) {
+						oa[j * 4] = (byte) (ia[j] & 0xFF);
+						oa[j * 4 + 1] = (byte) ((ia[j] >> 8) & 0xFF);
+						oa[j * 4 + 2] = (byte) ((ia[j] >> 16) & 0xFF);
+						oa[j * 4 + 3] = (byte) ((ia[j] >> 24) & 0xFF);
+					}
+					unicorn.mem_write(HEAP_POSITION, oa);
+				}
+				HEAP_POSITION += ia.length * 4;
+			} else
+				throw new RuntimeException("Array type not supported " + arg.getClass());
+
+			HEAP_POSITION += HEAP_POSITION % 4; // align
+		} else {
+			throw new RuntimeException("Can't convert argument of type " + arg.getClass());
+		}
+
 		return returnValue;
 
 	}
 	
+	// otherwise this might crash in the library
+	private static Unicorn globalUnicorn;
+	static {
+		// Initialize emulator in ARM Thumb mode
+		globalUnicorn = new Unicorn(Unicorn.UC_ARCH_ARM, Unicorn.UC_MODE_THUMB);
+
+		// Map 1024 bytes at address 0 for system registers
+		globalUnicorn.mem_map(0, 1024, Unicorn.UC_PROT_ALL);
+		// map 2MB memory for this emulation
+		globalUnicorn.mem_map(ADDRESS, 0x200000, Unicorn.UC_PROT_ALL);
+		// map 1MB memory for arrays
+		globalUnicorn.mem_map(HEAP, 0x10000, Unicorn.UC_PROT_ALL);
+		
+		// intercept invalid memory events
+		globalUnicorn.hook_add(new MyWriteInvalidHook(), Unicorn.UC_HOOK_MEM_WRITE_UNMAPPED, null);
+		globalUnicorn.hook_add(new MyReadInvalidHook(), Unicorn.UC_HOOK_MEM_READ_UNMAPPED, null);
+
+		// tracing all instruct
+		
+		globalUnicorn.hook_add(new InstructionCountHook(), 1, 0, null);
+	}
+
 	static long test_thumb(int[] code, Object... args) {
 
 		// r4 - r7 arguments
@@ -188,35 +207,32 @@ public class ThumbCodeGenerationTest {
 		long r1 = 0x7f133ddbL;
 		long r2 = 0xd8afc461L;
 		long r3 = 0x4a733f01L;
-		
+
 		long r4 = 0x717ea358L;
 		long r5 = 0x2771ce96L;
 		long r6 = 0x02b9ab1fL;
 		long r7 = 0x8eb618c1L;
-		
 
 		HEAP_POSITION = HEAP;
 		long sp = ADDRESS + 0x200000;
 
 		// System.out.print("Emulate ARM Thumb code\n");
 
-		// Initialize emulator in ARM Thumb mode
-		Unicorn u = new Unicorn(Unicorn.UC_ARCH_ARM, Unicorn.UC_MODE_THUMB);
 
-		// Map 1024 bytes at address 0 for system registers
-		u.mem_map(0, 1024, Unicorn.UC_PROT_ALL);
-		// map 2MB memory for this emulation
-		u.mem_map(ADDRESS, 0x200000, Unicorn.UC_PROT_ALL);
-		// map 1MB memory for arrays
-		u.mem_map(HEAP, 0x10000, Unicorn.UC_PROT_ALL);
-		
-		if(args.length > 4) throw new RuntimeException("Thumb can't handle more than 4 arguments"); // TODO: add this to the thumb code generator as well
-		if(args.length >= 1) r0 = convertArgument(u, args[0], false);
-		if(args.length >= 2) r1 = convertArgument(u, args[1], false);
-		if(args.length >= 3) r2 = convertArgument(u, args[2], false);
-		if(args.length >= 4) r3 = convertArgument(u, args[3], false);
-		
-		writeSystemRegisters(u);
+
+		if (args.length > 4)
+			throw new RuntimeException("Thumb can't handle more than 4 arguments"); // TODO: add this to the thumb code
+																					// generator as well
+		if (args.length >= 1)
+			r0 = convertArgument(globalUnicorn, args[0], false);
+		if (args.length >= 2)
+			r1 = convertArgument(globalUnicorn, args[1], false);
+		if (args.length >= 3)
+			r2 = convertArgument(globalUnicorn, args[2], false);
+		if (args.length >= 4)
+			r3 = convertArgument(globalUnicorn, args[3], false);
+
+		writeSystemRegisters(globalUnicorn);
 
 		System.out.println();
 		byte[] codeData = new byte[code.length];
@@ -228,58 +244,56 @@ public class ThumbCodeGenerationTest {
 		INST_SIZE = code.length;
 
 		// write machine code to be emulated to memory
-		u.mem_write(ADDRESS, codeData);
+		globalUnicorn.mem_write(ADDRESS, codeData);
 
 		// initialize machine registers
-		u.reg_write(Unicorn.UC_ARM_REG_LR, new Long(DEAD_ADDRESS));
-		u.reg_write(Unicorn.UC_ARM_REG_SP, new Long(sp));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_LR, new Long(DEAD_ADDRESS));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_SP, new Long(sp));
 
-		u.reg_write(Unicorn.UC_ARM_REG_R0, new Long(r0));
-		u.reg_write(Unicorn.UC_ARM_REG_R1, new Long(r1));
-		u.reg_write(Unicorn.UC_ARM_REG_R2, new Long(r2));
-		u.reg_write(Unicorn.UC_ARM_REG_R3, new Long(r3));
-		u.reg_write(Unicorn.UC_ARM_REG_R4, new Long(r4));
-		u.reg_write(Unicorn.UC_ARM_REG_R5, new Long(r5));
-		u.reg_write(Unicorn.UC_ARM_REG_R6, new Long(r6));
-		u.reg_write(Unicorn.UC_ARM_REG_R7, new Long(r7));
-		
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R0, new Long(r0));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R1, new Long(r1));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R2, new Long(r2));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R3, new Long(r3));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R4, new Long(r4));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R5, new Long(r5));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R6, new Long(r6));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R7, new Long(r7));
+
 		// r8 = function address
-		u.reg_write(Unicorn.UC_ARM_REG_R8, new Long(ADDRESS | 1));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R8, new Long(ADDRESS | 1));
 
-		// intercept invalid memory events
-		u.hook_add(new MyWriteInvalidHook(), Unicorn.UC_HOOK_MEM_WRITE_UNMAPPED, null);
-		u.hook_add(new MyReadInvalidHook(), Unicorn.UC_HOOK_MEM_READ_UNMAPPED, null);
-
-		// tracing all instructions
-		// u.hook_add(new MyCodeHook(), 1, 0, null);
 		
-		InstructionCountHook ich = new InstructionCountHook();
-		u.hook_add(ich, 1, 0, null);
+		INST_COUNT = 0;
+		
 
 		// emulate machine code in infinite time (last param = 0), or when
 		// finishing all the code.
 		try {
-			u.emu_start(ADDRESS | 1, ADDRESS + codeData.length, 0, 0);
+			globalUnicorn.emu_start(ADDRESS | 1, ADDRESS + codeData.length, 0, 0);
 		} catch (UnicornException ue) {
-			// ue.getMessage().contains("UC_ERR_FETCH_UNMAPPED") && 
-			if (((Long)u.reg_read(Unicorn.UC_ARM_REG_PC)).intValue() == DEAD_ADDRESS) {
+			// ue.getMessage().contains("UC_ERR_FETCH_UNMAPPED") &&
+			if (((Long) globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)).intValue() == DEAD_ADDRESS) {
 				// program ended normally
 			} else
 				throw ue;
 		}
-		
-		INST_COUNT = ich.instCounter;
-		
+
+		// INST_COUNT now contains instruction cound
+
 		// now print out some registers
 		// System.out.print(">>> Emulation done. Below is the CPU context\n");
 
-		Long r_r0 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R0);
-		
+		Long r_r0 = (Long) globalUnicorn.reg_read(Unicorn.UC_ARM_REG_R0);
+
 		HEAP_POSITION = HEAP;
-		if(args.length >= 1) convertArgument(u, args[0], true);
-		if(args.length >= 2) convertArgument(u, args[1], true);
-		if(args.length >= 3) convertArgument(u, args[2], true);
-		if(args.length >= 4) convertArgument(u, args[3], true);
+		if (args.length >= 1)
+			convertArgument(globalUnicorn, args[0], true);
+		if (args.length >= 2)
+			convertArgument(globalUnicorn, args[1], true);
+		if (args.length >= 3)
+			convertArgument(globalUnicorn, args[2], true);
+		if (args.length >= 4)
+			convertArgument(globalUnicorn, args[3], true);
 
 		/*
 		 * Long r_r0 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R0); Long r_r1 = (Long)
@@ -303,105 +317,153 @@ public class ThumbCodeGenerationTest {
 		 * System.out.printf(">>> R7 = 0x%x\n", r_r7.intValue());
 		 */
 
-		u.close();
+		//globalUnicorn.close();
 		
-		assertTrue("Binary Size is not multiple of Generator "+INST_SIZE, (INST_SIZE % ThumbGenerationUtil.getCodeSize()) == 0);
-		assertTrue("Instruction Executed is not multiple of Generator "+INST_COUNT, (INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
-		
+
+		assertTrue("Binary Size is not multiple of Generator " + INST_SIZE,
+				(INST_SIZE % ThumbGenerationUtil.getCodeSize()) == 0);
+		assertTrue("Instruction Executed is not multiple of Generator " + INST_COUNT,
+				(INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
+
 		return r_r0.intValue();
 	}
 
-
 	private static int testData123 = 0xBEEFBEEF;
-	private static void writeSystemRegisters(Unicorn u) {
-		u.mem_write(0x123, new byte[] { (byte) (testData123&0xFF), (byte) ((testData123>>8)&0xFF), (byte) ((testData123>>16)&0xFF), (byte) ((testData123>>24)&0xFF) });
-	}
 
-	public void runTest(String fileName, String functionName, Object... args) throws Exception {
+	private static void writeSystemRegisters(Unicorn u) {
+		u.mem_write(0x123, new byte[] { (byte) (testData123 & 0xFF), (byte) ((testData123 >> 8) & 0xFF),
+				(byte) ((testData123 >> 16) & 0xFF), (byte) ((testData123 >> 24) & 0xFF) });
+	}
+	
+	public static void evaluteSizeAndSpeed(List<List<int[]>> listOfList) {
+		
+		for(int i=0;i<listOfList.get(0).size();i++) {
+			
+			List<Integer> sizeList = new ArrayList<Integer>();
+			List<Integer> execList = new ArrayList<Integer>();
+			
+			for(int j=0;j<listOfList.size();j++) {
+				int[] ef = listOfList.get(j).get(i);
+				sizeList.add(ef[0]);
+				execList.add(ef[1]);
+			}
+			
+			assertTrue("Changes in size "+sizeList, sizeList.stream().distinct().count() == 1);
+			assertTrue("Changes in executed instructions "+execList, execList.stream().distinct().count() == 1);
+		}
+	}
+	
+
+	public static void runTest(String fileName, String functionName, String[] passes, Object... args) throws Exception {
 		byte[] data = SampleLoader.loadFile(fileName);
 		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
 		Integer fib = (Integer) m.invoke(null, args);
 
-		int[] code = ThumbGenerationUtil.generateCode(data, functionName);
+		int[] code = ThumbGenerationUtil.generateCode(data, functionName, passes);
 
-		//private static int INST_COUNT;
-		//private static int INST_SIZE;
+		// private static int INST_COUNT;
+		// private static int INST_SIZE;
 		long returnValue = test_thumb(code, args);
 		assertEquals("Java and Thumb Result don't match", fib.intValue(), returnValue);
 	}
-	
-	public long runTestBuilder(String builder, Map<String, Object> pars,  Object... args) throws Exception {
+
+	public static long runTestBuilder(String builder, Map<String, Object> pars, String[] passes, Object... args)
+			throws Exception {
 		Function func = Obfuscat.buildFunction(builder, pars);
+
+		if (passes != null) {
+			for (String pass : passes)
+				func = Obfuscat.applyPass(func, pass);
+		}
+
 		int[] code = Obfuscat.generateCode("Thumb", func).getData();
 		long v = test_thumb(code, args);
 		return v;
 	}
-	
-	public long runTestMerged(String fileName, String functionName,  Object... args) throws Exception {
+
+	public static long runTestMerged(String fileName, String functionName, String[] passes, Object... args)
+			throws Exception {
 		byte[] data = SampleLoader.loadFile(fileName);
-		int[] code = ThumbGenerationUtil.generateCodeMerged(data, functionName);
-		
-		Object[] argsAfter = new Object[args.length+1];
-		for(int i=0;i<args.length;i++)
-			argsAfter[i+1] = args[i];
+		int[] code = ThumbGenerationUtil.generateCodeMerged(data, functionName, passes);
+
+		Object[] argsAfter = new Object[args.length + 1];
+		for (int i = 0; i < args.length; i++)
+			argsAfter[i + 1] = args[i];
 		argsAfter[0] = 0;
-	
+
 		long returnValue = test_thumb(code, argsAfter);
-		//System.out.println("Return Value: "+returnValue);
+		// System.out.println("Return Value: "+returnValue);
 		return returnValue;
 	}
 
-	
-	@Test
-	public void testARMThumb() throws Exception {
-		runTest("Sample1", "entry");
-		runTest("Sample2", "entry");
-		runTest("Sample3", "entry");
-		runTest("Sample4", "crc32", new byte[] {0x12, 0x23, 0x45, 0x67, (byte) 0x89}, 5);
-		runTest("Sample5", "entry");
-		runTest("Sample6", "entry");
-
+	public static List<int[]> normalTestCases(String[] passes) throws Exception {
+		List<int[]> data = new ArrayList<int[]>();
+		runTest("Sample1", "entry", passes);
+		data.add(new int[] { INST_SIZE, INST_COUNT });
+		runTest("Sample2", "entry", passes);
+		data.add(new int[] { INST_SIZE, INST_COUNT });
+		runTest("Sample3", "entry", passes);
+		data.add(new int[] { INST_SIZE, INST_COUNT });
+		runTest("Sample4", "crc32", passes, new byte[] { 0x12, 0x23, 0x45, 0x67, (byte) 0x89 }, 5);
+		data.add(new int[] { INST_SIZE, INST_COUNT });
+		runTest("Sample5", "entry", passes);
+		data.add(new int[] { INST_SIZE, INST_COUNT });
+		runTest("Sample6", "entry", passes);
+		data.add(new int[] { INST_SIZE, INST_COUNT });
+		return data;
 	}
 
 	//@Test
+	//public void testARMThumb() throws Exception {
+	//	normalTestCases(null);
+	//}
+
+	@Test
 	public void testHWKeyBuilder() throws Exception {
-		
-		HashMap<String,Object> args = new HashMap<String,Object>();
+
+		HashMap<String, Object> args = new HashMap<String, Object>();
 		args.put("length", 7);
-		byte[] byteArray =  new byte[] {0, 0, 0, 0, 0, 0, 0, 12};
-		runTestBuilder("HWKeyBuilder", args, byteArray);
-		
-		byte[] byteArray2 = new byte[] {0, 0, 0, 0, 0, 0, 0, 12};
-		runTestBuilder("HWKeyBuilder", args, byteArray2);
-		
-		for(int i=0;i<7;i++) {
+		byte[] byteArray = new byte[] { 0, 0, 0, 0, 0, 0, 0, 12 };
+		runTestBuilder("HWKeyBuilder", args, null, byteArray);
+
+		byte[] byteArray2 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 12 };
+		runTestBuilder("HWKeyBuilder", args, null, byteArray2);
+
+		for (int i = 0; i < 7; i++) {
 			assertNotEquals("Byte Array Generation Failed", byteArray[i], byteArray2[i]);
 		}
 		assertEquals("Byte Array Generation Processed Too Much", byteArray[7], byteArray2[7]);
-		
+
 	}
 	
+	@Test
+	public void testReuseBuilder() throws Exception {
+		HashMap<String, Object> args = new HashMap<String, Object>();
+		runTestBuilder("Test", args, null, 5);
+	}
+	
+
 	@Test
 	public void testKeyBuilder() throws Exception {
-		
+
 		byte[] constKey = "POTATO".getBytes();
-		HashMap<String,Object> args = new HashMap<String,Object>();
-		args.put("data",constKey);
-		
-		byte[] byteArray =  new byte[constKey.length];
-		runTestBuilder("KeyBuilder", args, byteArray);
-		
-		for(int i=0;i<byteArray.length;i++) {
-			assertEquals("Byte Array Generation Failed", byteArray[i], constKey[i]);
+		HashMap<String, Object> args = new HashMap<String, Object>();
+		args.put("data", constKey);
+
+		byte[] byteArray = new byte[constKey.length];
+		runTestBuilder("KeyBuilder", args, null, byteArray);
+
+		for (int i = 0; i < byteArray.length; i++) {
+			assertEquals("Byte Array Generation Failed", constKey[i], byteArray[i]);
 		}
 	}
-	
+
 	@Test
 	public void testMerged() throws Exception {
-		byte[] res = new byte[] {-108, -110, -121, -119, -108, -16, -89, 2};
-		byte[] encoded = new byte[] {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48};
-		runTestMerged("Sample7", "rc4", new byte[] {0, 1, 2, 3, 4, 5, 6, 7}, encoded, new byte[256]);
-		for(int i=0;i<encoded.length;i++)
-			assertEquals("RC4 didn't work", encoded[i], res[i]);
+		byte[] res = new byte[] { -108, -110, -121, -119, -108, -16, -89, 2 };
+		byte[] encoded = new byte[] { 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48 };
+		runTestMerged("Sample7", "rc4", null, new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }, encoded, new byte[256]);
+		for (int i = 0; i < encoded.length; i++)
+			assertEquals("RC4 didn't work", res[i], encoded[i]);
 	}
 }

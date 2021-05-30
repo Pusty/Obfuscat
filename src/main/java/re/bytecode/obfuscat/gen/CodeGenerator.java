@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.Obfuscat;
@@ -175,36 +176,101 @@ public abstract class CodeGenerator {
 		return amountBlocks.get(bb);
 	}
 
-	private int nodeID;
-
-	// recursively give ids to the nodes and increase the count of nodes in the block
-	private void numberNode(BasicBlock bb, Node node) {
-		if (!numberedNodes.containsKey(node)) {
-			numberedNodes.put(node, nodeID++);
-			amountBlocks.put(bb, amountBlocks.get(bb) + 1);
-
-			Node[] children = node.children();
-
-			if (children != null)
-				for (int i = 0; i < children.length; i++)
-					numberNode(bb, children[i]);
-
-		}
+	private HashMap<Node, Integer> countOccurances;
+	
+	// recursively count the amount a node is needed, also look for circles
+	private void countOccuranceMethod(Node node, List<Node> alreadyPassed) {
+		
+		if(alreadyPassed.contains(node))
+			throw new RuntimeException("Circle found with node in Node "+node);
+		
+		alreadyPassed = alreadyPassed.stream().collect(Collectors.toList()); // make a shallow copy of the list
+		alreadyPassed.add(node);
+		
+		countOccurances.put(node, countOccurances.getOrDefault(node, 0)+1);
+		
+		Node[] children = node.children();
+		if (children != null)
+			for (int i = 0; i < children.length; i++)
+				countOccuranceMethod(children[i], alreadyPassed);
 	}
+	
+	private HashMap<Integer, Node> slots;
+	// recursively give ids to the nodes and increase the count of nodes in the block
+	private void numberNodes(Node node) {
+		
+		if(numberedNodes.containsKey(node)) return;
+		
+		Node[] children = node.children();
+		if (children != null) {
+			
+			// provide slots for children
+			for (int i = 0; i < children.length; i++) {
+				numberNodes(children[i]);
+			}
+			
+			// after usage of parameters - clear slots if values are not reused
+			for (int i = 0; i < children.length; i++) {
+				int occ = countOccurances.get(children[i])-1;
+				countOccurances.put(children[i], occ);
+				if(occ == 0)
+					slots.put(numberedNodes.get(children[i]), null);
+			}
+		}
+		
+		boolean foundFreeSlot = false;
+		
+		int slotSize = slots.size();
+		
+		// find an empty slot an empty slot
+		
+		for(int i=0;i<slotSize;i++) {
+			if(slots.get(i) == null) {
+				slots.put(i, node);
+				numberedNodes.put(node, i);
+				foundFreeSlot = true;
+				break;
+			}
+		}
+		
+		// add a new slot if no slot was empty
+		if(!foundFreeSlot) {
+			slots.put(slotSize, node);
+			numberedNodes.put(node, slotSize);
+		}
+
+	}
+	
 
 	// iterate each block and calculate the node is and the maximum needed node slots
 	private void iterateBlocks(BasicBlock bb) {
 
 		if (!numberedBlocks.containsKey(bb)) {
+			
 			numberedBlocks.put(bb, blockID++);
-			amountBlocks.put(bb, 0);
-
-			nodeID = 0;
+			
+			countOccurances = new HashMap<Node, Integer>();
+			
+			// circle detection - dependency counting
 			for (Node node : bb.getNodes()) {
-				numberNode(bb, node);
+				List<Node> alreadyPassed = new ArrayList<Node>();
+				countOccuranceMethod(node, alreadyPassed);
 			}
-			if (nodeID > maxNodeID)
-				maxNodeID = nodeID;
+			
+			amountBlocks.put(bb, countOccurances.size());
+			
+			//System.out.println(countOccurances);
+			
+			slots = new HashMap<Integer, Node>();
+			
+			for (Node node : bb.getNodes()) {
+				numberNodes(node);
+			}
+			
+			//System.out.println(slots);
+
+			if (slots.size() > maxNodeID)
+				maxNodeID = slots.size();
 
 			for (Entry<BranchCondition, BasicBlock> e : bb.getSwitchBlocks().entrySet()) {
 				iterateBlocks(e.getValue());

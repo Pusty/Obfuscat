@@ -31,6 +31,8 @@ public enum MathOperation {
 	NEG(1),
 	/** ~A **/
 	NOT(1),
+	/** NOP **/
+	NOP(1),
 	/** DUMMY **/
 	ANY(0);
 	
