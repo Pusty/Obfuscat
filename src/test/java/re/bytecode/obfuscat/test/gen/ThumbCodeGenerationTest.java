@@ -275,7 +275,7 @@ public class ThumbCodeGenerationTest {
 			if (((Long) globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)).intValue() == DEAD_ADDRESS) {
 				// program ended normally
 			} else
-				throw ue;
+				throw new RuntimeException("@ "+Long.toHexString((Long)globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)), ue);
 		}
 
 		// INST_COUNT now contains instruction cound
@@ -413,12 +413,12 @@ public class ThumbCodeGenerationTest {
 		return data;
 	}
 
-	//@Test
-	//public void testARMThumb() throws Exception {
-	//	normalTestCases(null);
-	//}
-
 	@Test
+	public void testARMThumb() throws Exception {
+		normalTestCases(null);
+	}
+
+	//@Test
 	public void testHWKeyBuilder() throws Exception {
 
 		HashMap<String, Object> args = new HashMap<String, Object>();
@@ -436,7 +436,7 @@ public class ThumbCodeGenerationTest {
 
 	}
 	
-	@Test
+	//@Test
 	public void testReuseBuilder() throws Exception {
 		HashMap<String, Object> args = new HashMap<String, Object>();
 		runTestBuilder("Test", args, null, 5);

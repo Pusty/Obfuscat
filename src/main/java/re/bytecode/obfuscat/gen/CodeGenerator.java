@@ -187,12 +187,22 @@ public abstract class CodeGenerator {
 		alreadyPassed = alreadyPassed.stream().collect(Collectors.toList()); // make a shallow copy of the list
 		alreadyPassed.add(node);
 		
-		countOccurances.put(node, countOccurances.getOrDefault(node, 0)+1);
-		
 		Node[] children = node.children();
 		if (children != null)
 			for (int i = 0; i < children.length; i++)
 				countOccuranceMethod(children[i], alreadyPassed);
+		
+		if(!countOccurances.containsKey(node)) {
+			countOccurances.put(node, 0);
+			List<Node> already = new ArrayList<Node>(); // don't count references to the same child from one parent multiple times
+			if (children != null)
+				for (int i = 0; i < children.length; i++) {
+					if(!already.contains(children[i])) {
+						countOccurances.put(children[i], countOccurances.getOrDefault(children[i], 0)+1);
+						already.add(children[i]);
+					}
+				}
+		}
 	}
 	
 	private HashMap<Integer, Node> slots;
@@ -256,6 +266,15 @@ public abstract class CodeGenerator {
 				List<Node> alreadyPassed = new ArrayList<Node>();
 				countOccuranceMethod(node, alreadyPassed);
 			}
+			
+			for(Entry<BranchCondition, BasicBlock> e : bb.getSwitchBlocks().entrySet()) {
+				countOccurances.put(e.getKey().getOperant1(), countOccurances.getOrDefault(e.getKey().getOperant1(), 0)+1);
+				if(e.getKey().getOperant2() != e.getKey().getOperant1())
+					countOccurances.put(e.getKey().getOperant2(), countOccurances.getOrDefault(e.getKey().getOperant2(), 0)+1);
+			}
+			
+			if(bb.getReturnValue() != null)
+				countOccurances.put(bb.getReturnValue(), countOccurances.getOrDefault(bb.getReturnValue(), 0)+1);
 			
 			amountBlocks.put(bb, countOccurances.size());
 			

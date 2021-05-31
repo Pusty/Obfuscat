@@ -63,7 +63,7 @@ public class SimpleArithmeticEncodePass extends Pass {
 	private static NodeMath2 ushr(Node a, Node b) { return new NodeMath2(a, b, USHR); }
 	private static NodeMath2 shl(Node a, Node b) { return new NodeMath2(a, b, SHL); }
 	private static NodeMath1 not(Node a) { return new NodeMath1(a, NOT); }
-	private static NodeMath1 neg(Node a) { return new NodeMath1(a, NEG); }
+	//private static NodeMath1 neg(Node a) { return new NodeMath1(a, NEG); }
 	private static NodeConst cst(Object o) { return new NodeConst(o); }
 	
 	private Node replaceAdd(Node[] x, int seed) {
@@ -157,7 +157,7 @@ public class SimpleArithmeticEncodePass extends Pass {
 		
 		int added = afterUnique-beforeUnique;
 		
-		final int GOAL = 10;
+		final int GOAL = 9;
 		
 		// add overall -  GOAL
 		if(added >  GOAL)
@@ -219,16 +219,19 @@ public class SimpleArithmeticEncodePass extends Pass {
 		List<Node> addOps = block.findNodes(new NodeMath2(null, null, ADD));
 		List<Node> subOps = block.findNodes(new NodeMath2(null, null, SUB));
 		List<Node> mulOps = block.findNodes(new NodeMath2(null, null, MUL));
-		List<Node> modOps = block.findNodes(new NodeMath2(null, null, MOD));
-		List<Node> divOps = block.findNodes(new NodeMath2(null, null, DIV));
+
 		List<Node> orOps = block.findNodes(new NodeMath2(null, null, OR));
 		List<Node> andOps = block.findNodes(new NodeMath2(null, null, AND));
 		List<Node> xorOps = block.findNodes(new NodeMath2(null, null, XOR));
+		
+		List<Node> modOps = block.findNodes(new NodeMath2(null, null, MOD));
+		List<Node> divOps = block.findNodes(new NodeMath2(null, null, DIV));
 		List<Node> shrOps = block.findNodes(new NodeMath2(null, null, SHR));
 		List<Node> ushrOps = block.findNodes(new NodeMath2(null, null, USHR));
 		List<Node> shlOps = block.findNodes(new NodeMath2(null, null, SHL));
 		//List<Node> notOps = block.findNodes(new NodeMath1(null, NOT));
 		//List<Node> negOps = block.findNodes(new NodeMath1(null, NEG));
+		//List<Node> nopOps = block.findNodes(new NodeMath1(null, NOP));
 		
 		for(Node node:addOps) {
 			Node gen = replaceAdd(node.children(), getContext().rand()&0xFFFF);
@@ -259,33 +262,35 @@ public class SimpleArithmeticEncodePass extends Pass {
 			Node gen = replaceAnd(node.children(), getContext().rand()&0xFFFF);
 			block.replace(node, pad(gen, node.countUnique()));
 		}
+		
+		
+		// basically nops
+		
+		for(Node node:divOps) {
+			Node[] children = node.children();
+			block.replace(node, pad(div(children[0], children[1]), node.countUnique()));
+		}
 	
-		
-		
-		/*
-		List<Node> addOps = block.findNodes(new NodeMath2(null, null, MathOperation.ADD));
-		
-		//  Implementation of  b + c = -(-b + (-c))
-		for(Node adds:addOps) {
-			Node[] children = adds.children();
-			NodeMath1 n1 = new NodeMath1(children[1],  MathOperation.NEG);
-			NodeMath1 n2 = new NodeMath1(children[0],  MathOperation.NEG);
-			NodeMath2 a1 = new NodeMath2(n1, n2, MathOperation.ADD);
-			NodeMath1 o1 = new NodeMath1(a1, MathOperation.NEG);
-			block.replace(adds, o1);
+		for(Node node:modOps) {
+			Node[] children = node.children();
+			block.replace(node, pad(mod(children[0], children[1]), node.countUnique()));
 		}
 		
-		List<Node> subOps = block.findNodes(new NodeMath2(null, null, MathOperation.SUB));
-		//  Implementation of b - c = b + (-c)
-		for(Node subs:subOps) {
-			Node[] children = subs.children();
-			NodeMath1 n1 = new NodeMath1(children[1],  MathOperation.NEG);
-			NodeMath2 a1 = new NodeMath2(children[0], n1, MathOperation.ADD);
-			NodeMath1 n2 = new NodeMath1(a1,  MathOperation.NEG);
-			NodeMath1 n3 = new NodeMath1(n2,  MathOperation.NEG);
-			block.replace(subs, n3);
+		for(Node node:shrOps) {
+			Node[] children = node.children();
+			block.replace(node, pad(shr(children[0], children[1]), node.countUnique()));
 		}
-		*/
+		
+		for(Node node:ushrOps) {
+			Node[] children = node.children();
+			block.replace(node, pad(ushr(children[0], children[1]), node.countUnique()));
+		}
+		
+		for(Node node:shlOps) {
+			Node[] children = node.children();
+			block.replace(node, pad(shl(children[0], children[1]), node.countUnique()));
+		}
+		
 	}
 	
 	

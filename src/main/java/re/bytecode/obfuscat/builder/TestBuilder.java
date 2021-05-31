@@ -35,10 +35,13 @@ public class TestBuilder extends Builder {
 		
 		NodeMath2 add = new NodeMath2(inp, inp, MathOperation.ADD);
 		
+		NodeMath2 add2 = new NodeMath2(add, add, MathOperation.ADD);
+		
 		curBlock.getNodes().add(inp);
 		curBlock.getNodes().add(add);
+		curBlock.getNodes().add(add2);
 		
-		curBlock.setExitBlock(add);
+		curBlock.setExitBlock(add2);
 		blocks.add(curBlock);
 		
 		Function f = new Function("generate", blocks, new Class<?>[] { int.class }, 1, false);

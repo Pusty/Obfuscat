@@ -10,7 +10,7 @@ public class Sample3 {
 		int b = 7;
 		int c = 235;
 		int d = -9999;
-		return /*(a*b)+(a*d)+(c/d)+(b/c)+(a-b)+(c-d)+(b&c)+(c|d)+*/(d^b)+(~d)+(-d)-(a*b % c);
+		return (a*b)+(a*d)+(c/d)+(b/c)+(a-b)+(c-d)+(b&c)+(c|d)+(d^b)+(~d)+(-d)-(a*b % c);
 	}
 
 }

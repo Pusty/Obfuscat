@@ -767,32 +767,33 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 			} else {
 				// if this is an exit block
-				done[6] = 0xAF; // NOP.W
-				done[7] = 0xF3;
-				done[8] = 0x00;
-				done[9] = 0x80;
-
+				
 				// load the return value into r0 before returning if there is a return value
 				if (cbb.getBlock().getReturnValue() != null) {
-					loadNode(done, 10, 0, cbb.getBlock().getReturnValue());
+					loadNode(done, 6, 0, cbb.getBlock().getReturnValue());
 				} else {
-					done[10] = 0x00; // NOP
-					done[11] = 0xBF;
+					done[6] = 0x00; // NOP
+					done[7] = 0xBF;
 				}
 
 				// "free" the stack variables / reset the stack pointer to the original position
 				int variableCount = (this.getFunction().getVariables() + getNodeSlotCount());
-				if (variableCount > 2032)
+				if (variableCount >= 256*2)
 					throw new RuntimeException("Too much stack space reserved");
 
-				// add sp, 0x40 - 10 B0
-
-				done[12] = variableCount & 0xFF;
-				done[13] = 0xB0;
-
+				int spOffset = variableCount * 4;
+				
+				// addw sp, sp, #0x1 - 0D F2 01 0D
+				done[8] = 0x0D;
+				done[9] = 0xF2;
+				done[10] = spOffset & 0xFF;
+				done[11] = 0x0D | (((spOffset >> 8) & 0x7) << 4);
+				
+				done[12] = 0x00; // NOP
+				done[13] = 0xBF;
+				
+				
 				// pop {pc, r7} - 80 BD
-
-				// return
 				done[14] = 0x80;
 				done[15] = 0xBD;
 
@@ -833,7 +834,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		
 		// System.out.println(nodeCount + " - "+ variableCount+ " - "+spOffset);
 
-		// sub sp, #0x1 - AD F2 01 0D
+		// subw sp, sp, #0x1 - AD F2 01 0D
 		pretext[2] = 0xAD;
 		pretext[3] = 0xF2;
 		pretext[4] = spOffset & 0xFF;
