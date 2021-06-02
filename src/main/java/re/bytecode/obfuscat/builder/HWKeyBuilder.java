@@ -17,7 +17,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 
 /**
  * This Builder creates a function that fills a provided array with randomized data and uses hardware specific registers to change them up
@@ -67,24 +67,24 @@ public class HWKeyBuilder extends Builder {
 			// choose actual operation
 			switch(operation) {
 			case 0:
-				operationNode = new NodeMath2(num, new NodeConst(randomInt), MathOperation.MUL);
+				operationNode = new NodeMath(MathOperation.MUL, num, new NodeConst(randomInt));
 				break;
 			case 1:
-				operationNode = new NodeMath2(num, new NodeConst(randomInt), MathOperation.ADD);
+				operationNode = new NodeMath(MathOperation.ADD, num, new NodeConst(randomInt));
 				break;
 			case 2:
-				operationNode = new NodeMath2(num, new NodeConst(randomInt), MathOperation.SUB);
+				operationNode = new NodeMath(MathOperation.SUB, num, new NodeConst(randomInt));
 				break;
 			case 3:
 			default:
-				operationNode = new NodeMath2(num, new NodeConst(randomInt), MathOperation.XOR);
+				operationNode = new NodeMath(MathOperation.XOR, num, new NodeConst(randomInt));
 				break;
 			}
 			
 			// create the next block
 			nextBlock = new BasicBlock();
 			// add the store array entry nodes
-			curBlock.getNodes().add(new NodeAStore(new NodeLoad(4, 0), new NodeConst(index), new NodeMath2(operationNode, new NodeConst(0xFF), MathOperation.AND), 1));
+			curBlock.getNodes().add(new NodeAStore(new NodeLoad(4, 0), new NodeConst(index), new NodeMath(MathOperation.AND, operationNode, new NodeConst(0xFF)), 1));
 			// link this block to the next block
 			curBlock.setUnconditionalBranch(nextBlock);
 			// add this block to the block list

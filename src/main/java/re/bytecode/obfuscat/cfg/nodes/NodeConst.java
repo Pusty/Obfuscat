@@ -46,4 +46,7 @@ public class NodeConst extends Node {
 	public Node clone() {
 		return new NodeConst(constObj);
 	}
+	
+	@Override
+	public String getNodeIdentifier() { return "const"; }
 }

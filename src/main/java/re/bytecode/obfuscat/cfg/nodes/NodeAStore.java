@@ -77,4 +77,7 @@ public class NodeAStore extends Node {
 	public Node clone() {
 		return new NodeAStore(array.clone(), index.clone(), value.clone(), storeSize);
 	}
+	
+	@Override
+	public String getNodeIdentifier() { return "astore"; }
 }

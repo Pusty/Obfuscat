@@ -70,4 +70,7 @@ public class NodeStore extends Node {
 	public Node clone() {
 		return new NodeStore(storeSize, slot, value.clone());
 	}
+	
+	@Override
+	public String getNodeIdentifier() { return "store"; }
 }

@@ -1,8 +1,10 @@
 package re.bytecode.obfuscat.cfg;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import re.bytecode.obfuscat.cfg.nodes.Node;
@@ -11,8 +13,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath1;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
 /**
@@ -27,10 +28,17 @@ public class EmulateFunction {
 	private BasicBlock currentBlock;
 
 	// Slot -> Variable Value
-	private HashMap<Integer, Object> variables;
+	private Map<Integer, Object> variables;
 
 	// A map of node -> result (reset every basic block entry)
-	private HashMap<Node, Object> nodeMap;
+	private Map<Node, Object> nodeMap;
+	
+	// Const map for evaluations, may be null
+	private Map<String, Integer> constMap;
+	
+	// Runtime statistics, will reset on run
+	private Map<String, Integer> runtimeStatistics;
+	
 
 	/**
 	 * Create a function emulator based on a function
@@ -72,6 +80,8 @@ public class EmulateFunction {
 		}
 
 		Object output = null;
+		
+		runtimeStatistics.put(node.getNodeIdentifier(), runtimeStatistics.getOrDefault(node.getNodeIdentifier(), 0)+1);
 
 		if (node instanceof NodeConst) {
 			// If the node is a constant node then convert it to an Integer
@@ -85,7 +95,14 @@ public class EmulateFunction {
 				value = (int) ((Short) obj).intValue();
 			} else if (obj instanceof Integer) {
 				value = (Integer) obj;
-			} else {
+			} else if (obj instanceof String) {
+				if(constMap == null)
+					throw new RuntimeException("String Constants not supported");
+				if(constMap.containsKey((String)obj))
+					value = (Integer)constMap.get((String)obj);
+				else
+					throw new RuntimeException("Keyword "+obj+" not supported as a constant");
+			}else {
 				throw new RuntimeException("Constant Type not supported");
 			}
 			output = value;
@@ -169,24 +186,9 @@ public class EmulateFunction {
 			default:
 				throw new RuntimeException("Not implemented");
 			}
-		} else if (node instanceof NodeMath1) {
-			// If the node is a math operation with one operand then apply the operation
-			switch (((NodeMath1) node).getOperation()) {
-			case NOT:
-				output = ~((Integer) input[0]);
-				break;
-			case NEG:
-				output = -((Integer) input[0]);
-				break;
-			case NOP:
-				output = ((Integer) input[0]);
-				break;
-			default:
-				throw new RuntimeException("Not implemented");
-			}
-		} else if (node instanceof NodeMath2) {
-			// If the node is a math operation with two operands then apply the operation
-			switch (((NodeMath2) node).getOperation()) {
+		}else if (node instanceof NodeMath) {
+			// If the node is a math operation then apply the operation
+			switch (((NodeMath) node).getOperation()) {
 			case ADD:
 				output = ((Integer) input[0]) + ((Integer) input[1]);
 				break;
@@ -220,6 +222,15 @@ public class EmulateFunction {
 			case SHL:
 				output = ((Integer) input[0]) << ((Integer) input[1]);
 				break;
+			case NOT:
+				output = ~((Integer) input[0]);
+				break;
+			case NEG:
+				output = -((Integer) input[0]);
+				break;
+			case NOP:
+				output = ((Integer) input[0]);
+				break;
 			default:
 				throw new RuntimeException("Not implemented");
 			}
@@ -230,7 +241,13 @@ public class EmulateFunction {
 				if (!(function instanceof MergedFunction))
 					throw new RuntimeException("Can't call in unmerged function");
 				
-				output = new EmulateFunction(function).run0(-1, false, input);
+				EmulateFunction tef = new EmulateFunction(function);
+				output = tef.run0(-1, false, input);
+				
+				// add call statistics to this one
+				for(Entry<String, Integer> e:tef.runtimeStatistics.entrySet())
+					runtimeStatistics.put(e.getKey(), runtimeStatistics.getOrDefault(e.getKey(), 0)+e.getValue());
+				
 			} else
 				throw new RuntimeException("Not implemented Node " + node);
 
@@ -253,6 +270,19 @@ public class EmulateFunction {
 	
 	
 	private int executedNodes;
+	
+	public static int eval(Node node, Map<String, Integer> constMap) {
+		BasicBlock bb = new BasicBlock();
+		bb.getNodes().add(node);
+		bb.setExitBlock(node);
+		
+		Function f = new Function("tmp", Arrays.asList(bb) , new Class[] {}, 0, true);
+		
+		EmulateFunction ef = new EmulateFunction(f);
+		ef.constMap = constMap;
+		return (Integer) ef.run(-1);
+	}
+	
 
 	/**
 	 * Run the emulation with a maximum amount of blocks to execute and the
@@ -270,6 +300,12 @@ public class EmulateFunction {
 	}
 
 	public Object run0(int blockLimit, boolean check, Object... args) {
+		
+		
+		// start runtime statistics
+		runtimeStatistics = new HashMap<String, Integer>();
+		
+		runtimeStatistics.put("calls", 1); // useful for call custom nodes
 		
 		// Check if the argument length matches
 		if (check && function.getArguments().length != args.length)
@@ -393,6 +429,9 @@ public class EmulateFunction {
 		// if no block is found abort
 		if (currentBlock == null)
 			return null;
+		
+		runtimeStatistics.put("blocks", runtimeStatistics.getOrDefault("blocks", 0)+1);
+
 
 		List<Node> nodes = currentBlock.getNodes();
 
@@ -454,6 +493,8 @@ public class EmulateFunction {
 			default:
 				throw new RuntimeException("Not implemented");
 			}
+			
+			runtimeStatistics.put("conditionals", runtimeStatistics.getOrDefault("conditionals", 0)+1);
 		}
 
 		// if the block has a unconditional follow up block then jump to it
@@ -468,5 +509,9 @@ public class EmulateFunction {
 				return nodeMap.get(ret); // but if there should be a return value then provide it
 			return null;
 		}
+	}
+	
+	public Map<String, Integer> statistics() {
+		return runtimeStatistics;
 	}
 }

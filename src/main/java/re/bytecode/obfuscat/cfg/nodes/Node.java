@@ -106,4 +106,6 @@ public abstract class Node implements Cloneable {
 		recursiveIter(nodes, this);
 		return nodes;
 	}
+	
+	public abstract String getNodeIdentifier();
 }

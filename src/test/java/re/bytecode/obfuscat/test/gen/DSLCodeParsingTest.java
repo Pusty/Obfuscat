@@ -5,13 +5,17 @@ import static org.junit.Assert.assertTrue;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.junit.Test;
 
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.EmulateFunction;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.test.util.DSLGenerationUtil;
 import re.bytecode.obfuscat.test.util.JavaGenerationUtil;
 import re.bytecode.obfuscat.test.util.SampleLoader;
@@ -95,6 +99,59 @@ public class DSLCodeParsingTest {
 			assertTrue("Changes in size "+sizeList, sizeList.stream().distinct().count() == 1);
 			assertTrue("Changes in executed instructions "+execList, execList.stream().distinct().count() == 1);
 		}
+	}
+	
+	public static void compareSizeAndSpeed(List<EmulateFunction> listNormal, List<EmulateFunction> listPass, List<Map<String, Node>> stats) {
+		
+		
+		for(int i=0;i<listNormal.size();i++) {
+			
+			// Verify node count and size expectations are fulfilled
+			{
+				
+				Map<String, Integer> base = listNormal.get(i).getFunction().statistics();
+				Map<String, Integer> changed = listPass.get(i).getFunction().statistics();
+				
+				// apply expected pass modifications
+				for(int j=0;j<stats.size();j++) {
+					Map<String, Integer> newbase = new HashMap<String, Integer>();
+					newbase.putAll(base);
+					for(Entry<String, Node> e:stats.get(j).entrySet()) {
+						newbase.put(e.getKey(), EmulateFunction.eval(e.getValue(), base));
+					}
+					base = newbase; // commit changes after pass
+				}
+				
+				for(String key:base.keySet()) {
+					assertEquals(key+": Size values don't match up with expected values ", changed.get(key), base.get(key));
+				}
+			
+			}
+			
+			// Verify runtime behavior expectations are fulfilled
+			{
+				
+				Map<String, Integer> base = listNormal.get(i).statistics();
+				Map<String, Integer> changed = listPass.get(i).statistics();
+				
+				// apply expected pass modifications
+				for(int j=0;j<stats.size();j++) {
+					Map<String, Integer> newbase = new HashMap<String, Integer>();
+					newbase.putAll(base);
+					for(Entry<String, Node> e:stats.get(j).entrySet()) {
+						newbase.put(e.getKey(), EmulateFunction.eval(e.getValue(), base));
+					}
+					base = newbase; // commit changes after pass
+				}
+				
+				for(String key:base.keySet()) {
+					assertEquals(key+": Speed values don't match up with expected values ", changed.get(key), base.get(key));
+				}
+			
+			}
+			
+		}
+		
 	}
 	
 	@Test

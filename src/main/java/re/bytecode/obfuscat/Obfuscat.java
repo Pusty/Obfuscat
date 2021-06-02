@@ -9,11 +9,12 @@ import re.bytecode.obfuscat.builder.HWKeyBuilder;
 import re.bytecode.obfuscat.builder.KeyBuilder;
 import re.bytecode.obfuscat.builder.TestBuilder;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
-import re.bytecode.obfuscat.gen.x86CodeGenerator;
 import re.bytecode.obfuscat.pass.Pass;
-import re.bytecode.obfuscat.pass.SimpleArithmeticEncodePass;
+import re.bytecode.obfuscat.pass.LiteralEncodePass;
+import re.bytecode.obfuscat.pass.OperationEncodePass;
 import re.bytecode.obfuscat.gen.CustomNodeImpl;
 
 /** Main Class */
@@ -31,14 +32,14 @@ public class Obfuscat {
 	
 	
 	static {
-		registerGenerator("x86", x86CodeGenerator.class);
 		
 		
 		registerGenerator("Thumb", ThumbCodeGenerator.class);
 		registerCustomNode("Thumb", "readInt", ThumbCodeGenerator.ThumbNodeReadInt.class);
 		registerCustomNode("Thumb", "call", ThumbCodeGenerator.ThumbNodeCall.class);
 		
-		registerPass("SimpleArithmeticEncode", SimpleArithmeticEncodePass.class);
+		registerPass("OperationEncode", OperationEncodePass.class);
+		registerPass("LiteralEncode", LiteralEncodePass.class);
 		
 		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);
 		registerBuilder("KeyBuilder", KeyBuilder.class);
@@ -96,6 +97,25 @@ public class Obfuscat {
 			throw new RuntimeException("Pass Construction Exception", e);
 		}
 		return f;
+	}
+	
+	public static Map<String, Node> getPassStatistics(String passName) {
+		if(passName == null) throw new IllegalArgumentException("The pass can't be null");
+		if(!passes.containsKey(passName)) throw new IllegalArgumentException("A Pass with the name '"+passName+"' is not registered");
+		
+		Context context = new Context(System.currentTimeMillis());
+		Pass pass;
+		Map<String, Node> map;
+		try {
+			Constructor<? extends Pass> c = passes.get(passName).getConstructor(Context.class);
+			pass = c.newInstance(context);
+			map = pass.statistics();
+		} catch (NoSuchMethodException e) {
+			throw new RuntimeException("Constructor for pass not found", e);
+		} catch (Exception e) {
+			throw new RuntimeException("Pass Construction Exception", e);
+		}
+		return map;
 	}
 	
 	/**

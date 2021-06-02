@@ -1,21 +1,15 @@
 package re.bytecode.obfuscat.builder;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MathOperation;
-import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
-import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 
 // Builder exists to test specific code generation features
 public class TestBuilder extends Builder {
@@ -33,9 +27,9 @@ public class TestBuilder extends Builder {
 	
 		NodeLoad inp = new NodeLoad(4, 0);
 		
-		NodeMath2 add = new NodeMath2(inp, inp, MathOperation.ADD);
+		NodeMath add = new NodeMath(MathOperation.ADD, inp, inp);
 		
-		NodeMath2 add2 = new NodeMath2(add, add, MathOperation.ADD);
+		NodeMath add2 = new NodeMath(MathOperation.ADD, add, add);
 		
 		curBlock.getNodes().add(inp);
 		curBlock.getNodes().add(add);

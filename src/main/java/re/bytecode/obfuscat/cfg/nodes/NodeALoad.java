@@ -71,4 +71,6 @@ public class NodeALoad extends Node {
 		return new NodeALoad(array.clone(), index.clone(), loadSize);
 	}
 	
+	@Override
+	public String getNodeIdentifier() { return "aload"; }
 }

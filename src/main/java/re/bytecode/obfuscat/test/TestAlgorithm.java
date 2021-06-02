@@ -3,21 +3,12 @@ package re.bytecode.obfuscat.test;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import re.bytecode.obfuscat.dsl.api.ExcludeMethod;
-import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.EmulateFunction;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MergedFunction;
 import re.bytecode.obfuscat.dsl.DSLParser;
-import re.bytecode.obfuscat.gen.CFGTOFLOW;
-import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
-import re.bytecode.obfuscat.gen.x86CodeGenerator;
 
 public class TestAlgorithm {
 	

@@ -3,9 +3,9 @@ package re.bytecode.obfuscat.test;
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.*;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
-import re.bytecode.obfuscat.pass.SimpleArithmeticEncodePass;
+import re.bytecode.obfuscat.pass.OperationEncodePass;
 
 public class TestPass {
 	public static void main(String[] args) throws Exception {
@@ -25,7 +25,7 @@ public class TestPass {
 		NodeConst c1 = new NodeConst(new Integer(3));
 		NodeConst c2 = new NodeConst(new Integer(5));
 		
-		NodeMath2 a1 = new NodeMath2(c1, c2, MathOperation.ADD);
+		NodeMath a1 = new NodeMath(MathOperation.ADD, c1, c2);
 		
 		b1.getNodes().add(a1);
 		
@@ -33,7 +33,7 @@ public class TestPass {
 		NodeConst c3 = new NodeConst(new Integer(12));
 		NodeConst c4 = new NodeConst(new Integer(4));
 		
-		NodeMath2 a2 = new NodeMath2(c3, c4, MathOperation.SUB);
+		NodeMath a2 = new NodeMath(MathOperation.SUB, c3, c4);
 		
 		b1.getNodes().add(a2);
 		
@@ -42,7 +42,7 @@ public class TestPass {
 		b1.setUnconditionalBranch(b3);
 		
 		
-		SimpleArithmeticEncodePass eap = new SimpleArithmeticEncodePass(new Context(System.currentTimeMillis()));
+		OperationEncodePass eap = new OperationEncodePass(new Context(System.currentTimeMillis()));
 		eap.processBlock(b1);
 		
 		System.out.println(b1);

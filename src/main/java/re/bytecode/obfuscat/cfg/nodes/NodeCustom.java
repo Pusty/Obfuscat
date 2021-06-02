@@ -66,4 +66,7 @@ public class NodeCustom extends Node {
 			argsCopy[i] = args[i].clone();
 		return new NodeCustom(identifier, argsCopy);
 	}
+	
+	@Override
+	public String getNodeIdentifier() { return "custom-"+identifier; }
 }

@@ -17,8 +17,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath1;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
 /**
@@ -491,170 +490,163 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			}
 		});
 
-		// Encode One Operand Math Operations
-		codeMapping.put(NodeMath1.class, new ThumbNodeCodeGenerator(new int[getNodeSize()]) {
+
+		// Encode Math Operations
+		codeMapping.put(NodeMath.class, new ThumbNodeCodeGenerator(new int[getNodeSize()]) {
 
 			@Override
 			public void writeData(Node n, int[] data) {
-				assert (n instanceof NodeMath1);
-				NodeMath1 node = (NodeMath1) n;
+				assert (n instanceof NodeMath);
+				NodeMath node = (NodeMath) n;
 
 				Node[] children = node.children();
 
-				loadNode(data, 0, 0, children[0]);
-				switch (((NodeMath1) node).getOperation()) {
-				case NOT:
-					// mvns r0, r0 - C0 43
-					data[2] = 0xC0;
-					data[3] = 0x43;
-					break;
-				case NEG:
-					// rsbs r0, r0, #0 - 40 42
-					data[2] = 0x40;
-					data[3] = 0x42;
-					break;
-				case NOP:
-					// NOP
-					data[2] = 0x00;
-					data[3] = 0xBF;
-					break;
-				default:
-					throw new RuntimeException("Not implemented");
-				}
-				storeNode(data, 4, node);
+				
+				if(node.getOperation().getOperandCount() == 1) {
+					loadNode(data, 0, 0, children[0]);
+					switch (((NodeMath) node).getOperation()) {
+					case NOT:
+						// mvns r0, r0 - C0 43
+						data[2] = 0xC0;
+						data[3] = 0x43;
+						break;
+					case NEG:
+						// rsbs r0, r0, #0 - 40 42
+						data[2] = 0x40;
+						data[3] = 0x42;
+						break;
+					case NOP:
+						// NOP
+						data[2] = 0x00;
+						data[3] = 0xBF;
+						break;
+					default:
+						throw new RuntimeException("Not implemented");
+					}
+					storeNode(data, 4, node);
 
-				data[6] = 0xAF; // NOP.W
-				data[7] = 0xF3;
-				data[8] = 0x00;
-				data[9] = 0x80;
+					data[6] = 0xAF; // NOP.W
+					data[7] = 0xF3;
+					data[8] = 0x00;
+					data[9] = 0x80;
 
-				data[10] = 0x00; // NOP
-				data[11] = 0xBF;
+					data[10] = 0x00; // NOP
+					data[11] = 0xBF;
 
-				data[12] = 0xAF; // NOP.W
-				data[13] = 0xF3;
-				data[14] = 0x00;
-				data[15] = 0x80;
+					data[12] = 0xAF; // NOP.W
+					data[13] = 0xF3;
+					data[14] = 0x00;
+					data[15] = 0x80;
 
-				// 6 instructions
-			}
+					// 6 instructions
+				}else if(node.getOperation().getOperandCount() == 2) {
+					for (int i = 0; i < data.length / 2; i++) {
+						data[i * 2] = 0x00; // NOP
+						data[i * 2 + 1] = 0xBF;
+					}
 
-		});
+					loadNode(data, 0, 0, children[0]);
+					loadNode(data, 2, 1, children[1]);
 
-		// Encode Two Operand Math Operations
-		codeMapping.put(NodeMath2.class, new ThumbNodeCodeGenerator(new int[getNodeSize()]) {
-
-			@Override
-			public void writeData(Node n, int[] data) {
-				assert (n instanceof NodeMath2);
-				NodeMath2 node = (NodeMath2) n;
-
-				Node[] children = node.children();
-
-				for (int i = 0; i < data.length / 2; i++) {
-					data[i * 2] = 0x00; // NOP
-					data[i * 2 + 1] = 0xBF;
-				}
-
-				loadNode(data, 0, 0, children[0]);
-				loadNode(data, 2, 1, children[1]);
-
-				data[6] = 0xAF; // NOP.W
-				data[7] = 0xF3;
-				data[8] = 0x00;
-				data[9] = 0x80;
-
-				data[10] = 0xAF; // NOP.W
-				data[11] = 0xF3;
-				data[12] = 0x00;
-				data[13] = 0x80;
-
-				switch (node.getOperation()) {
-				case ADD:
-					// adds r0, r0, r1 - 40 18
-					data[4] = 0x40;
-					data[5] = 0x18;
-
-					break;
-				case SUB:
-					// subs r0, r0, r1 - 40 1A
-					data[4] = 0x40;
-					data[5] = 0x1A;
-					break;
-				case MUL:
-					// muls r0, r0, r1 - 48 43
-					data[4] = 0x48;
-					data[5] = 0x43;
-					break;
-				case DIV:
-					// sdiv r0, r0, r1 - 90 fb f1 f0
-					data[4] = 0x90;
-					data[5] = 0xFB;
-					data[6] = 0xF1;
-					data[7] = 0xF0;
-
-					data[8] = 0x00; // NOP
-					data[9] = 0xBF;
+					data[6] = 0xAF; // NOP.W
+					data[7] = 0xF3;
+					data[8] = 0x00;
+					data[9] = 0x80;
 
 					data[10] = 0xAF; // NOP.W
 					data[11] = 0xF3;
 					data[12] = 0x00;
 					data[13] = 0x80;
 
-					break;
-				case MOD:
-					// mov r2, r0; sdiv r0, r2, r1; mls r0, r0, r1, r2
-					// 02 46 92 fb f1 f0 00 fb 11 20
-					data[4] = 0x02;
-					data[5] = 0x46;
+					switch (node.getOperation()) {
+					case ADD:
+						// adds r0, r0, r1 - 40 18
+						data[4] = 0x40;
+						data[5] = 0x18;
 
-					data[6] = 0x92;
-					data[7] = 0xFB;
-					data[8] = 0xF1;
-					data[9] = 0xF0;
+						break;
+					case SUB:
+						// subs r0, r0, r1 - 40 1A
+						data[4] = 0x40;
+						data[5] = 0x1A;
+						break;
+					case MUL:
+						// muls r0, r0, r1 - 48 43
+						data[4] = 0x48;
+						data[5] = 0x43;
+						break;
+					case DIV:
+						// sdiv r0, r0, r1 - 90 fb f1 f0
+						data[4] = 0x90;
+						data[5] = 0xFB;
+						data[6] = 0xF1;
+						data[7] = 0xF0;
 
-					data[10] = 0x00;
-					data[11] = 0xFB;
-					data[12] = 0x11;
-					data[13] = 0x20;
-					break;
-				case AND:
-					// ands r0, r0, r1 - 08 40
-					data[4] = 0x08;
-					data[5] = 0x40;
-					break;
-				case OR:
-					// orrs r0, r0, r1 - 08 43
-					data[4] = 0x08;
-					data[5] = 0x43;
-					break;
-				case XOR:
-					// eors r0, r0, r1 - 48 40
-					data[4] = 0x48;
-					data[5] = 0x40;
-					break;
-				case SHR:
-					// asrs r0, r0, r1 - 08 41
-					data[4] = 0x08;
-					data[5] = 0x41;
-					break;
-				case USHR:
-					// lsrs r0, r0, r1 - C8 40
-					data[4] = 0xC8;
-					data[5] = 0x40;
-					break;
-				case SHL:
-					// lsls r0, r0, r1 - 88 40
-					data[4] = 0x88;
-					data[5] = 0x40;
-					break;
-				default:
+						data[8] = 0x00; // NOP
+						data[9] = 0xBF;
+
+						data[10] = 0xAF; // NOP.W
+						data[11] = 0xF3;
+						data[12] = 0x00;
+						data[13] = 0x80;
+
+						break;
+					case MOD:
+						// mov r2, r0; sdiv r0, r2, r1; mls r0, r0, r1, r2
+						// 02 46 92 fb f1 f0 00 fb 11 20
+						data[4] = 0x02;
+						data[5] = 0x46;
+
+						data[6] = 0x92;
+						data[7] = 0xFB;
+						data[8] = 0xF1;
+						data[9] = 0xF0;
+
+						data[10] = 0x00;
+						data[11] = 0xFB;
+						data[12] = 0x11;
+						data[13] = 0x20;
+						break;
+					case AND:
+						// ands r0, r0, r1 - 08 40
+						data[4] = 0x08;
+						data[5] = 0x40;
+						break;
+					case OR:
+						// orrs r0, r0, r1 - 08 43
+						data[4] = 0x08;
+						data[5] = 0x43;
+						break;
+					case XOR:
+						// eors r0, r0, r1 - 48 40
+						data[4] = 0x48;
+						data[5] = 0x40;
+						break;
+					case SHR:
+						// asrs r0, r0, r1 - 08 41
+						data[4] = 0x08;
+						data[5] = 0x41;
+						break;
+					case USHR:
+						// lsrs r0, r0, r1 - C8 40
+						data[4] = 0xC8;
+						data[5] = 0x40;
+						break;
+					case SHL:
+						// lsls r0, r0, r1 - 88 40
+						data[4] = 0x88;
+						data[5] = 0x40;
+						break;
+					default:
+						throw new RuntimeException("Not implemented");
+					}
+
+					storeNode(data, 14, node);
+
+					// 6 instructions
+				}else {
 					throw new RuntimeException("Not implemented");
 				}
-
-				storeNode(data, 14, node);
-
-				// 6 instructions
 			}
 
 		});

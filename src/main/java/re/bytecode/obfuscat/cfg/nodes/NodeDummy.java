@@ -20,4 +20,7 @@ public class NodeDummy extends Node {
 	public Node clone() {
 		return new NodeDummy();
 	}
+	
+	@Override
+	public String getNodeIdentifier() { return "dummy"; }
 }

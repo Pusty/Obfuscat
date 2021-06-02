@@ -9,7 +9,7 @@ import re.bytecode.obfuscat.cfg.EmulateFunction;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MathOperation;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 
 public class TestEmulate {
 	public static void main(String[] args) {
@@ -20,7 +20,7 @@ public class TestEmulate {
 		NodeConst c1 = new NodeConst(new Integer(3));
 		NodeConst c2 = new NodeConst(new Integer(5));
 		
-		NodeMath2 a1 = new NodeMath2(c1, c2, MathOperation.ADD);
+		NodeMath a1 = new NodeMath(MathOperation.ADD, c1, c2);
 		
 		b1.getNodes().add(a1);
 		

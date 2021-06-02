@@ -42,8 +42,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath1;
-import re.bytecode.obfuscat.cfg.nodes.NodeMath2;
+import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
 /*
@@ -295,13 +294,13 @@ public class DSLParser {
 					switch (inst.getInstruction() & 0xFF) {
 					case Opcodes.I2B:
 						// (value & 0x7F) - (value & 0x80)
-						stack.push(new NodeMath2(new NodeMath2(value, new NodeConst(0x7F), MathOperation.AND),
-								new NodeMath2(value, new NodeConst(0x80), MathOperation.AND), MathOperation.SUB));
+						stack.push(new NodeMath(MathOperation.SUB, new NodeMath(MathOperation.AND, value, new NodeConst(0x7F)),
+								new NodeMath(MathOperation.AND, value, new NodeConst(0x80))));
 						break;
 					case Opcodes.I2C:
 					case Opcodes.I2S:
-						stack.push(new NodeMath2(new NodeMath2(value, new NodeConst(0x7FFF), MathOperation.AND),
-								new NodeMath2(value, new NodeConst(0x8000), MathOperation.AND), MathOperation.SUB));
+						stack.push(new NodeMath(MathOperation.SUB, new NodeMath(MathOperation.AND, value, new NodeConst(0x7FFF)),
+								new NodeMath(MathOperation.AND, value, new NodeConst(0x8000))));
 						break;
 					default:
 						throw new RuntimeException("Not implemented " + inst.getName());
@@ -318,13 +317,13 @@ public class DSLParser {
 						if (c >= 0) {
 							currentBlock.getNodes()
 									.add(new NodeStore(4, inst.getLocalVariable(),
-											new NodeMath2(new NodeLoad(4, inst.getLocalVariable()),
-													new NodeConst(inst.getConstantValue()), MathOperation.ADD)));
+											new NodeMath(MathOperation.ADD, new NodeLoad(4, inst.getLocalVariable()),
+													new NodeConst(inst.getConstantValue()))));
 						} else {
 							currentBlock.getNodes()
 									.add(new NodeStore(4, inst.getLocalVariable(),
-											new NodeMath2(new NodeLoad(4, inst.getLocalVariable()),
-													new NodeConst(-inst.getConstantValue()), MathOperation.SUB)));
+											new NodeMath(MathOperation.SUB, new NodeLoad(4, inst.getLocalVariable()),
+													new NodeConst(-inst.getConstantValue()))));
 						}
 
 					} else {
@@ -374,11 +373,11 @@ public class DSLParser {
 
 						if (operation.getOperandCount() == 1) {
 							Node op1 = stack.pop();
-							stack.push(new NodeMath1(op1, operation));
+							stack.push(new NodeMath(operation, op1));
 						} else if (operation.getOperandCount() == 2) {
 							Node op2 = stack.pop();
 							Node op1 = stack.pop();
-							stack.push(new NodeMath2(op1, op2, operation));
+							stack.push(new NodeMath(operation, op1, op2));
 						} else
 							throw new RuntimeException("Illegal Operant Count");
 					}

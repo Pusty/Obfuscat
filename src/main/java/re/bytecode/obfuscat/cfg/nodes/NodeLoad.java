@@ -61,4 +61,7 @@ public class NodeLoad extends Node {
 	public Node clone() {
 		return new NodeLoad(loadSize, slot);
 	}
+	
+	@Override
+	public String getNodeIdentifier() { return "load"; }
 }

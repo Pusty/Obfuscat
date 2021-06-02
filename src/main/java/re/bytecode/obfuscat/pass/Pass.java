@@ -1,8 +1,11 @@
 package re.bytecode.obfuscat.pass;
 
+import java.util.Map;
+
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.cfg.nodes.Node;
 
 // TODO: Not done yet
 public abstract class Pass {
@@ -26,4 +29,5 @@ public abstract class Pass {
 		
 	}
 	
+	public abstract Map<String, Node> statistics();
 }

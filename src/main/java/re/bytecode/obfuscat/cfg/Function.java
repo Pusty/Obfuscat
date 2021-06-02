@@ -1,6 +1,11 @@
 package re.bytecode.obfuscat.cfg;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import re.bytecode.obfuscat.cfg.nodes.Node;
 
 /**
  * A function is a collection of basic blocks that may take input, have variables and return values
@@ -54,5 +59,40 @@ public class Function {
 	public int getVariables() { return variableSlots; }
 	public boolean hasReturnValue() { return returnsSomething; }
 
+	
+	private void traverseNode(List<Node> already, Node node, Map<String, Integer> map) {
+		if(already.contains(node)) return;
+		already.add(node);
+		
+		map.put(node.getNodeIdentifier(), map.getOrDefault(node.getNodeIdentifier(), 0)+1);
+		
+		Node[] children = node.children();
+		if(children != null)
+			for(int i=0;i<children.length;i++)
+				traverseNode(already, children[i], map);
+	}
+	
+	public Map<String, Integer> statistics() {
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		
+		map.put("blocks", blocks.size());
+		
+		int conditionals = 0;
+		//int nodesOverall = 0;
+		
+		for(BasicBlock block:blocks) {
+			List<Node> already = new ArrayList<Node>();
+			for(Node node:block.getNodes()) {
+				traverseNode(already, node, map);
+			}
+			conditionals += block.getSwitchBlocks().size();
+		//	nodesOverall += already.size();
+		}
+		
+		map.put("conditionals", conditionals);
+		//map.put("nodes", nodesOverall);
+		
+		return map;
+	}
 	
 }
