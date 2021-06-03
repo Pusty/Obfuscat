@@ -6,6 +6,7 @@ import java.util.Map;
 
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
+import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import static re.bytecode.obfuscat.cfg.MathOperation.*;
@@ -79,7 +80,7 @@ public class LiteralEncodePass extends Pass {
  
 
 	@Override
-	public void processBlock(BasicBlock block) {
+	public void processBlock(Function function, BasicBlock block) {
 		List<Node> constOps = block.findNodes(new NodeConst(null));
 		
 		for(Node nodeRaw:constOps) {

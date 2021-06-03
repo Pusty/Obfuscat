@@ -6,7 +6,7 @@ import java.util.Map;
 
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
-
+import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 
@@ -20,6 +20,8 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 // https://gitlab.com/eshard/d810/-/tree/master/
 // https://github.com/softsec-unh/MBA-Solver/tree/main/full-dataset
 
+// Obfuscation with Mixed Boolean-ArithmeticExpressions: reconstruction, analysis and simplification tools by Ninon Eyrolles 
+// Has a nice list of MBA rewrite rules in Appendix
 
 /*
  * #define GET_IDENT0_PASS(x_0, x_1) ((x_0 & x_1) + (x_0 & ~(x_1)))
@@ -27,10 +29,28 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 #define GET_IDENT2_PASS(x_0, x_1) (x_0 & (x_0 | x_1))
  */
 
+
+// Most Passes here are from Hacker’s Delight
+
 public class OperationEncodePass extends Pass {
 
 	// Important here is that each operation always uses the same amount of nodes per operation
 	
+  
+	
+	// Some of these are sourced from linear or non linear mixed boolean terms
+	
+	/*
+	 * 
+	 * to generate more
+	 * 
+	 * from sympy import Matrix
+	 * 
+	 * F = generateMatrix()
+	 * V = F.nullspace()
+	 * 
+	 * Maybe do this before variable/array stores?
+	 */
 	
 	public OperationEncodePass(Context context) {
 		super(context);
@@ -229,7 +249,7 @@ public class OperationEncodePass extends Pass {
 
 
 	@Override
-	public void processBlock(BasicBlock block) {
+	public void processBlock(Function function, BasicBlock block) {
 
 		
 		List<Node> addOps = block.findNodes(new NodeMath(ADD, new Node[] {null, null}));

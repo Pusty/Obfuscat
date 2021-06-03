@@ -22,10 +22,10 @@ public abstract class Pass {
 	
 	public void processFunction(Function function) {
 		for(BasicBlock block:function.getBlocks())
-			processBlock(block);
+			processBlock(function, block);
 	}
 	
-	public void processBlock(BasicBlock block) {
+	public void processBlock(Function function, BasicBlock block) {
 		
 	}
 	

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
@@ -29,6 +30,9 @@ public class EmulateFunction {
 
 	// Slot -> Variable Value
 	private Map<Integer, Object> variables;
+	
+	// Array Reference -> Array
+	private Map<Integer, Object> arrayTable;
 
 	// A map of node -> result (reset every basic block entry)
 	private Map<Node, Object> nodeMap;
@@ -51,7 +55,7 @@ public class EmulateFunction {
 
 		currentBlock = f.getBlocks().get(0);
 		variables = new HashMap<Integer, Object>();
-
+		arrayTable = new HashMap<Integer, Object>();
 	}
 	
 
@@ -148,9 +152,9 @@ public class EmulateFunction {
 			// result to an integer
 			NodeALoad nl = (NodeALoad) node;
 
-			Object[] array = (Object[]) input[0];
+			Object[] array = (Object[]) arrayTable.get(input[0]);
 			Integer index = (Integer) input[1];
-
+			
 			switch (nl.getLoadSize()) {
 			case 1:
 				output = Integer.valueOf((int) (((Integer) array[index]).byteValue()));
@@ -170,7 +174,7 @@ public class EmulateFunction {
 			// integer and write it
 			NodeAStore ns = (NodeAStore) node;
 
-			Object[] array = (Object[]) input[0];
+			Object[] array = (Object[]) arrayTable.get(input[0]);
 			Integer index = (Integer) input[1];
 
 			switch (ns.getStoreSize()) {
@@ -240,8 +244,10 @@ public class EmulateFunction {
 			if (custom.getIdentifier().equals("call")) {
 				if (!(function instanceof MergedFunction))
 					throw new RuntimeException("Can't call in unmerged function");
-				
+	
 				EmulateFunction tef = new EmulateFunction(function);
+				tef.arrayTable = arrayTable;
+				tef.constMap = constMap;
 				output = tef.run0(-1, false, input);
 				
 				// add call statistics to this one
@@ -266,6 +272,16 @@ public class EmulateFunction {
 	
 	public int getExecutedNodes() {
 		return executedNodes;
+	}
+	
+	private Random arrayRandom = new Random();
+	private int arrayAddressSeed = arrayRandom.nextInt();
+	
+	private int registerArray(Object[] arr) {
+		int ar = arrayAddressSeed&0x7FFFFFFF;
+		arrayTable.put(ar, arr);
+		arrayAddressSeed = arrayRandom.nextInt();
+		return ar;
 	}
 	
 	
@@ -310,7 +326,7 @@ public class EmulateFunction {
 		// Check if the argument length matches
 		if (check && function.getArguments().length != args.length)
 			throw new RuntimeException("Amount of arguments don't match");
-
+		
 		// Argument Checking
 		for (int i = 0; i < args.length; i++) {
 
@@ -324,28 +340,28 @@ public class EmulateFunction {
 					Object[] oa = new Object[ba.length];
 					for (int j = 0; j < ba.length; j++)
 						oa[j] = Integer.valueOf(ba[j]);
-					argV = oa;
+					argV = registerArray(oa);
 				} else if (arg == short[].class) {
 					short[] sa = ((short[]) argV);
 					Object[] oa = new Object[sa.length];
 					for (int j = 0; j < sa.length; j++)
 						oa[j] = Integer.valueOf(sa[j]);
-					argV = oa;
+					argV = registerArray(oa);
 				} else if (arg == char[].class) {
 					char[] ca = ((char[]) argV);
 					Object[] oa = new Object[ca.length];
 					for (int j = 0; j < ca.length; j++)
 						oa[j] = Integer.valueOf(ca[j]);
-					argV = oa;
+					argV = registerArray(oa);
 				} else if (arg == int[].class) {
 					int[] ia = ((int[]) argV);
 					Object[] oa = new Object[ia.length];
 					for (int j = 0; j < ia.length; j++)
 						oa[j] = Integer.valueOf(ia[j]);
-					argV = oa;
+					argV = registerArray(oa);
 				} else if (arg == Object[].class) {
 					Object[] oa = ((Object[]) argV);
-					argV = oa;
+					argV = registerArray(oa);
 				} else
 					throw new RuntimeException("Unsupported Array Type "+argV);
 			}
@@ -392,22 +408,22 @@ public class EmulateFunction {
 
 				if (arg == byte[].class) {
 					byte[] ba = ((byte[]) argV);
-					Object[] oa = (Object[]) variables.get(i);
+					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
 					for (int j = 0; j < ba.length; j++)
 						ba[j] = ((Integer)oa[j]).byteValue();
 				} else if (arg == short[].class) {
 					short[] sa = ((short[]) argV);
-					Object[] oa = (Object[]) variables.get(i);
+					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
 					for (int j = 0; j < sa.length; j++)
 						sa[j] = ((Integer)oa[j]).shortValue();
 				} else if (arg == char[].class) {
 					char[] ca = ((char[]) argV);
-					Object[] oa = (Object[]) variables.get(i);
+					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
 					for (int j = 0; j < ca.length; j++)
 						ca[j] = (char) ((Integer)oa[j]).shortValue();
 				} else if (arg == int[].class) {
 					int[] ia = ((int[]) argV);
-					Object[] oa = (Object[]) variables.get(i);
+					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
 					for (int j = 0; j < ia.length; j++)
 						ia[j] = ((Integer)oa[j]).intValue();
 				}
