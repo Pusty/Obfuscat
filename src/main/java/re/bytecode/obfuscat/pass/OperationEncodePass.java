@@ -20,14 +20,8 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 // https://gitlab.com/eshard/d810/-/tree/master/
 // https://github.com/softsec-unh/MBA-Solver/tree/main/full-dataset
 
-// Obfuscation with Mixed Boolean-ArithmeticExpressions: reconstruction, analysis and simplification tools by Ninon Eyrolles 
+// Obfuscation with Mixed Boolean-Arithmetic Expressions: reconstruction, analysis and simplification tools by Ninon Eyrolles 
 // Has a nice list of MBA rewrite rules in Appendix
-
-/*
- * #define GET_IDENT0_PASS(x_0, x_1) ((x_0 & x_1) + (x_0 & ~(x_1)))
-#define GET_IDENT1_PASS(x_0, x_1) ((x_0 & x_1) ^ (x_0 & ~(x_1)))
-#define GET_IDENT2_PASS(x_0, x_1) (x_0 & (x_0 | x_1))
- */
 
 
 // Most Passes here are from Hacker’s Delight

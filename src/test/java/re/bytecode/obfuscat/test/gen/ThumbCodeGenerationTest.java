@@ -234,13 +234,13 @@ public class ThumbCodeGenerationTest {
 
 		writeSystemRegisters(globalUnicorn);
 
-		System.out.println();
+		//System.out.println();
 		byte[] codeData = new byte[code.length];
 		for (int i = 0; i < code.length; i++) {
 			codeData[i] = (byte) code[i];
-			System.out.print(String.format("%02X", codeData[i]));
+		//	System.out.print(String.format("%02X", codeData[i]));
 		}
-		System.out.println();
+		//System.out.println();
 		INST_SIZE = code.length;
 
 		// write machine code to be emulated to memory

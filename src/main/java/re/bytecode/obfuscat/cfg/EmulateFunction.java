@@ -383,7 +383,11 @@ public class EmulateFunction {
 			// Store converted array as variables in the fitting slots
 			variables.put(i, argV);
 		}
-
+		
+		// init variables with random input data
+		for(int i=args.length;i<getFunction().getVariables();i++)
+			variables.put(i, arrayRandom.nextInt());
+		
 		boolean returnedSomething = false;
 		Object returnedValue = null;
 

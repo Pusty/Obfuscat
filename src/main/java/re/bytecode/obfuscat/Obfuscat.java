@@ -14,6 +14,7 @@ import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
 import re.bytecode.obfuscat.pass.Pass;
 import re.bytecode.obfuscat.pass.VariableEncodePass;
+import re.bytecode.obfuscat.pass.FakeDependencyPass;
 import re.bytecode.obfuscat.pass.LiteralEncodePass;
 import re.bytecode.obfuscat.pass.OperationEncodePass;
 import re.bytecode.obfuscat.gen.CustomNodeImpl;
@@ -42,6 +43,7 @@ public class Obfuscat {
 		registerPass("OperationEncode", OperationEncodePass.class);
 		registerPass("LiteralEncode", LiteralEncodePass.class);
 		registerPass("VariableEncode", VariableEncodePass.class);
+		registerPass("FakeDependency", FakeDependencyPass.class);
 		
 		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);
 		registerBuilder("KeyBuilder", KeyBuilder.class);

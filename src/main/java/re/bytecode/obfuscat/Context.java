@@ -9,11 +9,11 @@ import java.util.Random;
 public class Context {
 	
 	private Random random;
-	//private long globalSeed;
+	private long globalSeed;
 	
 	public Context(long seed) {
 		random = new Random(seed);
-	//	globalSeed = random.nextLong();
+		globalSeed = random.nextLong();
 	}
 	
 	/**
@@ -34,7 +34,7 @@ public class Context {
 	
 	
 	public int seededRand(long seed) {
-		return new Random(seed/*^globalSeed*/).nextInt();
+		return new Random(seed^globalSeed).nextInt();
 	}
 	
 }
