@@ -8,22 +8,6 @@ import java.util.List;
  */
 public abstract class Node implements Cloneable {
 	
-	/**
-	 * Return a list of all nodes recursively references by this node or their children
-	 * @return a list containing all in some way referenced nodes
-	 */
-	public List<Node> list() {
-		ArrayList<Node> l = new ArrayList<Node>();
-		
-		Node[] children = children();
-		if(children != null)
-			for(Node c:children) {
-				l.addAll(c.list());
-			}
-		l.add(this);
-		return l;
-	}
-	
 	@Override
 	public String toString() {
 		return "Generic";
@@ -101,6 +85,10 @@ public abstract class Node implements Cloneable {
 		return getAssociated().size();
 	}
 	
+	/**
+	 * Return a list of all nodes recursively references by this node or their children
+	 * @return a list containing all in some way referenced nodes
+	 */
 	public List<Node> getAssociated() {
 		List<Node> nodes = new ArrayList<Node>();
 		recursiveIter(nodes, this);

@@ -1,18 +1,40 @@
 package re.bytecode.obfuscat.test.util;
 
+import java.util.HashMap;
+
+import re.bytecode.obfuscat.Obfuscat;
+import re.bytecode.obfuscat.cfg.Function;
+
 public class ManualSampleRun {
 	
-	private static final String[] passNames = new String[] {"LiteralEncode", "FakeDependency", "VariableEncode", "OperationEncode"};
+	private static final String[] passNames = new String[] {"LiteralEncode", "FakeDependency", "VariableEncode" /*, "OperationEncode"*/};
 	
 	
-	public static void main(String[] args) throws Exception {
+	
+	
+	
+	public static void main(String[] argsMain) throws Exception {
 		
 		
-		String fileName = "Sample4";
-		String functionName = "crc32";
+		/*
+		String fileName = "Sample6";
+		String functionName = "entry";
 		
 		byte[] data = SampleLoader.loadFile(fileName);
 		int[] code = ThumbGenerationUtil.generateCode(data, functionName, passNames);
+		*/
+		
+		byte[] constKey = "POTATO".getBytes();
+		HashMap<String, Object> args = new HashMap<String, Object>();
+		args.put("data", constKey);
+
+		
+		Function func = Obfuscat.buildFunction("KeyBuilder", args);
+
+		for (String pass : passNames)
+			func = Obfuscat.applyPass(func, pass);
+
+		int[] code = Obfuscat.generateCode("Thumb", func).getData();
 		
 		System.out.println(code.length);
 		

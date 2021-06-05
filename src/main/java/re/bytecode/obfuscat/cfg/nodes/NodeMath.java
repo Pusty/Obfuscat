@@ -57,9 +57,9 @@ public class NodeMath extends Node {
 			case SHL:
 				return "{ "+operands[0]+" << "+operands[1]+" }";
 			case NOT:
-				return "{ !("+operands[0]+") }";
-			case NEG:
 				return "{ ~("+operands[0]+") }";
+			case NEG:
+				return "{ -("+operands[0]+") }";
 			case NOP:
 				return "{ "+operands[0]+" }";
 			default:
