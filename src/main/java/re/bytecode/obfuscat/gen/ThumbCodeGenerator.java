@@ -37,6 +37,11 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	public ThumbCodeGenerator(Context context, Function function) {
 		super(context, function);
 	}
+	
+	
+	public String description() {
+		return "A code generator for ARMv8 Thumb2 code";
+	}
 
 	// Load Node Result from the Stack
 	private void loadNode(int[] data, int offset, int register, Node from) {
@@ -1122,5 +1127,6 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		}
 
 	}
+
 
 }

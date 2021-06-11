@@ -1,5 +1,6 @@
 package re.bytecode.obfuscat.cfg;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +12,9 @@ import re.bytecode.obfuscat.cfg.nodes.Node;
 /**
  * A BasicBlock is a sequence of instructions (Nodes) that end at conditional or unconditional control flow changes (jmp, jcc, ret)
  */
-public class BasicBlock {
+public class BasicBlock implements Serializable {
+
+	private static final long serialVersionUID = 4567636696750578172L;
 
 	private Map<BranchCondition, BasicBlock> switchBlocks; // conditional branching
 	

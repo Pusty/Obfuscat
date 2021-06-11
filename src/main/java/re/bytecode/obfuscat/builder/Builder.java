@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.exception.BuilderArgumentException;
 
 /**
  * A Builder is a Class that creates Functions based on a set of parameters
@@ -35,14 +36,14 @@ public abstract class Builder {
 	public Function generate(Map<String, Object> args) {
 		
 		
-		if(args == null) throw new IllegalArgumentException("Argument Map may not be null");
+		if(args == null) throw new BuilderArgumentException("Argument Map may not be null");
 		
 		Map<String, Class<?>> supported = supportedArguments();
 		for(Entry<String, Object> e:args.entrySet()) {
 			// Check if the arguments provided are all supported (possibly want to ignore or warn for not supported instead)
-			if(!supported.containsKey(e.getKey())) throw new IllegalArgumentException(this.getClass()+" doesn't supported argument '"+e.getKey()+"'");
+			if(!supported.containsKey(e.getKey())) throw new BuilderArgumentException(this.getClass()+" doesn't supported argument '"+e.getKey()+"'");
 			// Check if the provided arguments type is derivable from the specified parameter type
-			if(!supported.get(e.getKey()).isAssignableFrom(e.getValue().getClass())) throw new IllegalArgumentException("Argument "+e.getKey()+" has wrong type "+e.getValue().getClass()+" which should be "+supported.get(e.getKey()));
+			if(!supported.get(e.getKey()).isAssignableFrom(e.getValue().getClass())) throw new BuilderArgumentException("Argument "+e.getKey()+" has wrong type "+e.getValue().getClass()+" which should be "+supported.get(e.getKey()));
 		}
 		
 		return generateFunction(args);
@@ -60,4 +61,16 @@ public abstract class Builder {
 	 * @return a map of argument names and their associated types
 	 */
 	public abstract Map<String, Class<?>> supportedArguments();
+	
+	/**
+	 * Return a map of supported arguments and their description
+	 * @return a map of argument names and their help dialog
+	 */
+	public abstract Map<String, String> supportedArgumentsHelp();
+
+	/**
+	 * Return a description of the behavior of this object
+	 * @return return a description for the help dialog
+	 */
+	public abstract String description();
 }

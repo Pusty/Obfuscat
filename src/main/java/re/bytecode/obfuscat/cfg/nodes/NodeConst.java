@@ -5,6 +5,8 @@ package re.bytecode.obfuscat.cfg.nodes;
  */
 public class NodeConst extends Node {
 	
+	private static final long serialVersionUID = -1912615367767882961L;
+	
 	private Object constObj;
 	
 	/**

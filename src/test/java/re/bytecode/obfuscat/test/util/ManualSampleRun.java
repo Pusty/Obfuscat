@@ -34,7 +34,7 @@ public class ManualSampleRun {
 		for (String pass : passNames)
 			func = Obfuscat.applyPass(func, pass);
 
-		int[] code = Obfuscat.generateCode("Thumb", func).getData();
+		int[] code = Obfuscat.getGenerator("Thumb", func).getData();
 		
 		System.out.println(code.length);
 		

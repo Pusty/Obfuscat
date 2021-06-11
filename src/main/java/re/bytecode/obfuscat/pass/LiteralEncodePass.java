@@ -80,7 +80,7 @@ public class LiteralEncodePass extends Pass {
  
 
 	@Override
-	public void processBlock(Function function, BasicBlock block) {
+	protected void processBlock(Function function, BasicBlock block, Map<String, Object> args) {
 		List<Node> constOps = block.findNodes(new NodeConst(null));
 		
 		for(Node nodeRaw:constOps) {
@@ -137,5 +137,9 @@ public class LiteralEncodePass extends Pass {
 		map.put("const", add(cst("const"), mul(cst("const"), cst(3))));
 		
 		return map;
+	}
+	
+	public String description() {
+		return "Replace all constants with an encoded version and the decoder";
 	}
 }

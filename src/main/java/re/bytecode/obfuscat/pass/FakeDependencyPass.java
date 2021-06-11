@@ -36,7 +36,7 @@ public class FakeDependencyPass extends Pass {
 	}
 	
 	@Override
-	public void processBlock(Function function, BasicBlock block) {
+	protected void processBlock(Function function, BasicBlock block, Map<String, Object> args) {
 		List<Node> constOps = block.findNodes(new NodeConst(null));
 		
 		for(Node nodeRaw:constOps) {
@@ -82,4 +82,9 @@ public class FakeDependencyPass extends Pass {
 		
 		return map;
 	}
+	
+	public String description() {
+		return "Inject fake dependencies to function parameters into constants";
+	}
 }
+

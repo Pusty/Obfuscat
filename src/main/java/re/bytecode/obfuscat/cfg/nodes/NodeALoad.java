@@ -5,6 +5,7 @@ package re.bytecode.obfuscat.cfg.nodes;
  */
 public class NodeALoad extends Node {
 
+	private static final long serialVersionUID = -7877480315541802538L;
 	private Node array;
 	private Node index;
 	private int loadSize;

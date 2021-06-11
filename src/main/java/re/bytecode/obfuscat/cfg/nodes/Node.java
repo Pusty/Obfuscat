@@ -1,13 +1,16 @@
 package re.bytecode.obfuscat.cfg.nodes;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * A node is an abstraction from one "instruction" / operation
  */
-public abstract class Node implements Cloneable {
+public abstract class Node implements Cloneable, Serializable {
 	
+	private static final long serialVersionUID = -1984474441856451816L;
+
 	@Override
 	public String toString() {
 		return "Generic";

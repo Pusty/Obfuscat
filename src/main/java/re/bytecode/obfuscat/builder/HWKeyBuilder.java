@@ -107,5 +107,17 @@ public class HWKeyBuilder extends Builder {
 		return supported;
 	}
 
+	@Override
+	public Map<String, String> supportedArgumentsHelp() {
+		HashMap<String, String> helpInfo = new HashMap<String, String>();
+		helpInfo.put("length", "The length of the randomised key being written (Default: 4)");
+		return helpInfo;
+	}
+	
+	public String description() {
+		return "A builder for functions that write a randomised key with fixed size into an array\n" +
+			   "Call using 'function(array)', note that the array length is not dynamically verified\n" +
+			   "The function dynamically reads from hardware register 0x123 [PLACEHOLDER] to randomise per device\n";
+	}
 
 }

@@ -12,6 +12,8 @@ import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
 public class MergedFunction extends Function {
 	
+	private static final long serialVersionUID = 4854507091712950166L;
+
 	public MergedFunction(String name, List<BasicBlock> blocks, Class<?>[] argumentTypes, int variableSlots,
 			boolean returnsSomething) {
 		super(name, blocks, argumentTypes, variableSlots, returnsSomething);

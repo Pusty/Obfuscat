@@ -9,6 +9,7 @@ import re.bytecode.obfuscat.Obfuscat;
  */
 public class NodeCustom extends Node {
 
+	private static final long serialVersionUID = -7666453126576386252L;
 	private String identifier;
 	private Node[] args;
 

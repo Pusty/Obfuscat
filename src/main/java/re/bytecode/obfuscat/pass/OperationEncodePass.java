@@ -243,7 +243,7 @@ public class OperationEncodePass extends Pass {
 
 
 	@Override
-	public void processBlock(Function function, BasicBlock block) {
+	protected void processBlock(Function function, BasicBlock block, Map<String, Object> args) {
 
 		
 		List<Node> addOps = block.findNodes(new NodeMath(ADD, new Node[] {null, null}));
@@ -349,5 +349,8 @@ public class OperationEncodePass extends Pass {
 		return map;
 	}
 	
+	public String description() {
+		return "Encode all math operation nodes";
+	}
 
 }

@@ -47,6 +47,15 @@ public class TestBuilder extends Builder {
 		HashMap<String, Class<?>> supported = new HashMap<String, Class<?>>();
 		return supported;
 	}
-
+	
+	@Override
+	public Map<String, String> supportedArgumentsHelp() {
+		HashMap<String, String> helpInfo = new HashMap<String, String>();
+		return helpInfo;
+	}
+	
+	public String description() {
+		return "Test builder class";
+	}
 
 }

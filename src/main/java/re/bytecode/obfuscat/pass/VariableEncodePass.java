@@ -76,7 +76,7 @@ public class VariableEncodePass extends Pass {
 	
 	
 	@Override
-	public void processBlock(Function function, BasicBlock block) {
+	protected void processBlock(Function function, BasicBlock block, Map<String, Object> args) {
 		
 		// 4 -> 32bit, 2 -> 16bit, 1 -> 8bit - consider when encoding and decoding
 		// skip input variables / or apply non changing operations on them
@@ -138,5 +138,9 @@ public class VariableEncodePass extends Pass {
 		map.put("math", add(add(cst("math"), mul(cst("load"), cst(2))), mul(cst("store"), cst(2))));
 		
 		return map;
+	}
+	
+	public String description() {
+		return "Encode all variables when storing them and decode them when loading from them";
 	}
 }

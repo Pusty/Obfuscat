@@ -62,7 +62,7 @@ public abstract class CodeGenerator {
 				assert(node instanceof NodeCustom);
 				NodeCustom custom = (NodeCustom)node;
 				if(!cache.containsKey(custom.getIdentifier()))
-					cache.put(custom.getIdentifier(), Obfuscat.getCustomNodeImpl(CodeGenerator.this, custom.getIdentifier()));
+					cache.put(custom.getIdentifier(), Obfuscat.getCustomNodeImpl(CodeGenerator.this, custom.getIdentifier(), CodeGenerator.this.context));
 				cache.get(custom.getIdentifier()).process(cbb, custom);
 			}
 			
@@ -394,4 +394,26 @@ public abstract class CodeGenerator {
 	 * @return the exact amount of executed instructions each individual compiled code piece
 	 */
 	public abstract int getNodeInstCount();
+	
+	/**
+	 * Return a map of supported arguments
+	 * @return a map of argument names and their associated types
+	 */
+	public Map<String, Class<?>> supportedArguments() {
+		return new HashMap<String, Class<?>>();
+	}
+	
+	/**
+	 * Return a map of supported arguments and their description
+	 * @return a map of argument names and their help dialog
+	 */
+	public Map<String, String> supportedArgumentsHelp() {
+		return new HashMap<String, String>();
+	}
+	
+	/**
+	 * Return a description of the behavior of this object
+	 * @return return a description for the help dialog
+	 */
+	public abstract String description();
 }

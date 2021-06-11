@@ -10,8 +10,10 @@ public class Context {
 	
 	private Random random;
 	private long globalSeed;
+	private long seed;
 	
 	public Context(long seed) {
+		this.seed = seed;
 		random = new Random(seed);
 		globalSeed = random.nextLong();
 	}
@@ -32,9 +34,12 @@ public class Context {
 		return random;
 	}
 	
-	
 	public int seededRand(long seed) {
 		return new Random(seed^globalSeed).nextInt();
+	}
+	
+	public long getInternalSeed() {
+		return seed;
 	}
 	
 }

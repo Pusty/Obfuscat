@@ -23,14 +23,14 @@ import re.bytecode.obfuscat.gen.CustomNodeImpl;
 public class Obfuscat {
 	
 	
-	private static Map<String, Class<? extends Builder>> builders = new HashMap<String, Class<? extends Builder>>();
+	protected static Map<String, Class<? extends Builder>> builders = new HashMap<String, Class<? extends Builder>>();
 	
 	
-	private static Map<String, Class<? extends CodeGenerator>> generators = new HashMap<String, Class<? extends CodeGenerator>>();
+	protected static Map<String, Class<? extends CodeGenerator>> generators = new HashMap<String, Class<? extends CodeGenerator>>();
 	
-	private static Map<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>> customNodes = new HashMap<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>>();
+	protected static Map<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>> customNodes = new HashMap<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>>();
 
-	private static Map<String, Class<? extends Pass>> passes = new HashMap<String, Class<? extends Pass>>();
+	protected static Map<String, Class<? extends Pass>> passes = new HashMap<String, Class<? extends Pass>>();
 	
 	
 	static {
@@ -85,29 +85,40 @@ public class Obfuscat {
 	}
 	
 	public static Function applyPass(Function f, String passName) {
+		return applyPass(f, passName, new HashMap<String, Object>());
+	}
+	
+	public static Function applyPass(Function f, String passName, Map<String, Object> args) {
 		if(f == null) throw new IllegalArgumentException("The function can't be null");
+		return getPass(passName).obfuscate(f, args);
+	}
+	
+	
+	public static Pass getPass(String passName) {
+		return getPass(passName, System.currentTimeMillis());
+	}
+	public static Pass getPass(String passName, long seed) {
 		if(passName == null) throw new IllegalArgumentException("The pass can't be null");
 		if(!passes.containsKey(passName)) throw new IllegalArgumentException("A Pass with the name '"+passName+"' is not registered");
 		
-		Context context = new Context(System.currentTimeMillis());
+		Context context = new Context(seed);
 		Pass pass;
 		try {
 			Constructor<? extends Pass> c = passes.get(passName).getConstructor(Context.class);
 			pass = c.newInstance(context);
-			pass.processFunction(f);
 		} catch (NoSuchMethodException e) {
 			throw new RuntimeException("Constructor for pass not found", e);
 		} catch (Exception e) {
 			throw new RuntimeException("Pass Construction Exception", e);
 		}
-		return f;
+		return pass;
 	}
 	
 	public static Map<String, Node> getPassStatistics(String passName) {
 		if(passName == null) throw new IllegalArgumentException("The pass can't be null");
 		if(!passes.containsKey(passName)) throw new IllegalArgumentException("A Pass with the name '"+passName+"' is not registered");
 		
-		Context context = new Context(System.currentTimeMillis());
+		Context context = null; // this needs to be null
 		Pass pass;
 		Map<String, Node> map;
 		try {
@@ -143,13 +154,17 @@ public class Obfuscat {
 	 * @param function the function to generate code from
 	 * @return a processed code generator
 	 */
-	public static CodeGenerator generateCode(String generatorName, Function function) {
+	public static CodeGenerator getGenerator(String generatorName, Function function) {
+		return getGenerator(generatorName, function, System.currentTimeMillis());
+	}
+	
+	public static CodeGenerator getGenerator(String generatorName, Function function, long seed) {
 		
 		if(generatorName == null) throw new IllegalArgumentException("The generator can't be null");
-		if(function == null) throw new IllegalArgumentException("The function can't be null");
+		//if(function == null) throw new IllegalArgumentException("The function can't be null");
 		if(!generators.containsKey(generatorName))  throw new IllegalArgumentException("The generator with name '"+generatorName+"' isn't registered");
 		
-		Context context = new Context(System.currentTimeMillis());
+		Context context = new Context(seed);
 		CodeGenerator generator;
 		try {
 			Constructor<? extends CodeGenerator> c = generators.get(generatorName).getConstructor(Context.class, Function.class);
@@ -159,7 +174,7 @@ public class Obfuscat {
 		} catch (Exception e) {
 			throw new RuntimeException("Generator Construction Exception", e);
 		}
-		generator.generate();
+		//generator.generate();
 		return generator;
 		
 	}
@@ -171,10 +186,22 @@ public class Obfuscat {
 	 * @return the build function
 	 */
 	public static Function buildFunction(String builderName, Map<String, Object> args) {
+		return buildFunction(builderName, args, System.currentTimeMillis());
+	}
+	
+	public static Function buildFunction(String builderName, Map<String, Object> args, long seed) {
+		return getBuilder(builderName, seed).generate(args);
+	}
+	
+	public static Builder getBuilder(String builderName) {
+		return getBuilder(builderName, System.currentTimeMillis());
+	}
+	
+	public static Builder getBuilder(String builderName, long seed) {
 		if(builderName == null) throw new IllegalArgumentException("The builder can't be null");
 		if(!builders.containsKey(builderName)) throw new IllegalArgumentException("The builder with name '"+builderName+"' isn't registered");
 		
-		Context context = new Context(System.currentTimeMillis());
+		Context context = new Context(seed);
 		Builder builder;
 		try {
 			Constructor<? extends Builder> c = builders.get(builderName).getConstructor(Context.class);
@@ -184,7 +211,7 @@ public class Obfuscat {
 		} catch (Exception e) {
 			throw new RuntimeException("Builder Construction Exception", e);
 		}
-		return builder.generate(args);
+		return builder;
 	}
 	
 	/**
@@ -193,14 +220,14 @@ public class Obfuscat {
 	 * @param nodeName the custom node identifier
 	 * @return the custom node implementation for this identifier
 	 */
-	public static CustomNodeImpl getCustomNodeImpl(CodeGenerator generator, String nodeName) {
+	public static CustomNodeImpl getCustomNodeImpl(CodeGenerator generator, String nodeName, Context parentContext) {
 		if(generator == null) throw new IllegalArgumentException("The generator can't be null");
 		if(nodeName == null) throw new IllegalArgumentException("The node can't be null");
 		if(!generators.containsValue(generator.getClass()))  throw new IllegalArgumentException("The generator "+generator+" isn't registered");
 		Map<String, Class<? extends CustomNodeImpl>> map = customNodes.get(generator.getClass());
 		if(!map.containsKey(nodeName)) throw new IllegalArgumentException("The custom node '"+nodeName+"' is not part of generator "+generator);
 		
-		Context context = new Context(System.currentTimeMillis());
+		Context context = new Context(parentContext.getInternalSeed());
 		try {
 			Constructor<? extends CustomNodeImpl> c = map.get(nodeName).getConstructor(Context.class, CodeGenerator.class);
 			return c.newInstance(context, generator);

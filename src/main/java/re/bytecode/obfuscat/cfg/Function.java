@@ -1,5 +1,6 @@
 package re.bytecode.obfuscat.cfg;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,8 +11,9 @@ import re.bytecode.obfuscat.cfg.nodes.Node;
 /**
  * A function is a collection of basic blocks that may take input, have variables and return values
  */
-public class Function {
+public class Function implements Serializable {
 	
+	private static final long serialVersionUID = -1350502203263513629L;
 	private String name;
 	private List<BasicBlock> blocks;
 	private Class<?>[] argumentTypes;

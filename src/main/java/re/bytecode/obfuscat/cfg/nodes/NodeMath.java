@@ -7,6 +7,7 @@ import re.bytecode.obfuscat.cfg.MathOperation;
  */
 public class NodeMath extends Node {
 	
+	private static final long serialVersionUID = 6264126477931284549L;
 	private Node[] operands;
 	private MathOperation type;
 	

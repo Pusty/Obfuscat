@@ -1,13 +1,17 @@
 package re.bytecode.obfuscat.cfg;
 
+import java.io.Serializable;
+
 import re.bytecode.obfuscat.cfg.nodes.Node;
 
 /**
  * A Condition for Branching.
  */
-public class BranchCondition {
+public class BranchCondition implements Serializable {
 	
 	
+	private static final long serialVersionUID = 2958687028811699705L;
+
 	private BasicBlock owner;
 	
 	private Node op1;

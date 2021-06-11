@@ -376,7 +376,7 @@ public class ThumbCodeGenerationTest {
 				func = Obfuscat.applyPass(func, pass);
 		}
 
-		int[] code = Obfuscat.generateCode("Thumb", func).getData();
+		int[] code = Obfuscat.getGenerator("Thumb", func).getData();
 		long v = test_thumb(code, args);
 		return v;
 	}

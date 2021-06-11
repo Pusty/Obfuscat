@@ -14,6 +14,7 @@ import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
+import re.bytecode.obfuscat.exception.BuilderArgumentException;
 
 /**
  * This Builder creates a function that fills a provided array with a hardcoded key
@@ -33,7 +34,7 @@ public class KeyBuilder extends Builder {
 		List<BasicBlock> blocks = new ArrayList<BasicBlock>();
 
 		byte[] data = (byte[])args.get("data");
-		if(data == null) throw new IllegalArgumentException("Data must be provided");
+		if(data == null) throw new BuilderArgumentException("'data' argument must be provided");
 
 
 		List<Integer> intList = IntStream.rangeClosed(0, data.length-1).boxed().collect(Collectors.toList());
@@ -76,5 +77,15 @@ public class KeyBuilder extends Builder {
 		return supported;
 	}
 
+	@Override
+	public Map<String, String> supportedArgumentsHelp() {
+		HashMap<String, String> helpInfo = new HashMap<String, String>();
+		helpInfo.put("data", "[Required] The key this function will generate");
+		return helpInfo;
+	}
 
+	public String description() {
+		return "A builder for functions that write a hardcoded key into an array\n" +
+			   "Call using 'function(array)', note that the array length is not dynamically verified";
+	}
 }
