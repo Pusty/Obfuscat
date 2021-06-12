@@ -1,12 +1,14 @@
 package re.bytecode.obfuscat.cfg.nodes;
 
+import re.bytecode.obfuscat.cfg.MemorySize;
+
 /**
  * A Variable Store Operation
  */
 public class NodeStore extends Node {
 	
 	private static final long serialVersionUID = -3287729221748353659L;
-	private int storeSize;
+	private MemorySize storeSize;
 	private int slot;
 	private Node value;
 	
@@ -16,7 +18,7 @@ public class NodeStore extends Node {
 	 * @param slot the variable slot to store to
 	 * @param value the node to store
 	 */
-	public NodeStore(int storeSize, int slot, Node value) {
+	public NodeStore(MemorySize storeSize, int slot, Node value) {
 		this.storeSize = storeSize;
 		this.slot = slot;
 		this.value = value;
@@ -31,16 +33,16 @@ public class NodeStore extends Node {
 	}
 	
 	/**
-	 * The store size from this array (1 = byte, 2 = short/char, 4 = int/array)
+	 * The store size from this array
 	 * @return the size of data to store in this array
 	 */
-	public int getStoreSize() {
+	public MemorySize getStoreSize() {
 		return storeSize;
 	}
 	
 	@Override
 	public String toString() {
-		return "{ Store"+(8*storeSize)+"("+slot+") = "+value+" }";
+		return "{ Store"+storeSize+"("+slot+") = "+value+" }";
 	}
 	
 	@Override
@@ -61,7 +63,7 @@ public class NodeStore extends Node {
 	
 	@Override
 	protected boolean checkCriteria(Node o) { 
-		return (((NodeStore)o).storeSize == this.storeSize || ((NodeStore)o).storeSize == -1 || this.storeSize == -1) && (((NodeStore)o).slot == this.slot  || ((NodeStore)o).slot == -1 || this.slot == -1);
+		return (((NodeStore)o).storeSize == this.storeSize || ((NodeStore)o).storeSize == MemorySize.ANY || this.storeSize == MemorySize.ANY) && (((NodeStore)o).slot == this.slot  || ((NodeStore)o).slot == -1 || this.slot == -1);
 	}
 	
 	@Override

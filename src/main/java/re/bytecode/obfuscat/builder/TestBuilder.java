@@ -8,6 +8,7 @@ import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MathOperation;
+import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 
@@ -25,7 +26,7 @@ public class TestBuilder extends Builder {
 
 		BasicBlock curBlock = new BasicBlock();
 	
-		NodeLoad inp = new NodeLoad(4, 0);
+		NodeLoad inp = new NodeLoad(MemorySize.INT, 0);
 		
 		NodeMath add = new NodeMath(MathOperation.ADD, inp, inp);
 		

@@ -1,5 +1,7 @@
 package re.bytecode.obfuscat.cfg.nodes;
 
+import re.bytecode.obfuscat.cfg.MemorySize;
+
 /**
  * An Array Load Operation
  */
@@ -8,7 +10,7 @@ public class NodeALoad extends Node {
 	private static final long serialVersionUID = -7877480315541802538L;
 	private Node array;
 	private Node index;
-	private int loadSize;
+	private MemorySize loadSize;
 
 	/**
 	 * Create an array load operation based on an array, an index and the size to load from it.
@@ -16,17 +18,17 @@ public class NodeALoad extends Node {
 	 * @param index the index to reference in the array
 	 * @param loadSize the size of data read from the array
 	 */
-	public NodeALoad(Node array, Node index, int loadSize) {
+	public NodeALoad(Node array, Node index, MemorySize loadSize) {
 		this.array = array;
 		this.index = index;
 		this.loadSize = loadSize;
 	}
 
 	/**
-	 * The load size from this array (1 = byte, 2 = short/char, 4 = int/array)
+	 * The load size from this array
 	 * @return the size of data to load from this array
 	 */
-	public int getLoadSize() {
+	public MemorySize getLoadSize() {
 		return loadSize;
 	}
 
@@ -37,7 +39,7 @@ public class NodeALoad extends Node {
 
 	@Override
 	protected boolean checkCriteria(Node o) {
-		return ((NodeALoad) o).loadSize == this.loadSize || this.loadSize == -1 || ((NodeALoad) o).loadSize == -1;
+		return ((NodeALoad) o).loadSize == this.loadSize || this.loadSize == MemorySize.ANY || ((NodeALoad) o).loadSize == MemorySize.ANY;
 	}
 
 	@Override

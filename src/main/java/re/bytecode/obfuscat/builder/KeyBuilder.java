@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
@@ -52,7 +53,7 @@ public class KeyBuilder extends Builder {
 			nextBlock = new BasicBlock();
 			
 			// add the store array entry nodes
-			curBlock.getNodes().add(new NodeAStore(new NodeLoad(4, 0), new NodeConst(index), new NodeConst(data[index]), 1));
+			curBlock.getNodes().add(new NodeAStore(new NodeLoad(MemorySize.POINTER, 0), new NodeConst(index), new NodeConst(data[index]), MemorySize.BYTE));
 			
 			// link this block to the next block
 			curBlock.setUnconditionalBranch(nextBlock);

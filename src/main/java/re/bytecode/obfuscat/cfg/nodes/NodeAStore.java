@@ -1,5 +1,7 @@
 package re.bytecode.obfuscat.cfg.nodes;
 
+import re.bytecode.obfuscat.cfg.MemorySize;
+
 /**
  * An Array Store Operation
  */
@@ -9,7 +11,7 @@ public class NodeAStore extends Node {
 	private Node array;
 	private Node index;
 	private Node value;
-	private int storeSize;
+	private MemorySize storeSize;
 
 	/**
 	 * Create an array store operation based on an array, an index and the size to store into.
@@ -17,7 +19,7 @@ public class NodeAStore extends Node {
 	 * @param index the index to reference in the array
 	 * @param storeSize the size of data stored to the array
 	 */
-	public NodeAStore(Node array, Node index, Node value, int storeSize) {
+	public NodeAStore(Node array, Node index, Node value, MemorySize storeSize) {
 		this.array = array;
 		this.index = index;
 		this.value = value;
@@ -28,7 +30,7 @@ public class NodeAStore extends Node {
 	 * The store size to this array (1 = byte, 2 = short/char, 4 = int/array)
 	 * @return the size of data to store in this array
 	 */
-	public int getStoreSize() {
+	public MemorySize getStoreSize() {
 		return storeSize;
 	}
 
@@ -38,7 +40,7 @@ public class NodeAStore extends Node {
 
 	@Override
 	protected boolean checkCriteria(Node o) {
-		return ((NodeAStore) o).storeSize == this.storeSize || this.storeSize == -1 || ((NodeAStore) o).storeSize == -1;
+		return ((NodeAStore) o).storeSize == this.storeSize || this.storeSize == MemorySize.ANY || ((NodeAStore) o).storeSize == MemorySize.ANY;
 	}
 
 	@Override

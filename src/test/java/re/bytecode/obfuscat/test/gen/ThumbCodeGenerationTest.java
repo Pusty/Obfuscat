@@ -238,7 +238,7 @@ public class ThumbCodeGenerationTest {
 		byte[] codeData = new byte[code.length];
 		for (int i = 0; i < code.length; i++) {
 			codeData[i] = (byte) code[i];
-		//	System.out.print(String.format("%02X", codeData[i]));
+			//System.out.print(String.format("%02X", codeData[i]));
 		}
 		//System.out.println();
 		INST_SIZE = code.length;
@@ -259,8 +259,8 @@ public class ThumbCodeGenerationTest {
 		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R6, new Long(r6));
 		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R7, new Long(r7));
 
-		// r8 = function address
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R8, new Long(ADDRESS | 1));
+		// r8 = function address - this would be annoying to do in C
+		// globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R8, new Long(ADDRESS | 1));
 
 		
 		INST_COUNT = 0;
@@ -274,8 +274,9 @@ public class ThumbCodeGenerationTest {
 			// ue.getMessage().contains("UC_ERR_FETCH_UNMAPPED") &&
 			if (((Long) globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)).intValue() == DEAD_ADDRESS) {
 				// program ended normally
-			} else
+			} else {
 				throw new RuntimeException("@ "+Long.toHexString((Long)globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)), ue);
+			}
 		}
 
 		// INST_COUNT now contains instruction cound
@@ -386,12 +387,7 @@ public class ThumbCodeGenerationTest {
 		byte[] data = SampleLoader.loadFile(fileName);
 		int[] code = ThumbGenerationUtil.generateCodeMerged(data, functionName, passes);
 
-		Object[] argsAfter = new Object[args.length + 1];
-		for (int i = 0; i < args.length; i++)
-			argsAfter[i + 1] = args[i];
-		argsAfter[0] = 0;
-
-		long returnValue = test_thumb(code, argsAfter);
+		long returnValue = test_thumb(code, args);
 		// System.out.println("Return Value: "+returnValue);
 		return returnValue;
 	}
@@ -418,7 +414,7 @@ public class ThumbCodeGenerationTest {
 		normalTestCases(null);
 	}
 
-	//@Test
+	@Test
 	public void testHWKeyBuilder() throws Exception {
 
 		HashMap<String, Object> args = new HashMap<String, Object>();

@@ -37,7 +37,7 @@ public class MergedFunction extends Function {
 		List<BasicBlock> blocks = new ArrayList<BasicBlock>();
 		blocks.add(handler);
 		
-		Node op1 = new NodeLoad(4, 0);
+		Node op1 = new NodeLoad(MemorySize.INT, 0);
 		
 		int variableSlots = 0;
 		int arguments     = 0;
@@ -47,6 +47,11 @@ public class MergedFunction extends Function {
 		for(Entry<String, Function> e: functions.entrySet()) {
 			
 			Function currentFunction = e.getValue();
+			
+			if(currentFunction instanceof MergedFunction) {
+				throw new RuntimeException("Merging of already merged functions is not supported"); // this needs special cases and would only works pre-obfuscation
+			}
+			
 			variableSlots = Math.max(variableSlots, currentFunction.getVariables());
 			arguments     = Math.max(arguments, currentFunction.getArguments().length);
 			returnSomething = returnSomething | currentFunction.hasReturnValue();
@@ -61,7 +66,7 @@ public class MergedFunction extends Function {
 				BasicBlock currentBlock = functionBlocks.get(b);
 				
 				// Increase Loads
-				nodes = currentBlock.findNodes(new NodeLoad(-1, -1));
+				nodes = currentBlock.findNodes(new NodeLoad(MemorySize.ANY, -1));
 				for(int j=0;j<nodes.size();j++) {
 					NodeLoad oL = (NodeLoad)nodes.get(j);
 					NodeLoad nL = new NodeLoad(oL.getLoadSize(), oL.getSlot()+1);
@@ -69,7 +74,7 @@ public class MergedFunction extends Function {
 				}
 				
 				// Increase Stores
-				nodes = currentBlock.findNodes(new NodeStore(-1, -1, null));
+				nodes = currentBlock.findNodes(new NodeStore(MemorySize.ANY, -1, null));
 				for(int j=0;j<nodes.size();j++) {
 					NodeStore oS = (NodeStore)nodes.get(j);
 					NodeStore nS = new NodeStore(oS.getStoreSize(), oS.getSlot()+1, oS.children()[0]);

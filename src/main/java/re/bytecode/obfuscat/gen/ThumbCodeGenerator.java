@@ -273,7 +273,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				// results
 
 				switch (node.getLoadSize()) {
-				case 1:
+				case BYTE:
 
 					// LDRB r0, [r7, #0x0] - 38 78
 					// data[0] = 0x38 | ((slot & 3) << 6);
@@ -285,7 +285,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					data[2] = slotMem & 0xFF;
 					data[3] = (slotMem >> 8) & 0x0F;
 					break;
-				case 2:
+				case SHORT:
 					// LDRH r0, [r7, #0x0] - 38 88
 					// data[0] = 0x38 | ((slot & 3) << 6);
 					// data[1] = 0x88 | ((slot & 0x1C) >> 2);
@@ -296,7 +296,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					data[2] = slotMem & 0xFF;
 					data[3] = (slotMem >> 8) & 0x0F;
 					break;
-				case 4:
+				case INT:
+				case POINTER:
 					// LDR r0, [r7, #0x0] - 38 68
 					// data[0] = 0x38 | ((slot & 3) << 6);
 					// data[1] = 0x68 | ((slot & 0x1C) >> 2);
@@ -349,21 +350,22 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					throw new RuntimeException("Variable slot not supported");
 
 				switch (node.getStoreSize()) {
-				case 1:
+				case BYTE:
 					// STRB r0, [r7, #0x100] - 87 F8 00 01
 					data[2] = 0x87;
 					data[3] = 0xF8;
 					data[4] = slotMem & 0xFF;
 					data[5] = (slotMem >> 8) & 0x0F;
 					break;
-				case 2:
+				case SHORT:
 					// STRH r0, [r7, #0x100] - A7 F8 00 01
 					data[2] = 0xA7;
 					data[3] = 0xF8;
 					data[4] = slotMem & 0xFF;
 					data[5] = (slotMem >> 8) & 0x0F;
 					break;
-				case 4:
+				case INT:
+				case POINTER:
 					// STR r0, [r7, #0x100] - C7 F8 00 01
 					data[2] = 0xC7;
 					data[3] = 0xF8;
@@ -405,21 +407,22 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				loadNode(data, 2, 1, children[1]);
 
 				switch (node.getLoadSize()) {
-				case 1:
+				case BYTE:
 					// LDRSB r0, [r0, r1, LSL #0] - 10 F9 01 00
 					data[4] = 0x10;
 					data[5] = 0xF9;
 					data[6] = 0x01;
 					data[7] = 0x00;
 					break;
-				case 2:
+				case SHORT:
 					// LDRSH r0, [r0, r1, LSL #1] - 30 F9 11 00
 					data[4] = 0x30;
 					data[5] = 0xF9;
 					data[6] = 0x11;
 					data[7] = 0x00;
 					break;
-				case 4:
+				case INT:
+				case POINTER:
 					// LDR r0, [r0, r1, LSL #2] - 50 F8 21 00
 					data[4] = 0x50;
 					data[5] = 0xF8;
@@ -458,21 +461,22 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				loadNode(data, 4, 2, children[2]);
 
 				switch (node.getStoreSize()) {
-				case 1:
+				case BYTE:
 					// STRB r2, [r0, r1, LSL #0] - 00 F8 01 20
 					data[6] = 0x00;
 					data[7] = 0xF8;
 					data[8] = 0x01;
 					data[9] = 0x20;
 					break;
-				case 2:
+				case SHORT:
 					// STRH r2, [r0, r1, LSL #1] - 20 F8 11 20
 					data[6] = 0x20;
 					data[7] = 0xF8;
 					data[8] = 0x11;
 					data[9] = 0x20;
 					break;
-				case 4:
+				case INT:
+				case POINTER:
 					// STR r2, [r0, r1, LSL #2] - 40 F8 21 20
 					data[6] = 0x40;
 					data[7] = 0xF8;
@@ -688,6 +692,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 		HashMap<BasicBlock, Integer> positionMap = new HashMap<BasicBlock, Integer>();
 		int curPos = 0;
+		
+		curPos +=  getNodeSize(); // entry point
+		curPos +=  getNodeSize(); // pretext
 
 		// Map BasicBlocks to their position in compiled format
 		for (CompiledBasicBlock cbb : blocks) {
@@ -807,6 +814,63 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	public int[] finish(List<CompiledBasicBlock> compiledBlocks) {
 
 		List<int[]> l = new ArrayList<int[]>();
+		
+		// This entry point code is to streamline MergedFunctions
+		int[] entrypoint = new int[getNodeSize()];
+		
+		
+		// point r8 to pretext for calls
+		// add r8, pc, 13 - 0F F2 0D 08
+		entrypoint[0] = 0x0F;
+		entrypoint[1] = 0xF2;
+		entrypoint[2] = 0x0D;
+		entrypoint[3] = 0x08;
+		
+		entrypoint[4] = 0xAF; // NOP.W
+		entrypoint[5] = 0xF3;
+		entrypoint[6] = 0x00;
+		entrypoint[7] = 0x80;
+		
+		if(this.getFunction() instanceof MergedFunction) {
+			
+			
+			// mov r3, r2 - 13 46
+			entrypoint[8] = 0x13;
+			entrypoint[9] = 0x46;
+			
+			// mov r2, r1 - 0A 46
+			entrypoint[10] = 0x0A;
+			entrypoint[11] = 0x46;
+			
+			// mov r1, r0 - 01 46
+			entrypoint[12] = 0x01;
+			entrypoint[13] = 0x46;
+			
+			// merged functions first argument is the function hash, 0 is entry point
+			// LDR r0, 0 - 00 48 
+			entrypoint[14] = 0x00;
+			entrypoint[15] = 0x48;
+			
+			
+		}else {
+			entrypoint[8] = 0x00; // NOP
+			entrypoint[9] = 0xBF;
+			
+			entrypoint[10] = 0x00; // NOP
+			entrypoint[11] = 0xBF;
+			
+			entrypoint[12] = 0x00; // NOP
+			entrypoint[13] = 0xBF;
+			
+			entrypoint[14] = 0x00; // NOP
+			entrypoint[15] = 0xBF;
+		}
+		
+
+		// 6 instructions
+
+		
+		l.add(entrypoint);
 
 		int[] pretext = new int[getNodeSize()];
 

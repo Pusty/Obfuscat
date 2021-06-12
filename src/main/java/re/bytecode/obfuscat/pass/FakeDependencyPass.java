@@ -7,6 +7,7 @@ import java.util.Map;
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
@@ -48,9 +49,9 @@ public class FakeDependencyPass extends Pass {
 			int vars = function.getVariables();
 			
 			if(vars > 0)
-				fake = new NodeLoad(4, (getContext().rand()&0xFFFF)%vars); // the size might not match the actual variable, but it doesn't matter
+				fake = new NodeLoad(MemorySize.INT, (getContext().rand()&0xFFFF)%vars); // the size might not match the actual variable, but it doesn't matter
 			else
-				fake = new NodeLoad(4, 0); // this will be a random spot on the stack but that is fine as it doesn't matter anyways
+				fake = new NodeLoad(MemorySize.INT, 0); // this will be a random spot on the stack but that is fine as it doesn't matter anyways
 			
 			Node res;
 			

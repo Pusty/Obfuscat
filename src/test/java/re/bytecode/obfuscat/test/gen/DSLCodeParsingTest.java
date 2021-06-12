@@ -39,14 +39,9 @@ public class DSLCodeParsingTest {
 		
 		byte[] data = SampleLoader.loadFile(fileName);
 		EmulateFunction code = DSLGenerationUtil.generateCodeMerged(data, functionName, passes);
-		
-		Object[] argsAfter = new Object[args.length+1];
-		for(int i=0;i<args.length;i++)
-			argsAfter[i+1] = args[i];
-		argsAfter[0] = 0;
 	
 		//Integer res = (Integer)
-		code.run(-1, argsAfter);
+		code.run(-1, args);
 		return code;
 	}
 	

@@ -12,6 +12,7 @@ import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MathOperation;
+import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
@@ -84,7 +85,7 @@ public class HWKeyBuilder extends Builder {
 			// create the next block
 			nextBlock = new BasicBlock();
 			// add the store array entry nodes
-			curBlock.getNodes().add(new NodeAStore(new NodeLoad(4, 0), new NodeConst(index), new NodeMath(MathOperation.AND, operationNode, new NodeConst(0xFF)), 1));
+			curBlock.getNodes().add(new NodeAStore(new NodeLoad(MemorySize.POINTER, 0), new NodeConst(index), new NodeMath(MathOperation.AND, operationNode, new NodeConst(0xFF)), MemorySize.BYTE));
 			// link this block to the next block
 			curBlock.setUnconditionalBranch(nextBlock);
 			// add this block to the block list

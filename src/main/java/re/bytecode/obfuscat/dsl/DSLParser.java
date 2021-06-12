@@ -36,6 +36,7 @@ import re.bytecode.obfuscat.cfg.BranchCondition;
 import re.bytecode.obfuscat.cfg.CompareOperation;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MathOperation;
+import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
@@ -275,11 +276,30 @@ public class DSLParser {
 				if (instRaw instanceof InstLocalVar) {
 					// parse local variable instruction
 					InstLocalVar inst = (InstLocalVar) instRaw;
+					
+					
+					MemorySize localVarSize = MemorySize.POINTER;
+
+					if (inst.getType() == int.class)
+						localVarSize = MemorySize.INT;
+					else if (inst.getType() == short.class)
+						localVarSize = MemorySize.SHORT;
+					else if (inst.getType() == byte.class)
+						localVarSize = MemorySize.BYTE;
+					else if (inst.getType() == boolean.class)
+						localVarSize = MemorySize.BYTE;
+					else if (inst.getType() == char.class)
+						localVarSize = MemorySize.SHORT;
+					else if (inst.getType() == Array.class)
+						localVarSize = MemorySize.POINTER;
+					else
+						throw new RuntimeException("Not supported: " + inst.getType());
+					
 					if (inst.isLoad()) {
-						stack.push(new NodeLoad(inst.getLoadSize(), inst.getVariable()));
+						stack.push(new NodeLoad(localVarSize, inst.getVariable()));
 					}
 					if (inst.isStore()) {
-						currentBlock.getNodes().add(new NodeStore(inst.getLoadSize(), inst.getVariable(), stack.pop()));
+						currentBlock.getNodes().add(new NodeStore(localVarSize, inst.getVariable(), stack.pop()));
 					}
 				} else if (instRaw instanceof InstConst) {
 					// parse constant instructions
@@ -316,13 +336,13 @@ public class DSLParser {
 						int c = inst.getConstantValue();
 						if (c >= 0) {
 							currentBlock.getNodes()
-									.add(new NodeStore(4, inst.getLocalVariable(),
-											new NodeMath(MathOperation.ADD, new NodeLoad(4, inst.getLocalVariable()),
+									.add(new NodeStore(MemorySize.INT, inst.getLocalVariable(),
+											new NodeMath(MathOperation.ADD, new NodeLoad(MemorySize.INT, inst.getLocalVariable()),
 													new NodeConst(inst.getConstantValue()))));
 						} else {
 							currentBlock.getNodes()
-									.add(new NodeStore(4, inst.getLocalVariable(),
-											new NodeMath(MathOperation.SUB, new NodeLoad(4, inst.getLocalVariable()),
+									.add(new NodeStore(MemorySize.INT, inst.getLocalVariable(),
+											new NodeMath(MathOperation.SUB, new NodeLoad(MemorySize.INT, inst.getLocalVariable()),
 													new NodeConst(-inst.getConstantValue()))));
 						}
 
@@ -466,18 +486,19 @@ public class DSLParser {
 					
 					InstAVar inst = (InstAVar) instRaw;
 
-					int arraySize = 4;
+					MemorySize arraySize = MemorySize.POINTER;
 
 					if (inst.getType() == int.class)
-						arraySize = 4;
+						arraySize = MemorySize.INT;
 					else if (inst.getType() == short.class)
-						arraySize = 2;
+						arraySize = MemorySize.SHORT;
 					else if (inst.getType() == byte.class)
-						arraySize = 1;
+						arraySize = MemorySize.BYTE;
 					else if (inst.getType() == boolean.class)
-						arraySize = 1;
+						arraySize = MemorySize.BYTE;
 					else if (inst.getType() == char.class)
-						arraySize = 2;
+						arraySize = MemorySize.SHORT;
+					// maybe add support for array of arrays later
 					else
 						throw new RuntimeException("Not supported: " + inst.getType());
 

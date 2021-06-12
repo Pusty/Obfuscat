@@ -116,13 +116,14 @@ public class EmulateFunction {
 			NodeLoad nl = (NodeLoad) node;
 			Object value = variables.get(nl.getSlot());
 			switch (nl.getLoadSize()) {
-			case 1:
+			case BYTE:
 				output = Integer.valueOf((int) ((Integer) value).byteValue());
 				break;
-			case 2:
+			case SHORT:
 				output = Integer.valueOf((int) ((Integer) value).shortValue());
 				break;
-			case 4:
+			case INT:
+			case POINTER:
 				output = value;
 				break;
 			default:
@@ -135,13 +136,14 @@ public class EmulateFunction {
 			NodeStore ns = (NodeStore) node;
 			Object value = input[0];
 			switch (ns.getStoreSize()) {
-			case 1:
+			case BYTE:
 				variables.put(ns.getSlot(), Integer.valueOf((int) ((Integer) value).byteValue()));
 				break;
-			case 2:
+			case SHORT:
 				variables.put(ns.getSlot(), Integer.valueOf((int) ((Integer) value).shortValue()));
 				break;
-			case 4:
+			case INT:
+			case POINTER:
 				variables.put(ns.getSlot(), value);
 				break;
 			default:
@@ -156,13 +158,14 @@ public class EmulateFunction {
 			Integer index = (Integer) input[1];
 			
 			switch (nl.getLoadSize()) {
-			case 1:
+			case BYTE:
 				output = Integer.valueOf((int) (((Integer) array[index]).byteValue()));
 				break;
-			case 2:
+			case SHORT:
 				output = Integer.valueOf((int) (((Integer) array[index]).shortValue()));
 				break;
-			case 4:
+			case INT:
+			case POINTER:
 				output = ((Integer) array[index]);
 				break;
 			default:
@@ -178,13 +181,14 @@ public class EmulateFunction {
 			Integer index = (Integer) input[1];
 
 			switch (ns.getStoreSize()) {
-			case 1:
+			case BYTE:
 				array[index] = Integer.valueOf((int) (((Integer) input[2]).byteValue()));
 				break;
-			case 2:
+			case SHORT:
 				array[index] = Integer.valueOf((int) (((Integer) input[2]).shortValue()));
 				break;
-			case 4:
+			case INT:
+			case POINTER:
 				array[index] = ((Integer) input[2]);
 				break;
 			default:
@@ -254,6 +258,16 @@ public class EmulateFunction {
 				for(Entry<String, Integer> e:tef.runtimeStatistics.entrySet())
 					runtimeStatistics.put(e.getKey(), runtimeStatistics.getOrDefault(e.getKey(), 0)+e.getValue());
 				
+			}else if(custom.getIdentifier().equals("debugPrint")) {
+				// Debug Print in emulation
+				StringBuilder sb = new StringBuilder("[debugPrint]: ");
+				
+				for(Object obj:input) {
+					sb.append(obj == null? "null": obj.toString());
+					sb.append(' ');
+				}
+				System.out.println(sb.substring(0, sb.length()-1));
+				
 			} else
 				throw new RuntimeException("Not implemented Node " + node);
 
@@ -312,6 +326,15 @@ public class EmulateFunction {
 	 */
 	public Object run(int blockLimit, Object... args) {
 		executedNodes = 0;
+		
+		if(this.getFunction() instanceof MergedFunction) { // this is here to make usage of merged functions more in line with normal usage
+			Object[] argsAfter = new Object[args.length + 1];
+			for (int i = 0; i < args.length; i++)
+				argsAfter[i + 1] = args[i];
+			argsAfter[0] = 0;
+			args = argsAfter;
+		}
+		
 		return run0(blockLimit, true, args);
 	}
 
@@ -377,8 +400,9 @@ public class EmulateFunction {
 				arg = byte.class;
 			else if (arg.isArray())
 				arg = Array.class;
-			if (check && function.getArguments()[i] != arg)
-				throw new RuntimeException("Type of Argument " + i + " doesn't match signature");
+			
+			if (check && (function.getArguments()[i] != arg) && (!function.getArguments()[i].isArray() || arg != Array.class))
+				throw new RuntimeException("Type of Argument " + i + " doesn't match signature ("+arg+" != "+function.getArguments()[i]+")");
 
 			// Store converted array as variables in the fitting slots
 			variables.put(i, argV);

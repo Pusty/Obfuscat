@@ -7,6 +7,7 @@ import java.util.Map;
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
@@ -82,10 +83,10 @@ public class VariableEncodePass extends Pass {
 		// skip input variables / or apply non changing operations on them
 		
 		// encode at store
-		List<Node> storeOps = block.findNodes(new NodeStore(-1, -1, null));
+		List<Node> storeOps = block.findNodes(new NodeStore(MemorySize.ANY, -1, null));
 	
 		// decode at load
-		List<Node> loadOps = block.findNodes(new NodeLoad(-1, -1));
+		List<Node> loadOps = block.findNodes(new NodeLoad(MemorySize.ANY, -1));
 		
 		for(Node nodeRaw:storeOps) {
 			NodeStore node = (NodeStore)nodeRaw;
@@ -117,7 +118,30 @@ public class VariableEncodePass extends Pass {
 			int b = getContext().seededRand(seed+1);
 			if(a % 2 == 0) a++; // make uneven
 			
-			int[] rev = reverseLinear(a, b, node.getLoadSize()*8);
+			
+			int bits = 0;
+			
+			switch(node.getLoadSize()) {
+			case BYTE:
+				bits = 8;
+				break;
+			case SHORT:
+				bits = 16;
+				break;
+			case INT:
+				bits = 32;
+				break;
+			case POINTER: // this as a default only makes sense on some platforms
+				// as of writing only Thumb2 with 32bit pointer size is supported where this makes sense
+				// for architectures where this isn't true, an option should be added to specify that / disable pointer encoding
+				// for now just don't use it on platforms where this assumption does not hold
+				bits = 32;
+				break;
+			default:
+				throw new RuntimeException("Unexpected size of node "+node);
+			}
+			
+			int[] rev = reverseLinear(a, b, bits);
 	
 			if(node.getSlot() < function.getArguments().length) {
 				rev[0] = 1; // either do this, do something similar, or encode at the beginning
