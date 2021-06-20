@@ -52,7 +52,7 @@ public class DSLCodeParsingTest {
 		ef.add(runTest("Sample2", "entry", passes));
 		ef.add(runTest("Sample3", "entry", passes));
 		ef.add(runTest("Sample4", "crc32", passes, new byte[] {0x12, 0x23, 0x45, 0x67, (byte) 0x89}, 5));
-		ef.add(runTest("Sample5", "entry", passes)); 
+		ef.add(runTest("Sample5", "entry", passes));  // TODO
 		
 		return ef;
 	}
@@ -85,7 +85,8 @@ public class DSLCodeParsingTest {
 				int blocksOverall = 0;
 				for(BasicBlock bb:f.getBlocks()) {
 					blocksOverall += bb.getNodes().size();
-					blocksOverall += bb.getSwitchBlocks().size();
+					//if(bb.isSwitchCase())
+					//blocksOverall += bb.getSwitchBlocks().size();
 				}
 				sizeList.add(blocksOverall);
 				execList.add(ef.getExecutedNodes());

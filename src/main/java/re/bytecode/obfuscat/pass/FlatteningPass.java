@@ -59,7 +59,8 @@ public class FlatteningPass extends Pass {
 			safetyList.add(dispatchConstValue);
 			NodeConst dispatchConst = new NodeConst(dispatchConstValue);
 			dispatcher.getNodes().add(dispatchConst);
-			dispatcher.getSwitchBlocks().put(new BranchCondition(dispatcher, dispatchValue, dispatchConst, CompareOperation.EQUAL), bb);
+		//	dispatcher.getSwitchBlocks().put(new BranchCondition(dispatcher, dispatchValue, dispatchConst, CompareOperation.EQUAL), bb); // TODO
+			throw new RuntimeException("TODO");
 		}
 		
 		

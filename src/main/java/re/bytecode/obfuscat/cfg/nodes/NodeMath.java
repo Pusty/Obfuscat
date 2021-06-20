@@ -92,7 +92,10 @@ public class NodeMath extends Node {
 	
 	@Override
 	public Node clone() {
-		return new NodeMath(type, operands.clone());
+		Node[] children = new Node[operands.length];
+		for(int i=0;i<children.length;i++)
+			children[i] = operands[i].clone();
+		return new NodeMath(type, children);
 	}
 	
 	@Override

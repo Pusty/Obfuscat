@@ -2,11 +2,7 @@ package re.bytecode.obfuscat.cfg;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import re.bytecode.obfuscat.cfg.nodes.Node;
 
 /**
@@ -16,7 +12,11 @@ public class BasicBlock implements Serializable {
 
 	private static final long serialVersionUID = 4567636696750578172L;
 
-	private Map<BranchCondition, BasicBlock> switchBlocks; // conditional branching
+	private BranchCondition conditionalJumpCondition; // if(condition)
+	private BasicBlock      conditionalJumpBlock; // if(condition) { # code }
+	
+	private Node switchNode; // switch case node
+	private List<BasicBlock> switchBlocks; // switch case branching
 	
 	private BasicBlock unconditional; // default branch, null = exitBlock
 	
@@ -29,7 +29,10 @@ public class BasicBlock implements Serializable {
 	 */
 	public BasicBlock() {
 		nodes = new ArrayList<Node>();
-		switchBlocks = new HashMap<BranchCondition, BasicBlock>();
+		conditionalJumpCondition = null;
+		conditionalJumpBlock = null;
+		switchNode = null;
+		switchBlocks = null;
 		unconditional = null;
 		returnValue = null;
 	}
@@ -76,11 +79,39 @@ public class BasicBlock implements Serializable {
 		this.returnValue = returnValue;
 	}
 	
-	/**
-	 * Return the map of branching conditionals and the associated target basic blocks
-	 * @return the map of conditional branches and their locations
-	 */
-	public Map<BranchCondition , BasicBlock> getSwitchBlocks() { return switchBlocks; }
+	public List<BasicBlock> getSwitchBlocks() { return switchBlocks; }
+	
+	public Node getSwitchNode() { return switchNode; }
+	
+	public void setSwitchBlock(List<BasicBlock> bbs, Node sN) {
+		if(bbs == null) throw new IllegalArgumentException("Switch Blocks may not be null");
+		if(!getNodes().contains(sN)) throw new IllegalArgumentException("Switch Node must be in the basic block");
+		if(this.conditionalJumpBlock != null) throw new IllegalArgumentException("Block with conditional jump may not have switch cases");
+		if(this.returnValue != null) throw new IllegalArgumentException("Switch block may not return a value directly");
+		if(this.unconditional != null) throw new IllegalArgumentException("Switch block may have an unconditional branch");
+		switchBlocks = bbs;
+		switchNode = sN;
+	}
+
+	public boolean isSwitchCase() {
+		return switchNode != null;
+	}
+	
+	public BasicBlock getConditionalBranch() { return conditionalJumpBlock; }
+	public BranchCondition getCondition() { return conditionalJumpCondition; }
+	
+	public void setConditionalBranch(BasicBlock b, BranchCondition bc) {
+		if(b == null) throw new IllegalArgumentException("Conditional Block may not be null");
+		if(bc == null) throw new IllegalArgumentException("Conditio may not be null");
+		if(switchBlocks != null && switchBlocks.size() > 0) throw new IllegalArgumentException("Block with conditional jump may not have switch cases");
+		conditionalJumpBlock = b;
+		conditionalJumpCondition = bc;
+	}
+	
+	public boolean isConditionalBlock() {
+		return conditionalJumpBlock != null;
+	}
+	
 	
 	/**
 	 * Return the internally used sequential list of instructions / nodes
@@ -136,22 +167,13 @@ public class BasicBlock implements Serializable {
 			newNodeList.add(n.equals(node)?newNode:n.replace(node, newNode));
 		}
 
-		
 		// commit the changes to all instructions
 		this.nodes.clear();
 		this.nodes.addAll(newNodeList);
 
-		Map<BranchCondition, BasicBlock> newSwitchBlocks = new HashMap<BranchCondition, BasicBlock>();
-		
-		// replace all occurrences of the node in the branch conditions
-		for(Entry<BranchCondition, BasicBlock> cond:switchBlocks.entrySet()) {
-			newSwitchBlocks.put(cond.getKey().replace(node, newNode), cond.getValue());
-		}
-		
-		// commit the changes to the conditional jumps
-		this.switchBlocks.clear();
-		this.switchBlocks.putAll(newSwitchBlocks);
-		
+
+		if(this.conditionalJumpCondition != null)
+			conditionalJumpCondition = conditionalJumpCondition.replace(node, newNode);
 		
 		if(returnValue != null)
 			returnValue = returnValue.equals(node)?newNode:returnValue.replace(node, newNode);
@@ -189,17 +211,31 @@ public class BasicBlock implements Serializable {
 		block.append("]");
 		
 		// append conditional branching text
-		for(Entry<BranchCondition, BasicBlock> e:getSwitchBlocks().entrySet()) {
+		if(isConditionalBlock()) {
 			block.append(" if(");
-			block.append(e.getKey().toString());
+			block.append(conditionalJumpCondition.toString());
 			block.append(") -> ");
-			block.append(e.getValue().getName());
+			block.append(conditionalJumpBlock.getName());
 			block.append(" ");
 		}
 		
-		// remove the last space
-		if(getSwitchBlocks().entrySet().size() > 0)
-			block.setLength(block.length()-1);
+		if(this.isSwitchCase()) {
+		
+			block.append(" [ ");
+			block.append(this.getSwitchNode().toString());
+			block.append(" ] ");
+			
+			for(BasicBlock sc:getSwitchBlocks()) {
+				block.append(" => ");
+				block.append(sc.getName());
+				block.append(" ");
+			}
+			
+			// remove the last space
+			if(getSwitchBlocks().size() > 0)
+				block.setLength(block.length()-1);
+		
+		}
 		
 		
 		if(isExitBlock()) {

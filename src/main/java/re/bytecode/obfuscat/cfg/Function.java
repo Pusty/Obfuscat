@@ -79,7 +79,7 @@ public class Function implements Serializable {
 		
 		map.put("blocks", blocks.size());
 		
-		int conditionals = 0;
+		int switches = 0;
 		//int nodesOverall = 0;
 		
 		for(BasicBlock block:blocks) {
@@ -87,11 +87,12 @@ public class Function implements Serializable {
 			for(Node node:block.getNodes()) {
 				traverseNode(already, node, map);
 			}
-			conditionals += block.getSwitchBlocks().size();
+			if(block.isSwitchCase())
+				switches += block.getSwitchBlocks().size();
 		//	nodesOverall += already.size();
 		}
 		
-		map.put("conditionals", conditionals);
+		map.put("switches", switches);
 		//map.put("nodes", nodesOverall);
 		
 		return map;

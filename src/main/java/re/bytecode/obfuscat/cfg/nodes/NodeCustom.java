@@ -38,7 +38,7 @@ public class NodeCustom extends Node {
 
 	@Override
 	public boolean checkCriteria(Node o) {
-		return ((NodeCustom) o).identifier.equals(identifier);
+		return this.identifier == null || ((NodeCustom) o).identifier == null || ((NodeCustom) o).identifier.equals(identifier);
 	}
 
 	@Override

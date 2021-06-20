@@ -492,45 +492,45 @@ public class EmulateFunction {
 		// System.out.println(currentBlock.getSwitchBlocks());
 
 		// Evalute the conditional branches and check if one should be taken
-		for (Entry<BranchCondition, BasicBlock> e : currentBlock.getSwitchBlocks().entrySet()) {
-			BranchCondition condition = e.getKey();
+		if(currentBlock.isConditionalBlock())  {
+			BranchCondition condition = currentBlock.getCondition();
 			int op1 = (Integer) nodeMap.get(condition.getOperant1());
 			int op2 = (Integer) nodeMap.get(condition.getOperant2());
 			// System.out.println(condition.getOperation()+" - "+op1+ " : "+op2);
 			switch (condition.getOperation()) {
 			case EQUAL:
 				if (op1 == op2) {
-					currentBlock = e.getValue();
+					currentBlock = currentBlock.getConditionalBranch();
 					return null;
 				}
 				break;
 			case NOTEQUAL:
 				if (op1 != op2) {
-					currentBlock = e.getValue();
+					currentBlock = currentBlock.getConditionalBranch();
 					return null;
 				}
 				break;
 			case LESSTHAN:
 				if (op1 < op2) {
-					currentBlock = e.getValue();
+					currentBlock = currentBlock.getConditionalBranch();
 					return null;
 				}
 				break;
 			case LESSEQUAL:
 				if (op1 <= op2) {
-					currentBlock = e.getValue();
+					currentBlock = currentBlock.getConditionalBranch();
 					return null;
 				}
 				break;
 			case GREATERTHAN:
 				if (op1 > op2) {
-					currentBlock = e.getValue();
+					currentBlock = currentBlock.getConditionalBranch();
 					return null;
 				}
 				break;
 			case GREATEREQUAL:
 				if (op1 >= op2) {
-					currentBlock = e.getValue();
+					currentBlock = currentBlock.getConditionalBranch();
 					return null;
 				}
 				break;
@@ -539,7 +539,14 @@ public class EmulateFunction {
 			}
 			
 			runtimeStatistics.put("conditionals", runtimeStatistics.getOrDefault("conditionals", 0)+1);
+		}else if(currentBlock.isSwitchCase()){
+			int caseIndex = (Integer) nodeMap.get(currentBlock.getSwitchNode());
+			if(caseIndex < 0 || caseIndex >= currentBlock.getSwitchBlocks().size())
+				throw new RuntimeException("Switch Jump out of bounds "+caseIndex+" @ "+currentBlock);
+			currentBlock = currentBlock.getSwitchBlocks().get(caseIndex);
+			return null;
 		}
+
 
 		// if the block has a unconditional follow up block then jump to it
 		if (!currentBlock.isExitBlock()) {

@@ -235,12 +235,13 @@ public class DSLParser {
 		// }
 
 		
-		HashMap<Integer, BasicBlock> blockMap = new HashMap<Integer, BasicBlock>();
+		HashMap<Integer, List<BasicBlock>> blockMap = new HashMap<Integer, List<BasicBlock>>();
 
 		// map each internal basic block a real basic block
 		for (DSLBasicBlock dslblock : blocks) {
-			BasicBlock bb = new BasicBlock();
-			blockMap.put(dslblock.getStart(), bb);
+			List<BasicBlock> bbl = new ArrayList<BasicBlock>();
+			bbl.add(new BasicBlock());
+			blockMap.put(dslblock.getStart(), bbl);
 		}
 
 		BasicBlock lastBlock;
@@ -250,7 +251,7 @@ public class DSLParser {
 		// TODO: probably smart to optimize this
 		for (DSLBasicBlock dslblock : blocks) {
 			lastBlock = currentBlock;
-			currentBlock = blockMap.get(dslblock.getStart());
+			currentBlock = blockMap.get(dslblock.getStart()).get(0);
 
 			// link sequential blocks together
 			if (lastBlock != null && !lastBlockExitBlock && lastBlock.isExitBlock())
@@ -522,16 +523,37 @@ public class DSLParser {
 					Node op2;
 					BranchCondition cond;
 					int[] branchList = inst.getBranchListInstructionPos();
+					boolean addedOne = false;
 					for(int i=0;i<branchList.length;i++) {
+						
+						if(currentBlock.isConditionalBlock()) { // already conditional
+							BasicBlock cascadeBlock = new BasicBlock();
+							currentBlock.setUnconditionalBranch(cascadeBlock);
+							blockMap.get(dslblock.getStart()).add(cascadeBlock);
+							currentBlock = cascadeBlock;
+							addedOne = true;
+						}
+						
 						op2 = new NodeConst(inst.getBranchIndex()[i]);
-						if (!currentBlock.getNodes().contains(op1))
-							currentBlock.getNodes().add(op1);
+						Node op1_clone = op1.clone();
+						if (!currentBlock.getNodes().contains(op1_clone))
+							currentBlock.getNodes().add(op1_clone);
 						if (!currentBlock.getNodes().contains(op2))
 							currentBlock.getNodes().add(op2);
-						cond = new BranchCondition(currentBlock, op1, op2, CompareOperation.EQUAL);
-						currentBlock.getSwitchBlocks().put(cond, blockMap.get(branchList[i]));
+						cond = new BranchCondition(currentBlock, op1_clone, op2, CompareOperation.EQUAL);
+						currentBlock.setConditionalBranch(blockMap.get(branchList[i]).get(0), cond);
+						
+						// as the switch cases require context to the switch variable, it needs to be cloned into each block (or stored in a variable)
+						// as custom nodes may return values and could be used in switch cases, catch this edge case and complain
+						if(addedOne) {
+							if(currentBlock.findNodes(new NodeCustom(null)).size() > 0)
+								throw new RuntimeException("Custom nodes may not be cloned for switch usage");
+						}
 					}
-					currentBlock.setUnconditionalBranch(blockMap.get(inst.getBranchDefaultInstructionPos()));
+					
+					currentBlock.setUnconditionalBranch(blockMap.get(inst.getBranchDefaultInstructionPos()).get(0));
+					
+
 					
 				}  else if (instRaw instanceof InstBranch) {
 					
@@ -578,7 +600,7 @@ public class DSLParser {
 						if (!currentBlock.getNodes().contains(op2))
 							currentBlock.getNodes().add(op2);
 						cond = new BranchCondition(currentBlock, op1, op2, operation);
-						currentBlock.getSwitchBlocks().put(cond, blockMap.get(inst.getBranchInstructionPos()));
+						currentBlock.setConditionalBranch(blockMap.get(inst.getBranchInstructionPos()).get(0), cond);
 						break;
 					case InstBranch.BRANCH_ICMPCC:
 						switch (inst.getInstruction() & 0xFF) {
@@ -611,10 +633,10 @@ public class DSLParser {
 						if (!currentBlock.getNodes().contains(op2))
 							currentBlock.getNodes().add(op2);
 						cond = new BranchCondition(currentBlock, op1, op2, operation);
-						currentBlock.getSwitchBlocks().put(cond, blockMap.get(inst.getBranchInstructionPos()));
+						currentBlock.setConditionalBranch(blockMap.get(inst.getBranchInstructionPos()).get(0), cond);
 						break;
 					case InstBranch.BRANCH_GOTO:
-						currentBlock.setUnconditionalBranch(blockMap.get(inst.getBranchInstructionPos()));
+						currentBlock.setUnconditionalBranch(blockMap.get(inst.getBranchInstructionPos()).get(0));
 						break;
 					case InstBranch.BRANCH_RETURN:
 						boolean returnValue = convertDescriptor(
@@ -736,7 +758,8 @@ public class DSLParser {
 
 		ArrayList<BasicBlock> returnValue = new ArrayList<BasicBlock>();
 		for (DSLBasicBlock dslblock : blocks) {
-			returnValue.add(blockMap.get(dslblock.getStart()));
+			for(BasicBlock bb:blockMap.get(dslblock.getStart()))
+				returnValue.add(bb);
 		}
 
 		return returnValue;

@@ -31,13 +31,12 @@ public class MergedFunction extends Function {
 	
 	public static MergedFunction mergeFunctions(Map<String, Function> functions, String entryPoint) {
 		
-		
-		BasicBlock handler = new BasicBlock();
 
 		List<BasicBlock> blocks = new ArrayList<BasicBlock>();
-		blocks.add(handler);
 		
-		Node op1 = new NodeLoad(MemorySize.INT, 0);
+		
+		BasicBlock handler = createSwitch(null, functions.get(entryPoint).getBlocks().get(0), 0);
+		blocks.add(handler);
 		
 		int variableSlots = 0;
 		int arguments     = 0;
@@ -84,12 +83,8 @@ public class MergedFunction extends Function {
 				blocks.add(currentBlock);
 			}
 			
-			if(!handler.getNodes().contains(op1))
-				handler.getNodes().add(op1);
-			Node op2 = new NodeConst(currentFunction.getName().hashCode());
-			if(!handler.getNodes().contains(op2))
-				handler.getNodes().add(op2);
-			handler.getSwitchBlocks().put(new BranchCondition(handler, op1, op2, CompareOperation.EQUAL), currentFunction.getBlocks().get(0));
+			handler = createSwitch(handler, currentFunction.getBlocks().get(0), currentFunction.getName().hashCode());
+			blocks.add(handler);
 		}
 		
 		// Increase one for added parameter
@@ -107,6 +102,19 @@ public class MergedFunction extends Function {
 		afterArgs[0] = int.class;
 		
 		return new MergedFunction(entryPoint+"_merged", blocks, afterArgs, variableSlots, returnSomething);
+	}
+	
+	private static BasicBlock createSwitch(BasicBlock prev, BasicBlock connected, int id) {
+		BasicBlock newOne = new BasicBlock();
+		if(prev != null)
+			prev.setUnconditionalBranch(newOne);
+		Node op1 = new NodeLoad(MemorySize.INT, 0);
+		Node op2 = new NodeConst(id);
+		newOne.getNodes().add(op1);
+		newOne.getNodes().add(op2);
+		newOne.setConditionalBranch(connected, new BranchCondition(newOne, op1, op2, CompareOperation.EQUAL));
+		return newOne;
+		
 	}
 	
 }

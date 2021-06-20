@@ -60,22 +60,10 @@ public class ThumbCodeGenerationTest {
 
 	private static int INST_COUNT;
 	private static int INST_SIZE;
-	
-	private static long LAST_PC;
 
 	private static class InstructionCountHook implements CodeHook {
 		public void hook(Unicorn u, long address, int size, Object user_data) {
 			
-			Long currentPC = ((Long) u.reg_read(Unicorn.UC_ARM_REG_PC)).longValue();
-			
-			
-			// this is super annoying
-			// IT blocks don't cause instruction events when the flags aren't set
-			// this may be correct behavior but I won't count it anyways
-			// 6 byte instruction can only be caused because of IT blocks
-			if(currentPC-LAST_PC == 0x6) {
-				INST_COUNT++;
-			}
 			
 			/*{
 			Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
@@ -90,7 +78,6 @@ public class ThumbCodeGenerationTest {
 			}*/
 			
 			INST_COUNT++;
-			LAST_PC = currentPC;
 			
 			/*{
 				Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
@@ -342,7 +329,7 @@ public class ThumbCodeGenerationTest {
 
 		assertTrue("Binary Size is not multiple of Generator " + INST_SIZE,
 				(INST_SIZE % ThumbGenerationUtil.getCodeSize()) == 0);
-		assertTrue("Instruction Executed is not multiple of Generator " + INST_COUNT,
+		assertTrue("Instruction Executed is not multiple of Generator " + INST_COUNT, // TODO
 			(INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
 
 		return r_r0.intValue();

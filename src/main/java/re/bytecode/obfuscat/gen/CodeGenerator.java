@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.Obfuscat;
 import re.bytecode.obfuscat.cfg.BasicBlock;
-import re.bytecode.obfuscat.cfg.BranchCondition;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
@@ -267,11 +265,13 @@ public abstract class CodeGenerator {
 				countOccuranceMethod(node, alreadyPassed);
 			}
 			
-			for(Entry<BranchCondition, BasicBlock> e : bb.getSwitchBlocks().entrySet()) {
-				countOccurances.put(e.getKey().getOperant1(), countOccurances.getOrDefault(e.getKey().getOperant1(), 0)+1);
-				if(e.getKey().getOperant2() != e.getKey().getOperant1())
-					countOccurances.put(e.getKey().getOperant2(), countOccurances.getOrDefault(e.getKey().getOperant2(), 0)+1);
+			if(bb.isConditionalBlock()) {
+				countOccurances.put(bb.getCondition().getOperant1(), countOccurances.getOrDefault(bb.getCondition().getOperant1(), 0)+1);
+				if(bb.getCondition().getOperant2() != bb.getCondition().getOperant1())
+					countOccurances.put(bb.getCondition().getOperant2(), countOccurances.getOrDefault(bb.getCondition().getOperant2(), 0)+1);
 			}
+			
+
 			
 			if(bb.getReturnValue() != null)
 				countOccurances.put(bb.getReturnValue(), countOccurances.getOrDefault(bb.getReturnValue(), 0)+1);
@@ -290,10 +290,16 @@ public abstract class CodeGenerator {
 
 			if (slots.size() > maxNodeID)
 				maxNodeID = slots.size();
-
-			for (Entry<BranchCondition, BasicBlock> e : bb.getSwitchBlocks().entrySet()) {
-				iterateBlocks(e.getValue());
+			
+			if(bb.isConditionalBlock()) {
+				iterateBlocks(bb.getConditionalBranch());
 			}
+			
+			if(bb.isSwitchCase()) {
+				for(BasicBlock c:bb.getSwitchBlocks())
+					iterateBlocks(c);
+			}
+
 
 			if (!bb.isExitBlock())
 				iterateBlocks(bb.getUnconditionalBranch());
@@ -336,8 +342,13 @@ public abstract class CodeGenerator {
 
 		// iterate all connected basic blocks
 		
-		for (Entry<BranchCondition, BasicBlock> e : block.getSwitchBlocks().entrySet()) {
-			generateBlockRecursive(compiledBlocks, processedBlocks, e.getValue());
+		if(block.isConditionalBlock()) {
+			generateBlockRecursive(compiledBlocks, processedBlocks, block.getConditionalBranch());
+		}
+		
+		if(block.isSwitchCase()) {
+			for(BasicBlock c:block.getSwitchBlocks())
+				generateBlockRecursive(compiledBlocks, processedBlocks, c);
 		}
 
 		if (!block.isExitBlock())

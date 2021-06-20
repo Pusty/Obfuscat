@@ -3,11 +3,8 @@ package re.bytecode.obfuscat.gen;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
-
 import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
-import re.bytecode.obfuscat.cfg.BranchCondition;
 import re.bytecode.obfuscat.cfg.CompareOperation;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MergedFunction;
@@ -695,9 +692,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		for (CompiledBasicBlock cbb : blocks) {
 			positionMap.put(cbb.getBlock(), curPos);
 			curPos += this.getBlockSize(cbb.getBlock()) * getNodeSize(); // the size for the nodes
-			curPos += cbb.getBlock().getSwitchBlocks().size() * getNodeSize(); // the size for conditional jumps
+			curPos += cbb.getBlock().isConditionalBlock()?getNodeSize():0;
+			//curPos += cbb.getBlock().getSwitchBlocks().size() * getNodeSize(); // the size for conditional jumps
 			curPos += getNodeSize(); // the size for a unconditional jump or return
-			curPos += getNodeSize()*2; // the size for jump preparing and jump choice
 		}
 		
 
@@ -706,142 +703,55 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			assert (cbb instanceof ThumbCompiledBasicBlock);
 			// current position is at the end of this basic block
 			int position = positionMap.get(cbb.getBlock()) + this.getBlockSize(cbb.getBlock()) * getNodeSize();
-			position += this.getNodeSize(); // after init
-			position += cbb.getBlock().getSwitchBlocks().size()*this.getNodeSize(); // each jump
-			position += this.getNodeSize(); // after jump
-			int[] prepareJumps = new int[getNodeSize()];;
-			
-			prepareJumps[0] = 0x00; // NOP
-			prepareJumps[1] = 0xBF;
-			
-			prepareJumps[2] = 0x00; // NOP
-			prepareJumps[3] = 0xBF;
 
-			prepareJumps[4] = 0x00; // NOP
-			prepareJumps[5] = 0xBF;
-			
-			prepareJumps[6] = 0x00; // NOP
-			prepareJumps[7] = 0xBF;
-			
-			// LDRSH r6, [pc, #2] - BF F9 02 60
-			prepareJumps[8] = 0xBF;
-			prepareJumps[9] = 0xF9;
-			prepareJumps[10] = 0x02;
-			prepareJumps[11] = 0x60;
-		
-			// B 4 - 00 E0 
-			prepareJumps[12] = 0x00;
-			prepareJumps[13] = 0xE0;
-			
-			// 6 instructions
-			int jumpOffset = 0 | 1; // default jump
-			// this is skipped
-			prepareJumps[14] = jumpOffset&0xFF;
-			prepareJumps[15] = (jumpOffset>>8)&0xFF;
-			
-			((ThumbCompiledBasicBlock) cbb).appendBytes(prepareJumps);
-
-			
-			for (Entry<BranchCondition, BasicBlock> e : cbb.getBlock().getSwitchBlocks().entrySet()) {
-
+			if(cbb.getBlock().isConditionalBlock()) {
 				int[] branches = new int[getNodeSize()];
 
+
 				// load values to compare
-				loadNode(branches, 0, 0, e.getKey().getOperant1());
-				loadNode(branches, 2, 1, e.getKey().getOperant2());
+				loadNode(branches, 0, 0, cbb.getBlock().getCondition().getOperant1());
+				loadNode(branches, 2, 1, cbb.getBlock().getCondition().getOperant2());
 
 				// cmp r0, r1 - 88 42
 				branches[4] = 0x88;
 				branches[5] = 0x42;
 				
-				//IT <cond> - 08 BF
-				branches[6] = 0x08 | (conditionCode(e.getKey().getOperation())<<4); // NOP
-				branches[7] = 0xBF;
-				
-				// LDRSH<cond> r6, [pc, #2] - BF F9 02 60
-				branches[8] = 0xBF;
-				branches[9] = 0xF9;
-				branches[10] = 0x02;
-				branches[11] = 0x60;
-				
-				// B 4 - 00 E0 
-				branches[12] = 0x00;
-				branches[13] = 0xE0;
-				
-				// 6 instructions
-				
-				jumpOffset = (positionMap.get(e.getValue()) - position) | 1;
-				// this is skipped
-				branches[14] = jumpOffset&0xFF;
-				branches[15] = (jumpOffset>>8)&0xFF;
-				
+				branches[6] = 0xAF; // NOP.W
+				branches[7] = 0xF3;
+				branches[8] = 0x00;
+				branches[9] = 0x80;
+	
+				branches[10] = 0x00; // NOP
+				branches[11] = 0xBF;
+
+				// calculate the actual offset to jump
+				int jumpOffsetConditonal = positionMap.get(cbb.getBlock().getConditionalBranch()) - (position + 4 + 12);
+
+				// add the conditional jump
+				conditionalJump(branches, 12, jumpOffsetConditonal, cbb.getBlock().getCondition().getOperation());
+
 				// append the compiled conditional jump
 				((ThumbCompiledBasicBlock) cbb).appendBytes(branches);
+				position += this.getNodeSize(); // add the conditional jump size to the current position
 				// 6 instructions
 			}
 			
-			
-			int[] before = new int[getNodeSize()];;
-			
-			// ADD R6, PC - 7E 44
-			before[0] = 0x7E; 
-			before[1] = 0x44;
-
-			// ADDS R6, R6, #0xC - 0C 36
-			before[2] = 0x0C; 
-			before[3] = 0x36;
-			
-			before[4] = 0xAF; // NOP.W
-			before[5] = 0xF3;
-			before[6] = 0x00;
-			before[7] = 0x80;
-			
-			before[8] = 0xAF; // NOP.W
-			before[9] = 0xF3;
-			before[10] = 0x00;
-			before[11] = 0x80;
-			
-			before[12] = 0x00; // NOP
-			before[13] = 0xBF;
-			
-			// BX R6 - 30 47
-			before[14] = 0x30;
-			before[15] = 0x47;
-			
-			
-			((ThumbCompiledBasicBlock) cbb).appendBytes(before);
-			
-			
-			int[] done = new int[getNodeSize()];
-
-			done[0] = 0xAF; // NOP.W
-			done[1] = 0xF3;
-			done[2] = 0x00;
-			done[3] = 0x80;
-
-			done[4] = 0x00; // NOP
-			done[5] = 0xBF;
-
-			if (!cbb.getBlock().isExitBlock()) {
-
-				done[6] = 0x00; // NOP
-				done[7] = 0xBF;
-
-				done[8] = 0x00; // NOP
-				done[9] = 0xBF;
-
-				done[10] = 0x00; // NOP
-				done[11] = 0xBF;
-
-				// if this isn't a returning block unconditionally jump to the next one
-				jumpOffset = positionMap.get(cbb.getBlock().getUnconditionalBranch()) - (position + 4 + 12);
-				conditionalJump(done, 12, jumpOffset, null);
-
-				// 6 instructions
-
-			} else {
+			if(cbb.getBlock().isSwitchCase()) {
+				throw new RuntimeException("Not implemented TODO");
+				// TODO
+			}else if(cbb.getBlock().isExitBlock()) {
+				int[] done = new int[getNodeSize()];
+				
+				done[0] = 0xAF; // NOP.W
+				done[1] = 0xF3;
+				done[2] = 0x00;
+				done[3] = 0x80;
+	
+				done[4] = 0x00; // NOP
+				done[5] = 0xBF;
+				
 				// if this is an exit block
-
+				
 				// load the return value into r0 before returning if there is a return value
 				if (cbb.getBlock().getReturnValue() != null) {
 					loadNode(done, 6, 0, cbb.getBlock().getReturnValue());
@@ -869,12 +779,40 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				// pop {pc, r6, r7} - C0 BD
 				done[14] = 0xC0;
 				done[15] = 0xBD;
+				
+				((ThumbCompiledBasicBlock) cbb).appendBytes(done);
 
 				// 6 instructions
-			}
+			}else {			
+				// Normal direct jump	
+				int[] done = new int[getNodeSize()];
+	
+				done[0] = 0xAF; // NOP.W
+				done[1] = 0xF3;
+				done[2] = 0x00;
+				done[3] = 0x80;
+	
+				done[4] = 0x00; // NOP
+				done[5] = 0xBF;
+
+				done[6] = 0x00; // NOP
+				done[7] = 0xBF;
+
+				done[8] = 0x00; // NOP
+				done[9] = 0xBF;
+
+				done[10] = 0x00; // NOP
+				done[11] = 0xBF;
+
+				// if this isn't a returning block unconditionally jump to the next one
+				int jumpOffset = positionMap.get(cbb.getBlock().getUnconditionalBranch()) - (position + 4 + 12);
+				conditionalJump(done, 12, jumpOffset, null);
+
+				// 6 instructions
 
 			// append the last part of code
 			((ThumbCompiledBasicBlock) cbb).appendBytes(done);
+			}
 		}
 		
 
