@@ -103,6 +103,7 @@ public class LiteralEncodePass extends Pass {
 			int a = getContext().rand();
 			int b = getContext().rand();
 			int c = getContext().rand();
+		
 					
 			if(b % 2 == 0) b++; // make uneven
 			

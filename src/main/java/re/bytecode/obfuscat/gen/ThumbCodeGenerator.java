@@ -37,8 +37,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	public ThumbCodeGenerator(Context context, Function function) {
 		super(context, function);
 	}
-	
-	
+
 	public String description() {
 		return "A code generator for ARMv8 Thumb2 code";
 	}
@@ -114,6 +113,26 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 	}
 
+	
+	private int conditionCode(CompareOperation type) {
+		switch (type) {
+		case EQUAL:
+			return 0;
+		case NOTEQUAL:
+			return 1;
+		case LESSTHAN:
+			return 11;
+		case LESSEQUAL:
+			return 13;
+		case GREATERTHAN:
+			return 12;
+		case GREATEREQUAL:
+			return 10;
+		default:
+			throw new RuntimeException("Not implemented");
+		}
+	}
+	
 	// As conditional and unconditional jump encoding is non-trivial
 	// This function is here to handle it
 	// Implemented based on the encoding specifications of the ARMv8 Thumb Manual
@@ -143,28 +162,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			j2 = 1;
 			isConditional = false;
 		} else {
-			switch (type) {
-			case EQUAL:
-				cond = 0;
-				break;
-			case NOTEQUAL:
-				cond = 1;
-				break;
-			case LESSTHAN:
-				cond = 11;
-				break;
-			case LESSEQUAL:
-				cond = 13;
-				break;
-			case GREATERTHAN:
-				cond = 12;
-				break;
-			case GREATEREQUAL:
-				cond = 10;
-				break;
-			default:
-				throw new RuntimeException("Not implemented");
-			}
+			cond = conditionCode(type);
 		}
 
 		if (position < 0) {
@@ -229,7 +227,6 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 				data[0] = 0x40 | (value >> 12) & 0xF;
 				data[1] = 0xF2 | (((value >> 11) & 1) << 2);
-				;
 				data[2] = value & 0xFF;
 				data[3] = (((value >> 8) & 0x7) << 4);
 
@@ -499,7 +496,6 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			}
 		});
 
-
 		// Encode Math Operations
 		codeMapping.put(NodeMath.class, new ThumbNodeCodeGenerator(new int[getNodeSize()]) {
 
@@ -510,8 +506,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 				Node[] children = node.children();
 
-				
-				if(node.getOperation().getOperandCount() == 1) {
+				if (node.getOperation().getOperandCount() == 1) {
 					loadNode(data, 0, 0, children[0]);
 					switch (((NodeMath) node).getOperation()) {
 					case NOT:
@@ -548,7 +543,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					data[15] = 0x80;
 
 					// 6 instructions
-				}else if(node.getOperation().getOperandCount() == 2) {
+				} else if (node.getOperation().getOperandCount() == 2) {
 					for (int i = 0; i < data.length / 2; i++) {
 						data[i * 2] = 0x00; // NOP
 						data[i * 2 + 1] = 0xBF;
@@ -653,7 +648,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					storeNode(data, 14, node);
 
 					// 6 instructions
-				}else {
+				} else {
 					throw new RuntimeException("Not implemented");
 				}
 			}
@@ -692,9 +687,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 		HashMap<BasicBlock, Integer> positionMap = new HashMap<BasicBlock, Integer>();
 		int curPos = 0;
-		
-		curPos +=  getNodeSize(); // entry point
-		curPos +=  getNodeSize(); // pretext
+
+		curPos += getNodeSize(); // entry point
+		curPos += getNodeSize(); // pretext
 
 		// Map BasicBlocks to their position in compiled format
 		for (CompiledBasicBlock cbb : blocks) {
@@ -702,46 +697,121 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			curPos += this.getBlockSize(cbb.getBlock()) * getNodeSize(); // the size for the nodes
 			curPos += cbb.getBlock().getSwitchBlocks().size() * getNodeSize(); // the size for conditional jumps
 			curPos += getNodeSize(); // the size for a unconditional jump or return
+			curPos += getNodeSize()*2; // the size for jump preparing and jump choice
 		}
+		
 
 		// Iterate the basic blocks and add the conditional and unconditional jumps
 		for (CompiledBasicBlock cbb : blocks) {
 			assert (cbb instanceof ThumbCompiledBasicBlock);
 			// current position is at the end of this basic block
 			int position = positionMap.get(cbb.getBlock()) + this.getBlockSize(cbb.getBlock()) * getNodeSize();
+			position += this.getNodeSize(); // after init
+			position += cbb.getBlock().getSwitchBlocks().size()*this.getNodeSize(); // each jump
+			position += this.getNodeSize(); // after jump
+			int[] prepareJumps = new int[getNodeSize()];;
+			
+			prepareJumps[0] = 0x00; // NOP
+			prepareJumps[1] = 0xBF;
+			
+			prepareJumps[2] = 0x00; // NOP
+			prepareJumps[3] = 0xBF;
+
+			prepareJumps[4] = 0x00; // NOP
+			prepareJumps[5] = 0xBF;
+			
+			prepareJumps[6] = 0x00; // NOP
+			prepareJumps[7] = 0xBF;
+			
+			// LDRSH r6, [pc, #2] - BF F9 02 60
+			prepareJumps[8] = 0xBF;
+			prepareJumps[9] = 0xF9;
+			prepareJumps[10] = 0x02;
+			prepareJumps[11] = 0x60;
+		
+			// B 4 - 00 E0 
+			prepareJumps[12] = 0x00;
+			prepareJumps[13] = 0xE0;
+			
+			// 6 instructions
+			int jumpOffset = 0 | 1; // default jump
+			// this is skipped
+			prepareJumps[14] = jumpOffset&0xFF;
+			prepareJumps[15] = (jumpOffset>>8)&0xFF;
+			
+			((ThumbCompiledBasicBlock) cbb).appendBytes(prepareJumps);
+
+			
 			for (Entry<BranchCondition, BasicBlock> e : cbb.getBlock().getSwitchBlocks().entrySet()) {
 
 				int[] branches = new int[getNodeSize()];
 
-				branches[0] = 0xAF; // NOP.W
-				branches[1] = 0xF3;
-				branches[2] = 0x00;
-				branches[3] = 0x80;
-
-				branches[4] = 0x00; // NOP
-				branches[5] = 0xBF;
-
 				// load values to compare
-				loadNode(branches, 6, 0, e.getKey().getOperant1());
-				loadNode(branches, 8, 1, e.getKey().getOperant2());
+				loadNode(branches, 0, 0, e.getKey().getOperant1());
+				loadNode(branches, 2, 1, e.getKey().getOperant2());
 
 				// cmp r0, r1 - 88 42
-				branches[10] = 0x88;
-				branches[11] = 0x42;
-
-				// calculate the actual offset to jump
-				int jumpOffset = positionMap.get(e.getValue()) - (position + 4 + 12);
-
-				// add the conditional jump
-				conditionalJump(branches, 12, jumpOffset, e.getKey().getOperation());
-
+				branches[4] = 0x88;
+				branches[5] = 0x42;
+				
+				//IT <cond> - 08 BF
+				branches[6] = 0x08 | (conditionCode(e.getKey().getOperation())<<4); // NOP
+				branches[7] = 0xBF;
+				
+				// LDRSH<cond> r6, [pc, #2] - BF F9 02 60
+				branches[8] = 0xBF;
+				branches[9] = 0xF9;
+				branches[10] = 0x02;
+				branches[11] = 0x60;
+				
+				// B 4 - 00 E0 
+				branches[12] = 0x00;
+				branches[13] = 0xE0;
+				
+				// 6 instructions
+				
+				jumpOffset = (positionMap.get(e.getValue()) - position) | 1;
+				// this is skipped
+				branches[14] = jumpOffset&0xFF;
+				branches[15] = (jumpOffset>>8)&0xFF;
+				
 				// append the compiled conditional jump
 				((ThumbCompiledBasicBlock) cbb).appendBytes(branches);
-				position += this.getNodeSize(); // add the conditional jump size to the current position
-
 				// 6 instructions
 			}
+			
+			
+			int[] before = new int[getNodeSize()];;
+			
+			// ADD R6, PC - 7E 44
+			before[0] = 0x7E; 
+			before[1] = 0x44;
 
+			// ADDS R6, R6, #0xC - 0C 36
+			before[2] = 0x0C; 
+			before[3] = 0x36;
+			
+			before[4] = 0xAF; // NOP.W
+			before[5] = 0xF3;
+			before[6] = 0x00;
+			before[7] = 0x80;
+			
+			before[8] = 0xAF; // NOP.W
+			before[9] = 0xF3;
+			before[10] = 0x00;
+			before[11] = 0x80;
+			
+			before[12] = 0x00; // NOP
+			before[13] = 0xBF;
+			
+			// BX R6 - 30 47
+			before[14] = 0x30;
+			before[15] = 0x47;
+			
+			
+			((ThumbCompiledBasicBlock) cbb).appendBytes(before);
+			
+			
 			int[] done = new int[getNodeSize()];
 
 			done[0] = 0xAF; // NOP.W
@@ -764,14 +834,14 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				done[11] = 0xBF;
 
 				// if this isn't a returning block unconditionally jump to the next one
-				int jumpOffset = positionMap.get(cbb.getBlock().getUnconditionalBranch()) - (position + 4 + 12);
+				jumpOffset = positionMap.get(cbb.getBlock().getUnconditionalBranch()) - (position + 4 + 12);
 				conditionalJump(done, 12, jumpOffset, null);
 
 				// 6 instructions
 
 			} else {
 				// if this is an exit block
-				
+
 				// load the return value into r0 before returning if there is a return value
 				if (cbb.getBlock().getReturnValue() != null) {
 					loadNode(done, 6, 0, cbb.getBlock().getReturnValue());
@@ -782,23 +852,22 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 				// "free" the stack variables / reset the stack pointer to the original position
 				int variableCount = (this.getFunction().getVariables() + getNodeSlotCount());
-				if (variableCount >= 256*2)
+				if (variableCount >= 256 * 2)
 					throw new RuntimeException("Too much stack space reserved");
 
 				int spOffset = variableCount * 4;
-				
+
 				// addw sp, sp, #0x1 - 0D F2 01 0D
 				done[8] = 0x0D;
 				done[9] = 0xF2;
 				done[10] = spOffset & 0xFF;
 				done[11] = 0x0D | (((spOffset >> 8) & 0x7) << 4);
-				
+
 				done[12] = 0x00; // NOP
 				done[13] = 0xBF;
-				
-				
-				// pop {pc, r7} - 80 BD
-				done[14] = 0x80;
+
+				// pop {pc, r6, r7} - C0 BD
+				done[14] = 0xC0;
 				done[15] = 0xBD;
 
 				// 6 instructions
@@ -807,6 +876,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			// append the last part of code
 			((ThumbCompiledBasicBlock) cbb).appendBytes(done);
 		}
+		
 
 	}
 
@@ -814,70 +884,65 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	public int[] finish(List<CompiledBasicBlock> compiledBlocks) {
 
 		List<int[]> l = new ArrayList<int[]>();
-		
+
 		// This entry point code is to streamline MergedFunctions
 		int[] entrypoint = new int[getNodeSize()];
-		
-		
+
 		// point r8 to pretext for calls
 		// add r8, pc, 13 - 0F F2 0D 08
 		entrypoint[0] = 0x0F;
 		entrypoint[1] = 0xF2;
 		entrypoint[2] = 0x0D;
 		entrypoint[3] = 0x08;
-		
+
 		entrypoint[4] = 0xAF; // NOP.W
 		entrypoint[5] = 0xF3;
 		entrypoint[6] = 0x00;
 		entrypoint[7] = 0x80;
-		
-		if(this.getFunction() instanceof MergedFunction) {
-			
-			
+
+		if (this.getFunction() instanceof MergedFunction) {
+
 			// mov r3, r2 - 13 46
 			entrypoint[8] = 0x13;
 			entrypoint[9] = 0x46;
-			
+
 			// mov r2, r1 - 0A 46
 			entrypoint[10] = 0x0A;
 			entrypoint[11] = 0x46;
-			
+
 			// mov r1, r0 - 01 46
 			entrypoint[12] = 0x01;
 			entrypoint[13] = 0x46;
-			
+
 			// merged functions first argument is the function hash, 0 is entry point
-			// LDR r0, 0 - 00 48 
+			// LDR r0, 0 - 00 48
 			entrypoint[14] = 0x00;
 			entrypoint[15] = 0x48;
-			
-			
-		}else {
+
+		} else {
 			entrypoint[8] = 0x00; // NOP
 			entrypoint[9] = 0xBF;
-			
+
 			entrypoint[10] = 0x00; // NOP
 			entrypoint[11] = 0xBF;
-			
+
 			entrypoint[12] = 0x00; // NOP
 			entrypoint[13] = 0xBF;
-			
+
 			entrypoint[14] = 0x00; // NOP
 			entrypoint[15] = 0xBF;
 		}
-		
 
 		// 6 instructions
 
-		
 		l.add(entrypoint);
 
 		int[] pretext = new int[getNodeSize()];
 
 		// set r8 = current address
 
-		// push {lr, r7} - 80 B5
-		pretext[0] = 0x80;
+		// push {lr, r6, r7} - C0 B5
+		pretext[0] = 0xC0;
 		pretext[1] = 0xB5;
 
 		int variableCount = this.getFunction().getVariables();
@@ -887,12 +952,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		int nodeCount = getNodeSlotCount();
 		if (nodeCount >= 256)
 			throw new RuntimeException("Too much stack space reserved " + nodeCount);
-		
 
-
-		
 		int spOffset = (variableCount + nodeCount) * 4;
-		
+
 		// System.out.println(nodeCount + " - "+ variableCount+ " - "+spOffset);
 
 		// subw sp, sp, #0x1 - AD F2 01 0D
@@ -1191,6 +1253,5 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		}
 
 	}
-
 
 }

@@ -38,6 +38,8 @@ public class CLI {
 		//main2(new String[] { "help", "info", "KeyBuilder" });
 		main2(new String[] { "emulate", "'0000'" });
 	}*/
+	
+	//TODO: rewrite how arrays are parsed
 
 	public static void main(String[] args) {
 
@@ -683,7 +685,7 @@ public class CLI {
 			for(String key:Obfuscat.builders.keySet()) {
 				System.out.println(key+" : "+Obfuscat.getBuilder(key).description());
 			}
-		}else if(args.length == 2 && args[1].equals("pass")) {
+		}else if(args.length == 2 && args[1].equals("obfuscate")) {
 			for(String key:Obfuscat.passes.keySet()) {
 				System.out.println(key+" : "+Obfuscat.getPass(key).description());
 			}
@@ -752,7 +754,7 @@ public class CLI {
 					"    emulate [args]  [-input filename] - Emulate the input function and print statistics");
 			System.out.println("    help - Provide an overview over supported commands");
 			System.out.println("    help builder - List all registered builders");
-			System.out.println("    help pass - List all registered passes");
+			System.out.println("    help obfuscate - List all registered obfuscation passes");
 			System.out.println("    help generator - List all registered generators");
 			System.out.println("    help info <builder/pass/generator> - List information for the provided builder/pass or generator");
 		}

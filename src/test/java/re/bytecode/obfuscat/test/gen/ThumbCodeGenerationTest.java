@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,10 @@ import unicorn.UnicornException;
 
 public class ThumbCodeGenerationTest {
 
+	// Toggle machine code & name dumping
+	private static final boolean VERBOSE = false;
+	
+	
 	// memory address where emulation starts
 	private static final int ADDRESS = 0x1000000;
 	// memory address where the heap starts
@@ -53,37 +58,52 @@ public class ThumbCodeGenerationTest {
 		}
 	}
 
-	// callback for tracing instruction
-	@SuppressWarnings("unused")
-	private static class MyCodeHook implements CodeHook {
+	private static int INST_COUNT;
+	private static int INST_SIZE;
+	
+	private static long LAST_PC;
+
+	private static class InstructionCountHook implements CodeHook {
 		public void hook(Unicorn u, long address, int size, Object user_data) {
-
-			byte[] data = u.mem_read(address, 2);
-
-			if ((data[1] & 0xFF) == 0x90) {
+			
+			Long currentPC = ((Long) u.reg_read(Unicorn.UC_ARM_REG_PC)).longValue();
+			
+			
+			// this is super annoying
+			// IT blocks don't cause instruction events when the flags aren't set
+			// this may be correct behavior but I won't count it anyways
+			// 6 byte instruction can only be caused because of IT blocks
+			if(currentPC-LAST_PC == 0x6) {
+				INST_COUNT++;
+			}
+			
+			/*{
+			Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
+				
+				System.out.printf(">>> PC is 0x%x 0x%x\n", r_pc.intValue(), INST_COUNT);
+				
+				
+				if(r_pc.intValue()%0x10 == 0 && INST_COUNT % 6 != 0) {
+					System.out.println(Arrays.toString(u.mem_read(r_pc.longValue(), 8)));
+					System.out.println("^^^^^^^^^^^^^^^^");
+				}
+			}*/
+			
+			INST_COUNT++;
+			LAST_PC = currentPC;
+			
+			/*{
 				Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
 				Long r_r0 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R0);
 				Long r_r1 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R1);
 				Long r_r2 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R2);
 				Long r_r3 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R3);
-				Long r_r4 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R4);
+				Long r_r6 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R6);
 				// System.out.printf(">>> Tracing instruction at 0x%x\n", address);
-				System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R3 0x%x R4 0x%x \n", r_pc.intValue(),
-						r_r0.intValue(), r_r1.intValue(), r_r2.intValue(), r_r3.intValue(), r_r4.intValue());
+				System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R3 0x%x R6 0x%x \n", r_pc.intValue(),
+						r_r0.intValue(), r_r1.intValue(), r_r2.intValue(), r_r3.intValue(), r_r6.intValue());
 
-			}
-
-			// if((data[0]&0xFF) == 0x00 && (data[1]&0xFF) == 0xBD) u.emu_stop(); // stop at
-			// ret
-		}
-	}
-
-	private static int INST_COUNT;
-	private static int INST_SIZE;
-
-	private static class InstructionCountHook implements CodeHook {
-		public void hook(Unicorn u, long address, int size, Object user_data) {
-			INST_COUNT++;
+			}*/
 		}
 	}
 
@@ -234,13 +254,12 @@ public class ThumbCodeGenerationTest {
 
 		writeSystemRegisters(globalUnicorn);
 
-		//System.out.println();
 		byte[] codeData = new byte[code.length];
 		for (int i = 0; i < code.length; i++) {
 			codeData[i] = (byte) code[i];
-			//System.out.print(String.format("%02X", codeData[i]));
+			if(VERBOSE) System.out.print(String.format("%02X", codeData[i]));
 		}
-		//System.out.println();
+		if(VERBOSE) System.out.println();
 		INST_SIZE = code.length;
 
 		// write machine code to be emulated to memory
@@ -324,7 +343,7 @@ public class ThumbCodeGenerationTest {
 		assertTrue("Binary Size is not multiple of Generator " + INST_SIZE,
 				(INST_SIZE % ThumbGenerationUtil.getCodeSize()) == 0);
 		assertTrue("Instruction Executed is not multiple of Generator " + INST_COUNT,
-				(INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
+			(INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
 
 		return r_r0.intValue();
 	}
@@ -349,8 +368,8 @@ public class ThumbCodeGenerationTest {
 				execList.add(ef[1]);
 			}
 			
-			assertTrue("Changes in size "+sizeList, sizeList.stream().distinct().count() == 1);
-			assertTrue("Changes in executed instructions "+execList, execList.stream().distinct().count() == 1);
+			assertTrue("Changes in size "+sizeList+" @ Nr. "+(i+1), sizeList.stream().distinct().count() == 1);
+			assertTrue("Changes in executed instructions "+execList+" @ Nr. "+(i+1), execList.stream().distinct().count() == 1);
 		}
 	}
 	
@@ -360,6 +379,8 @@ public class ThumbCodeGenerationTest {
 		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
 		Integer fib = (Integer) m.invoke(null, args);
 
+		if(VERBOSE) System.out.println("Testing: "+fileName+"."+functionName+(passes==null?"":" with "+Arrays.toString(passes)));
+		
 		int[] code = ThumbGenerationUtil.generateCode(data, functionName, passes);
 
 		// private static int INST_COUNT;
@@ -372,6 +393,8 @@ public class ThumbCodeGenerationTest {
 			throws Exception {
 		Function func = Obfuscat.buildFunction(builder, pars);
 
+		if(VERBOSE) System.out.println("Testing: "+builder+(passes==null?"":" with "+Arrays.toString(passes)));
+		
 		if (passes != null) {
 			for (String pass : passes)
 				func = Obfuscat.applyPass(func, pass);
@@ -385,6 +408,9 @@ public class ThumbCodeGenerationTest {
 	public static long runTestMerged(String fileName, String functionName, String[] passes, Object... args)
 			throws Exception {
 		byte[] data = SampleLoader.loadFile(fileName);
+		
+		if(VERBOSE) System.out.println("Testing Merged: "+fileName+"."+functionName+(passes==null?"":" with "+Arrays.toString(passes)));
+		
 		int[] code = ThumbGenerationUtil.generateCodeMerged(data, functionName, passes);
 
 		long returnValue = test_thumb(code, args);
@@ -432,7 +458,7 @@ public class ThumbCodeGenerationTest {
 
 	}
 	
-	//@Test
+	@Test
 	public void testReuseBuilder() throws Exception {
 		HashMap<String, Object> args = new HashMap<String, Object>();
 		runTestBuilder("Test", args, null, 5);
