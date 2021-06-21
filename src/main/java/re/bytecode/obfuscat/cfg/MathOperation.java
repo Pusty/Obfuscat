@@ -54,6 +54,7 @@ public enum MathOperation {
 	public static NodeMath shl(Node a, Node b) { return new NodeMath(SHL, a, b); }
 	public static NodeMath not(Node a) { return new NodeMath(NOT, a); }
 	public static NodeMath neg(Node a) { return new NodeMath(NEG, a); }
+	public static NodeMath nop(Node a) { return new NodeMath(NOP, a); }
 	public static NodeConst cst(Object o) { return new NodeConst(o); }
 	
 	private int operands;

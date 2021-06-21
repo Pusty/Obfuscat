@@ -51,6 +51,10 @@ public abstract class Pass {
 	
 	public abstract Map<String, Node> statistics();
 	
+	public Map<String, Node> statisticsRuntime() {
+		return statistics();
+	}
+	
 	
 	/**
 	 * Return a map of supported arguments

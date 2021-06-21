@@ -39,11 +39,14 @@ public class FakeDependencyPassTest {
 		List<EmulateFunction> listPass = DSLCodeParsingTest.normalTestCases(passNames);
 		
 		List<Map<String, Node>> stats = new ArrayList<Map<String, Node>>();
-		
 		for(int i=0;i<passNames.length;i++)
 			stats.add(Obfuscat.getPassStatistics(passNames[i]));
 		
-		DSLCodeParsingTest.compareSizeAndSpeed(listNormal, listPass, stats);
+		List<Map<String, Node>> statsRuntime = new ArrayList<Map<String, Node>>();
+		for(int i=0;i<passNames.length;i++)
+			statsRuntime.add(Obfuscat.getPassRuntimeStatistics(passNames[i]));
+		
+		DSLCodeParsingTest.compareSizeAndSpeed(listNormal, listPass, stats, statsRuntime);
 		
 	}
 	

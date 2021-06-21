@@ -78,17 +78,17 @@ public class ThumbCodeGenerationTest {
 			}*/
 			
 			INST_COUNT++;
-			
+
 			/*{
 				Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
 				Long r_r0 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R0);
 				Long r_r1 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R1);
 				Long r_r2 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R2);
-				Long r_r3 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R3);
 				Long r_r6 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R6);
+				Long r_r7 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R7);
 				// System.out.printf(">>> Tracing instruction at 0x%x\n", address);
-				System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R3 0x%x R6 0x%x \n", r_pc.intValue(),
-						r_r0.intValue(), r_r1.intValue(), r_r2.intValue(), r_r3.intValue(), r_r6.intValue());
+				System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R7 0x%x R6 0x%x \n", r_pc.intValue(),
+						r_r0.intValue(), r_r1.intValue(), r_r2.intValue(), r_r7.intValue(), r_r6.intValue());
 
 			}*/
 		}
@@ -228,8 +228,7 @@ public class ThumbCodeGenerationTest {
 
 
 		if (args.length > 4)
-			throw new RuntimeException("Thumb can't handle more than 4 arguments"); // TODO: add this to the thumb code
-																					// generator as well
+			throw new RuntimeException("Thumb can't handle more than 4 arguments"); 
 		if (args.length >= 1)
 			r0 = convertArgument(globalUnicorn, args[0], false);
 		if (args.length >= 2)
@@ -329,7 +328,7 @@ public class ThumbCodeGenerationTest {
 
 		assertTrue("Binary Size is not multiple of Generator " + INST_SIZE,
 				(INST_SIZE % ThumbGenerationUtil.getCodeSize()) == 0);
-		assertTrue("Instruction Executed is not multiple of Generator " + INST_COUNT, // TODO
+		assertTrue("Instruction Executed is not multiple of Generator " + INST_COUNT,
 			(INST_COUNT % ThumbGenerationUtil.getCodeInstCount()) == 0);
 
 		return r_r0.intValue();
@@ -445,7 +444,7 @@ public class ThumbCodeGenerationTest {
 
 	}
 	
-	@Test
+	//@Test
 	public void testReuseBuilder() throws Exception {
 		HashMap<String, Object> args = new HashMap<String, Object>();
 		runTestBuilder("Test", args, null, 5);

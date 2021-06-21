@@ -1,12 +1,14 @@
 package re.bytecode.obfuscat.cfg;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
+import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
@@ -29,19 +31,40 @@ public class MergedFunction extends Function {
 			method.getCode().getLocalVariableTable().getTable().length, returnValue);
 	*/
 	
+	
+	// Ironcily this merger is more efficient and was used to test the switch table
+	// But in practice it weakens Flattening as code paths are not predictable
+	// allowing both methods of merging would make sense
+	// TODO
+	// see commit eec106263e520048c66094d864eda6ce5381b424 for "old" version
+	
 	public static MergedFunction mergeFunctions(Map<String, Function> functions, String entryPoint) {
 		
 
 		List<BasicBlock> blocks = new ArrayList<BasicBlock>();
 		
-		
-		BasicBlock handler = createSwitch(null, functions.get(entryPoint).getBlocks().get(0), 0);
+		BasicBlock handler = new BasicBlock();
+		NodeLoad loadSwitchVar = new NodeLoad(MemorySize.INT, 0);
+		handler.getNodes().add(loadSwitchVar);
 		blocks.add(handler);
 		
 		int variableSlots = 0;
 		int arguments     = 0;
 		boolean returnSomething = false;
 		
+		Function entryFunction = functions.get(entryPoint);
+		HashMap<Integer, Integer> resolvedCalls = new HashMap<Integer, Integer>();
+		resolvedCalls.put(entryFunction.getName().hashCode(), 0);
+		
+		int resolveCounter = 1;
+		for(Entry<String, Function> e: functions.entrySet()) {
+			if(!resolvedCalls.containsKey(e.getValue().getName().hashCode())) {
+				resolvedCalls.put(e.getValue().getName().hashCode(), resolveCounter++);
+			}
+		}
+		
+		
+
 		// Iterate all functions
 		for(Entry<String, Function> e: functions.entrySet()) {
 			
@@ -80,19 +103,39 @@ public class MergedFunction extends Function {
 					currentBlock.replace(oS, nS);
 				}
 				
+				// Resolve calls
+				nodes = currentBlock.findNodes(new NodeCustom("call_unresolved", new NodeConst(null)));
+				for(int j=0;j<nodes.size();j++) {
+					NodeCustom unresolvedCall = (NodeCustom)nodes.get(j);
+					int callHash = ((Integer)((NodeConst)unresolvedCall.children()[0]).getObj()).intValue();
+					if(!resolvedCalls.containsKey(callHash))
+						throw new RuntimeException("Call to function with hash "+Integer.toHexString(callHash)+" can't be resolved");
+					
+					Node[] args = unresolvedCall.children();
+					args[0] =  new NodeConst(resolvedCalls.get(callHash)); // replace with resolved constant
+					
+					NodeCustom resolvedCall = new NodeCustom("call", args);
+					currentBlock.replace(unresolvedCall, resolvedCall);
+				}
 				blocks.add(currentBlock);
 			}
-			
-			handler = createSwitch(handler, currentFunction.getBlocks().get(0), currentFunction.getName().hashCode());
-			blocks.add(handler);
 		}
 		
+		List<BasicBlock> switchBlocks = new ArrayList<BasicBlock>();
+		for(int i=0;i<resolveCounter;i++) {
+			for(Entry<String, Function> e: functions.entrySet()) {
+				if(i == resolvedCalls.get(e.getValue().getName().hashCode())) {
+					switchBlocks.add(e.getValue().getBlocks().get(0));
+					break;
+				}
+			}
+		}
+
+		handler.setSwitchBlock(switchBlocks, loadSwitchVar);
+
 		// Increase one for added parameter
 		variableSlots += 1;
 		arguments += 1;
-		
-		Function entryFunction = functions.get(entryPoint);
-		handler.setUnconditionalBranch(entryFunction.getBlocks().get(0));
 		
 		Class<?>[] prevArgs = entryFunction.getArguments();
 		Class<?>[] afterArgs = new Class<?>[prevArgs.length+1];
@@ -104,17 +147,6 @@ public class MergedFunction extends Function {
 		return new MergedFunction(entryPoint+"_merged", blocks, afterArgs, variableSlots, returnSomething);
 	}
 	
-	private static BasicBlock createSwitch(BasicBlock prev, BasicBlock connected, int id) {
-		BasicBlock newOne = new BasicBlock();
-		if(prev != null)
-			prev.setUnconditionalBranch(newOne);
-		Node op1 = new NodeLoad(MemorySize.INT, 0);
-		Node op2 = new NodeConst(id);
-		newOne.getNodes().add(op1);
-		newOne.getNodes().add(op2);
-		newOne.setConditionalBranch(connected, new BranchCondition(newOne, op1, op2, CompareOperation.EQUAL));
-		return newOne;
-		
-	}
+
 	
 }

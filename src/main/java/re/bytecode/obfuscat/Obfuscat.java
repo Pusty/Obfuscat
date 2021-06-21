@@ -117,22 +117,11 @@ public class Obfuscat {
 	}
 	
 	public static Map<String, Node> getPassStatistics(String passName) {
-		if(passName == null) throw new IllegalArgumentException("The pass can't be null");
-		if(!passes.containsKey(passName)) throw new IllegalArgumentException("A Pass with the name '"+passName+"' is not registered");
-		
-		Context context = null; // this needs to be null
-		Pass pass;
-		Map<String, Node> map;
-		try {
-			Constructor<? extends Pass> c = passes.get(passName).getConstructor(Context.class);
-			pass = c.newInstance(context);
-			map = pass.statistics();
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException("Constructor for pass not found", e);
-		} catch (Exception e) {
-			throw new RuntimeException("Pass Construction Exception", e);
-		}
-		return map;
+		return getPass(passName).statistics();
+	}
+	
+	public static Map<String, Node> getPassRuntimeStatistics(String passName) {
+		return getPass(passName).statisticsRuntime();
 	}
 	
 	/**
@@ -239,5 +228,6 @@ public class Obfuscat {
 			throw new RuntimeException("CustomNodeImpl Construction Exception", e);
 		}
 	}
+
 	
 }

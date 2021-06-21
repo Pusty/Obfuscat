@@ -30,7 +30,7 @@ public abstract class Node implements Cloneable, Serializable {
 	    
 	    if(o.getClass() == NodeDummy.class) return true; // for pattern matching / wildcard usage
 	    
-	    if (getClass() != o.getClass()) // if they aren't the same time they can't match
+	    if (getClass() != o.getClass()) // if they aren't the same type they can't match
 	        return false;
 	    
 	    if(!checkCriteria((Node) o)) return false; // if their internal non-node specific behavior doesn't match they can't match
@@ -38,11 +38,12 @@ public abstract class Node implements Cloneable, Serializable {
 	    Node[] own = children();
 	    Node[] nodes = ((Node) o).children();
 	    
+	    
 	    if(own == null && nodes == null) return true; // if there are no children they match at this point 
 	    if((own == null) != (nodes == null)) return false; // if only one has children then they can't match
-	    if(nodes.length != own.length) return false; // if the amount of children doesn't match they can't match
-	    
-	    for(int i=0;i<own.length;i++) {
+	    if(o.getClass() != NodeCustom.class && nodes.length != own.length) return false; // if the amount of children doesn't match they can't match (unless custom node in which case only provided args must match)
+	    int mincheck = Math.min(nodes.length, own.length);
+	    for(int i=0;i<mincheck;i++) {
 	    	if(!own[i].equalsSemantics(nodes[i])) return false; // if one child doesn't sementically match then this can't match
 	    }
 	    

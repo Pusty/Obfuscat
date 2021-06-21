@@ -699,13 +699,13 @@ public class DSLParser {
 							
 							// function id
 							NodeConst functionID = new NodeConst((name+type).hashCode());
-							if (!currentBlock.getNodes().contains(functionID))
-								currentBlock.getNodes().add(functionID);
+							//if (!currentBlock.getNodes().contains(functionID))
+							//	currentBlock.getNodes().add(functionID);
 							argsNode[0] = functionID;
 							
 							boolean returnsSomething = convertDescriptor(type.split("\\x29")[1].charAt(0)) != null;
 							
-							NodeCustom custom = new NodeCustom("call", argsNode);
+							NodeCustom custom = new NodeCustom("call_unresolved", argsNode); // this needs to be resolved / replaced by a resolved version by the merger
 							if(returnsSomething)
 								stack.push(custom);
 							else

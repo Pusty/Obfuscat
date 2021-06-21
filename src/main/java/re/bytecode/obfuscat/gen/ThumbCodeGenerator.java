@@ -678,6 +678,11 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	public int getNodeInstCount() {
 		return 6;
 	}
+	
+	@Override
+	public int getSwitchCaseCount() {
+		return 8;
+	}
 
 	@Override
 	public void link(List<CompiledBasicBlock> blocks) {
@@ -692,8 +697,14 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		for (CompiledBasicBlock cbb : blocks) {
 			positionMap.put(cbb.getBlock(), curPos);
 			curPos += this.getBlockSize(cbb.getBlock()) * getNodeSize(); // the size for the nodes
-			curPos += cbb.getBlock().isConditionalBlock()?getNodeSize():0;
-			//curPos += cbb.getBlock().getSwitchBlocks().size() * getNodeSize(); // the size for conditional jumps
+			curPos += cbb.getBlock().isConditionalBlock()?getNodeSize():0; // conditional jumps
+			
+			if(cbb.getBlock().isSwitchCase()) { // switch cases
+				int swc = (cbb.getBlock().getSwitchBlocks().size()/getSwitchCaseCount());
+				if(cbb.getBlock().getSwitchBlocks().size() % getSwitchCaseCount() != 0)
+					swc++;
+				curPos += swc * getNodeSize();
+			}
 			curPos += getNodeSize(); // the size for a unconditional jump or return
 		}
 		
@@ -716,13 +727,15 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				branches[4] = 0x88;
 				branches[5] = 0x42;
 				
-				branches[6] = 0xAF; // NOP.W
-				branches[7] = 0xF3;
-				branches[8] = 0x00;
-				branches[9] = 0x80;
-	
-				branches[10] = 0x00; // NOP
-				branches[11] = 0xBF;
+				
+				branches[6] = 0x00; // NOP
+				branches[7] = 0xBF;
+				
+				branches[8] = 0xAF; // NOP.W
+				branches[9] = 0xF3;
+				branches[10] = 0x00;
+				branches[11] = 0x80;
+
 
 				// calculate the actual offset to jump
 				int jumpOffsetConditonal = positionMap.get(cbb.getBlock().getConditionalBranch()) - (position + 4 + 12);
@@ -737,8 +750,67 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			}
 			
 			if(cbb.getBlock().isSwitchCase()) {
-				throw new RuntimeException("Not implemented TODO");
-				// TODO
+
+				int[] switchJump = new int[getNodeSize()];
+
+				// load switch jump value
+				loadNode(switchJump, 0, 0, cbb.getBlock().getSwitchNode());
+				
+				// LSL.W R0, R0, #1 - 4F EA 40 00
+				switchJump[2] = 0x4F;
+				switchJump[3] = 0xEA;
+				switchJump[4] = 0x40;
+				switchJump[5] = 0x00;
+				
+				// add r0, r0, pc - 78 44
+				switchJump[6] = 0x78;
+				switchJump[7] = 0x44;
+				
+				// LDRSH r0, [r0, #6] - B0 F9 06 00
+				switchJump[8] = 0xB0;
+				switchJump[9] = 0xF9;
+				switchJump[10] = 0x06;
+				switchJump[11] = 0x00;
+				
+				// ADD r0, r0, pc - 78 44
+				switchJump[12] = 0x78;
+				switchJump[13] = 0x44;
+				
+				// BX r0 - 00 47
+				switchJump[14] = 0x00;
+				switchJump[15] = 0x47;
+				
+				((ThumbCompiledBasicBlock) cbb).appendBytes(switchJump);
+				position += this.getNodeSize(); // add the conditional jump size to the current position
+				// 6 instructions
+				
+				int[] switchEntry = new int[getNodeSize()];
+				int switchEntryIndex = 0;
+				int switchEntryAppened = 0;
+				for(int s=0;s<cbb.getBlock().getSwitchBlocks().size();s++) {
+					
+					// jump offset
+					int offset = (positionMap.get(cbb.getBlock().getSwitchBlocks().get(s)) - (position)) | 1;
+					switchEntry[switchEntryIndex] = offset & 0xFF;
+					switchEntry[switchEntryIndex+1] = (offset>>8) & 0xFF;
+					
+					switchEntryIndex+=2;
+					if(switchEntryIndex % getNodeSize() == 0) {
+						((ThumbCompiledBasicBlock) cbb).appendBytes(switchEntry);
+						switchEntry = new int[getNodeSize()];
+						switchEntryIndex = 0;
+						switchEntryAppened++;
+					}
+				}
+				
+				// append unfinished blocks as well
+				if(switchEntryIndex != 0) {
+					((ThumbCompiledBasicBlock) cbb).appendBytes(switchEntry);
+					switchEntryAppened++;
+				}
+				
+				position += switchEntryAppened*getNodeSize();
+				
 			}else if(cbb.getBlock().isExitBlock()) {
 				int[] done = new int[getNodeSize()];
 				
@@ -853,9 +925,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			entrypoint[13] = 0x46;
 
 			// merged functions first argument is the function hash, 0 is entry point
-			// LDR r0, 0 - 00 48
-			entrypoint[14] = 0x00;
-			entrypoint[15] = 0x48;
+			// EORS r0, r0 - 40 40
+			entrypoint[14] = 0x40;
+			entrypoint[15] = 0x40;
 
 		} else {
 			entrypoint[8] = 0x00; // NOP

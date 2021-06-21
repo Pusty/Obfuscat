@@ -20,7 +20,7 @@ public class NodeCustom extends Node {
 	 */
 	public NodeCustom(String identifier, Node... args) {
 		this.identifier = identifier;
-		this.args = args;
+		this.args = args==null?new Node[0]:args;
 	}
 
 	/**

@@ -79,21 +79,30 @@ public class Function implements Serializable {
 		
 		map.put("blocks", blocks.size());
 		
-		int switches = 0;
-		//int nodesOverall = 0;
-		
+		int conditionalBlocks = 0;
+		int switchBlocks = 0;
+		int exitBlocks   = 0;
+		int jumpBlocks   = 0;
+
 		for(BasicBlock block:blocks) {
 			List<Node> already = new ArrayList<Node>();
 			for(Node node:block.getNodes()) {
 				traverseNode(already, node, map);
 			}
-			if(block.isSwitchCase())
-				switches += block.getSwitchBlocks().size();
-		//	nodesOverall += already.size();
+			if(block.isConditionalBlock())
+				conditionalBlocks++;
+			else if(block.isSwitchCase())
+				switchBlocks++;
+			else if(block.isExitBlock())
+				exitBlocks++;
+			else if(block.getUnconditionalBranch() != null)
+				jumpBlocks++;
 		}
 		
-		map.put("switches", switches);
-		//map.put("nodes", nodesOverall);
+		map.put("conditionalBlocks", conditionalBlocks);
+		map.put("switchBlocks", switchBlocks);
+		map.put("exitBlocks", exitBlocks);
+		map.put("jumpBlocks", jumpBlocks);
 		
 		return map;
 	}

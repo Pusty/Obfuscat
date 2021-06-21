@@ -76,6 +76,8 @@ public class BasicBlock implements Serializable {
 		unconditional = null; 
 		if(returnValue != null && findNodes(returnValue).size() == 0)
 			throw new IllegalArgumentException("Return Value is not in Basic Block");
+		if(this.isConditionalBlock() || this.isSwitchCase())
+			throw new IllegalArgumentException("Neither conditional nor switch blocks may be exit blocks");
 		this.returnValue = returnValue;
 	}
 	
@@ -100,10 +102,17 @@ public class BasicBlock implements Serializable {
 	public BasicBlock getConditionalBranch() { return conditionalJumpBlock; }
 	public BranchCondition getCondition() { return conditionalJumpCondition; }
 	
+	public void unsetConditionalBranch() {
+		if(!isConditionalBlock()) throw new IllegalArgumentException("Can't unset a block that isn't a Conditional Block");
+		conditionalJumpBlock = null;
+		conditionalJumpCondition = null;
+	}
+	
 	public void setConditionalBranch(BasicBlock b, BranchCondition bc) {
 		if(b == null) throw new IllegalArgumentException("Conditional Block may not be null");
 		if(bc == null) throw new IllegalArgumentException("Conditio may not be null");
 		if(switchBlocks != null && switchBlocks.size() > 0) throw new IllegalArgumentException("Block with conditional jump may not have switch cases");
+		//if(isExitBlock()) throw new IllegalArgumentException("Conditional Block can not be exit block"); // TODO: Verify somewhere else
 		conditionalJumpBlock = b;
 		conditionalJumpCondition = bc;
 	}
@@ -174,6 +183,9 @@ public class BasicBlock implements Serializable {
 
 		if(this.conditionalJumpCondition != null)
 			conditionalJumpCondition = conditionalJumpCondition.replace(node, newNode);
+		
+		if(this.switchNode != null)
+			switchNode = switchNode.equals(node)?newNode:switchNode.replace(node, newNode);
 		
 		if(returnValue != null)
 			returnValue = returnValue.equals(node)?newNode:returnValue.replace(node, newNode);

@@ -52,7 +52,7 @@ public class DSLCodeParsingTest {
 		ef.add(runTest("Sample2", "entry", passes));
 		ef.add(runTest("Sample3", "entry", passes));
 		ef.add(runTest("Sample4", "crc32", passes, new byte[] {0x12, 0x23, 0x45, 0x67, (byte) 0x89}, 5));
-		ef.add(runTest("Sample5", "entry", passes));  // TODO
+		ef.add(runTest("Sample5", "entry", passes)); 
 		
 		return ef;
 	}
@@ -97,7 +97,7 @@ public class DSLCodeParsingTest {
 		}
 	}
 	
-	public static void compareSizeAndSpeed(List<EmulateFunction> listNormal, List<EmulateFunction> listPass, List<Map<String, Node>> stats) {
+	public static void compareSizeAndSpeed(List<EmulateFunction> listNormal, List<EmulateFunction> listPass, List<Map<String, Node>> stats, List<Map<String, Node>> statsRuntime) {
 		
 		
 		for(int i=0;i<listNormal.size();i++) {
@@ -119,12 +119,13 @@ public class DSLCodeParsingTest {
 				}
 				
 				for(String key:base.keySet()) {
-					assertEquals(key+": Size values don't match up with expected values ", changed.get(key), base.get(key));
+					assertEquals(key+": Size values don't match up with expected values ", base.get(key), changed.get(key));
 				}
 			
 			}
 			
 			// Verify runtime behavior expectations are fulfilled
+			// TODO: Verifying runtime behavior for control flow changes differs from direct changes
 			{
 				
 				Map<String, Integer> base = listNormal.get(i).statistics();
@@ -134,14 +135,14 @@ public class DSLCodeParsingTest {
 				for(int j=0;j<stats.size();j++) {
 					Map<String, Integer> newbase = new HashMap<String, Integer>();
 					newbase.putAll(base);
-					for(Entry<String, Node> e:stats.get(j).entrySet()) {
+					for(Entry<String, Node> e:statsRuntime.get(j).entrySet()) {
 						newbase.put(e.getKey(), EmulateFunction.eval(e.getValue(), base));
 					}
 					base = newbase; // commit changes after pass
 				}
 				
 				for(String key:base.keySet()) {
-					assertEquals(key+": Speed values don't match up with expected values ", changed.get(key), base.get(key));
+					assertEquals(key+" @ Nr. "+(i)+" Speed values don't match up with expected values ", base.get(key), changed.get(key));
 				}
 			
 			}

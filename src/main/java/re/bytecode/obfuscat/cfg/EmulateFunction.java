@@ -86,7 +86,6 @@ public class EmulateFunction {
 		Object output = null;
 		
 		runtimeStatistics.put(node.getNodeIdentifier(), runtimeStatistics.getOrDefault(node.getNodeIdentifier(), 0)+1);
-
 		if (node instanceof NodeConst) {
 			// If the node is a constant node then convert it to an Integer
 			Object obj = ((NodeConst) node).getObj();
@@ -345,6 +344,10 @@ public class EmulateFunction {
 		runtimeStatistics = new HashMap<String, Integer>();
 		
 		runtimeStatistics.put("calls", 1); // useful for call custom nodes
+		runtimeStatistics.put("conditionalBlocks", 0);
+		runtimeStatistics.put("switchBlocks", 0);
+		runtimeStatistics.put("exitBlocks", 0);
+		runtimeStatistics.put("jumpBlocks", 0);
 		
 		// Check if the argument length matches
 		if (check && function.getArguments().length != args.length)
@@ -476,14 +479,13 @@ public class EmulateFunction {
 		
 		runtimeStatistics.put("blocks", runtimeStatistics.getOrDefault("blocks", 0)+1);
 
-
 		List<Node> nodes = currentBlock.getNodes();
 
 		// reset the node evaluations
 		nodeMap = new HashMap<Node, Object>();
 
-		// System.out.println(currentBlock);
-
+		//System.out.println(nodes);
+		
 		// evaluate all nodes of this basic block
 		for (int i = 0; i < nodes.size(); i++)
 			executeNode(nodes.get(i));
@@ -493,10 +495,10 @@ public class EmulateFunction {
 
 		// Evalute the conditional branches and check if one should be taken
 		if(currentBlock.isConditionalBlock())  {
+			runtimeStatistics.put("conditionalBlocks", runtimeStatistics.getOrDefault("conditionalBlocks", 0)+1);
 			BranchCondition condition = currentBlock.getCondition();
 			int op1 = (Integer) nodeMap.get(condition.getOperant1());
 			int op2 = (Integer) nodeMap.get(condition.getOperant2());
-			// System.out.println(condition.getOperation()+" - "+op1+ " : "+op2);
 			switch (condition.getOperation()) {
 			case EQUAL:
 				if (op1 == op2) {
@@ -538,28 +540,30 @@ public class EmulateFunction {
 				throw new RuntimeException("Not implemented");
 			}
 			
-			runtimeStatistics.put("conditionals", runtimeStatistics.getOrDefault("conditionals", 0)+1);
+			// if no jump was taken use default jump
+			currentBlock = currentBlock.getUnconditionalBranch();
+			return null;
 		}else if(currentBlock.isSwitchCase()){
+			runtimeStatistics.put("switchBlocks", runtimeStatistics.getOrDefault("switchBlocks", 0)+1);
 			int caseIndex = (Integer) nodeMap.get(currentBlock.getSwitchNode());
 			if(caseIndex < 0 || caseIndex >= currentBlock.getSwitchBlocks().size())
 				throw new RuntimeException("Switch Jump out of bounds "+caseIndex+" @ "+currentBlock);
 			currentBlock = currentBlock.getSwitchBlocks().get(caseIndex);
 			return null;
-		}
-
-
-		// if the block has a unconditional follow up block then jump to it
-		if (!currentBlock.isExitBlock()) {
-			currentBlock = currentBlock.getUnconditionalBranch();
-			return null;
-		} else {
+		}else if(currentBlock.isExitBlock()) {
+			runtimeStatistics.put("exitBlocks", runtimeStatistics.getOrDefault("exitBlocks", 0)+1);
 			// if the block is an exit block and no jump was taken then return
 			Node ret = currentBlock.getReturnValue();
 			currentBlock = null;
 			if (function.hasReturnValue())
 				return nodeMap.get(ret); // but if there should be a return value then provide it
 			return null;
+		}else {
+			runtimeStatistics.put("jumpBlocks", runtimeStatistics.getOrDefault("jumpBlocks", 0)+1);
+			currentBlock = currentBlock.getUnconditionalBranch();
+			return null;
 		}
+
 	}
 	
 	public Map<String, Integer> statistics() {

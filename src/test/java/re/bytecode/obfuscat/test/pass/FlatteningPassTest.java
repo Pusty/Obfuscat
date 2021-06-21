@@ -19,7 +19,7 @@ public class FlatteningPassTest {
 	private static final String[] passNames = new String[] {"Flatten"};
 	
 	
-	//@Test
+	@Test
 	public void testDSL() throws Exception {
 		
 		List<List<EmulateFunction>> listOfList = new ArrayList<List<EmulateFunction>>();
@@ -32,22 +32,25 @@ public class FlatteningPassTest {
 
 
 	
-	//@Test
+	@Test
 	public void testConstrains() throws Exception {
 		
 		List<EmulateFunction> listNormal = DSLCodeParsingTest.normalTestCases(null);
 		List<EmulateFunction> listPass = DSLCodeParsingTest.normalTestCases(passNames);
 		
 		List<Map<String, Node>> stats = new ArrayList<Map<String, Node>>();
-		
 		for(int i=0;i<passNames.length;i++)
 			stats.add(Obfuscat.getPassStatistics(passNames[i]));
 		
-		DSLCodeParsingTest.compareSizeAndSpeed(listNormal, listPass, stats);
+		List<Map<String, Node>> statsRuntime = new ArrayList<Map<String, Node>>();
+		for(int i=0;i<passNames.length;i++)
+			statsRuntime.add(Obfuscat.getPassRuntimeStatistics(passNames[i]));
+		
+		DSLCodeParsingTest.compareSizeAndSpeed(listNormal, listPass, stats, statsRuntime);
 		
 	}
 	
-	//@Test
+	@Test
 	public void testMergedDSL() throws Exception {
 		
 		List<List<EmulateFunction>> listOfList = new ArrayList<List<EmulateFunction>>();
@@ -60,7 +63,7 @@ public class FlatteningPassTest {
 	
 	
 	
-	//@Test
+	@Test
 	public void testARMThumb() throws Exception {
 		
 		List<List<int[]>> listOfList = new ArrayList<List<int[]>>();

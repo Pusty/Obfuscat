@@ -372,7 +372,12 @@ public abstract class CodeGenerator {
 		ArrayList<CompiledBasicBlock> blocks = new ArrayList<CompiledBasicBlock>();
 		
 		// Compile the basic blocks starting from the first recursively
-		generateBlockRecursive(blocks, new ArrayList<BasicBlock>(), f.get(0));
+		//generateBlockRecursive(blocks, new ArrayList<BasicBlock>(), f.get(0));
+		
+		// Iterative means we can decide the order
+		for(BasicBlock bb:f) {
+			blocks.add(generateBlock(bb));
+		}
 		
 		// Link the basic blocks together (add code parts for jumps)
 		link(blocks);
@@ -405,6 +410,13 @@ public abstract class CodeGenerator {
 	 * @return the exact amount of executed instructions each individual compiled code piece
 	 */
 	public abstract int getNodeInstCount();
+	
+	/**
+	 * The fixed amount of switch case entries per node block size
+	 * @return the exact amount of switch case entries in one node size
+	 */
+	public abstract int getSwitchCaseCount();
+	
 	
 	/**
 	 * Return a map of supported arguments
