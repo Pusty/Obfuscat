@@ -29,11 +29,11 @@ public class CLI {
 	// ./CLI obfuscate <Obfuscator> [obfuscator args]
 	// ./CLI compile <Platform> [compile args]
 
-	/*
-	public static void main(String[] args) {
+	
+	/*public static void main(String[] args) {
 		main2(new String[] { "builder", "KeyBuilder", "-data", "'test'" });
 		main2(new String[] { "emulate", "'0000'", "-input", "build.fbin" });
-		main2(new String[] { "obfuscate", "VariableEncode" });
+		main2(new String[] { "obfuscate", "Flatten" });
 		main2(new String[] { "compile", "Thumb" });
 		//main2(new String[] { "help", "info", "KeyBuilder" });
 		main2(new String[] { "emulate", "'0000'" });
