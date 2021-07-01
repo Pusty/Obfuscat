@@ -50,7 +50,10 @@ public class NodeCustom extends Node {
 
 	@Override
 	public Node[] children() {
-		return args.clone();
+		Node[] targs = new Node[args.length];
+		for(int i=0;i<targs.length;i++)
+			targs[i] = args[i];
+		return targs;
 	}
 
 	@Override
@@ -69,5 +72,5 @@ public class NodeCustom extends Node {
 	}
 	
 	@Override
-	public String getNodeIdentifier() { return "custom-"+identifier; }
+	public String getNodeIdentifier() { return "custom"; }
 }

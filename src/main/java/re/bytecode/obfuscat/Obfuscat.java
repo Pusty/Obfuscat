@@ -6,6 +6,7 @@ import java.util.Map;
 
 import re.bytecode.obfuscat.builder.Builder;
 import re.bytecode.obfuscat.builder.HWKeyBuilder;
+import re.bytecode.obfuscat.builder.JavaClassBuilder;
 import re.bytecode.obfuscat.builder.KeyBuilder;
 import re.bytecode.obfuscat.builder.TestBuilder;
 import re.bytecode.obfuscat.cfg.Function;
@@ -19,6 +20,7 @@ import re.bytecode.obfuscat.pass.FlatteningPass;
 import re.bytecode.obfuscat.pass.LiteralEncodePass;
 import re.bytecode.obfuscat.pass.OperationEncodePass;
 import re.bytecode.obfuscat.gen.CustomNodeImpl;
+import re.bytecode.obfuscat.gen.FlowgraphCodeGenerator;
 
 /** Main Class */
 public class Obfuscat {
@@ -38,8 +40,14 @@ public class Obfuscat {
 		
 		
 		registerGenerator("Thumb", ThumbCodeGenerator.class);
-		registerCustomNode("Thumb", "readInt", ThumbCodeGenerator.ThumbNodeReadInt.class);
-		registerCustomNode("Thumb", "call", ThumbCodeGenerator.ThumbNodeCall.class);
+		//registerCustomNode("Thumb", "readInt", ThumbCodeGenerator.ThumbNodeReadInt.class);
+		//registerCustomNode("Thumb", "call", ThumbCodeGenerator.ThumbNodeCall.class);
+		
+		registerGenerator("Flowgraph", FlowgraphCodeGenerator.class);
+		//registerCustomNode("Flowgraph", "readInt", FlowgraphCodeGenerator.FlowgraphNodeReadInt.class);
+		//registerCustomNode("Flowgraph", "call", FlowgraphCodeGenerator.FlowgraphNodeCall.class);
+		
+		// TODO: Reconnect adding custom nodes from Obfuscat again
 		
 		registerPass("OperationEncode", OperationEncodePass.class);
 		registerPass("LiteralEncode", LiteralEncodePass.class);
@@ -47,9 +55,11 @@ public class Obfuscat {
 		registerPass("FakeDependency", FakeDependencyPass.class);
 		registerPass("Flatten", FlatteningPass.class);
 		
+		registerBuilder("Class", JavaClassBuilder.class);
 		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);
 		registerBuilder("KeyBuilder", KeyBuilder.class);
 		registerBuilder("Test", TestBuilder.class);
+		
 	}
 	
 	/**
@@ -211,17 +221,16 @@ public class Obfuscat {
 	 * @param nodeName the custom node identifier
 	 * @return the custom node implementation for this identifier
 	 */
-	public static CustomNodeImpl getCustomNodeImpl(CodeGenerator generator, String nodeName, Context parentContext) {
+	public static CustomNodeImpl getCustomNodeImpl(CodeGenerator generator, String nodeName) {
 		if(generator == null) throw new IllegalArgumentException("The generator can't be null");
 		if(nodeName == null) throw new IllegalArgumentException("The node can't be null");
 		if(!generators.containsValue(generator.getClass()))  throw new IllegalArgumentException("The generator "+generator+" isn't registered");
 		Map<String, Class<? extends CustomNodeImpl>> map = customNodes.get(generator.getClass());
 		if(!map.containsKey(nodeName)) throw new IllegalArgumentException("The custom node '"+nodeName+"' is not part of generator "+generator);
 		
-		Context context = new Context(parentContext.getInternalSeed());
 		try {
-			Constructor<? extends CustomNodeImpl> c = map.get(nodeName).getConstructor(Context.class, CodeGenerator.class);
-			return c.newInstance(context, generator);
+			Constructor<? extends CustomNodeImpl> c = map.get(nodeName).getConstructor();
+			return c.newInstance();
 		} catch (NoSuchMethodException e) {
 			throw new RuntimeException("Constructor for CustomNodeImpl not found", e);
 		} catch (Exception e) {

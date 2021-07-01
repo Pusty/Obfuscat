@@ -1,6 +1,5 @@
 package re.bytecode.obfuscat.gen;
 
-import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 
 /**
@@ -9,35 +8,17 @@ import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
  */
 public abstract class CustomNodeImpl {
 	
-	private Context context;
-	private CodeGenerator generator;
-	
 	/**
-	 * Create a specific custom node implementation instance for a given compilation context and code generator instance
-	 * @param context the context of this interpretation
-	 * @param gen the associated code generator
+	 * Create a specific custom node implementation instance
 	 */
-	public CustomNodeImpl(Context context, CodeGenerator gen) {
-		this.context = context;
-		this.generator = gen;
-	}
+	public CustomNodeImpl() {}
 	
 	/**
 	 * Process the CustomNode's redirected to this implementation
+	 * @param gen the associated code generator
 	 * @param cbb the CompiledBasicBlock the handled node belongs to
 	 * @param node the node to process
 	 */
-	public abstract void process(CompiledBasicBlock cbb, NodeCustom node);
+	public abstract void process(CodeGenerator gen, CompiledBasicBlock cbb, NodeCustom node);
 	
-	/**
-	 * Return the current context of this operation
-	 * @return the context of this compilation process
-	 */
-	public Context getContext() { return context; }
-	
-	/**
-	 * Return the code generator instance this implementation instance is linked to
-	 * @return the code generator for which CustomNodes are handled
-	 */
-	public CodeGenerator getGenerator() { return generator; }
 }

@@ -82,6 +82,7 @@ public class OperationEncodePass extends Pass {
 		seed = seed % 1;
 		switch(seed) {
 		case 0:
+			// ((x | y) * (x & y)) + ((x & (~y)) * (y & (~x)))
 			return mul(add(mul(or(x[0], x[1]), and(x[0], x[1])), mul(and(x[0], not(x[1])), and(x[1], not(x[0])))), cst(1)); //  10m 1c
 		//case 1: // removed because too long
 		//	return sub(add(mul(or(x[0], x[1]), and(x[0], x[1])), mul(not(or(x[0], not(x[1]))), and(x[0], not(x[1])))), cst(0)); // 11m 1c

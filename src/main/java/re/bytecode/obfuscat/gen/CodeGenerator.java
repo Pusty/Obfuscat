@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import re.bytecode.obfuscat.Context;
-import re.bytecode.obfuscat.Obfuscat;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
@@ -60,14 +59,30 @@ public abstract class CodeGenerator {
 				assert(node instanceof NodeCustom);
 				NodeCustom custom = (NodeCustom)node;
 				if(!cache.containsKey(custom.getIdentifier()))
-					cache.put(custom.getIdentifier(), Obfuscat.getCustomNodeImpl(CodeGenerator.this, custom.getIdentifier(), CodeGenerator.this.context));
-				cache.get(custom.getIdentifier()).process(cbb, custom);
+					//cache.put(custom.getIdentifier(), Obfuscat.getCustomNodeImpl(CodeGenerator.this, custom.getIdentifier(), CodeGenerator.this.context));
+					cache.put(custom.getIdentifier(), getCustomNodeImpl(custom.getIdentifier()));
+				cache.get(custom.getIdentifier()).process(CodeGenerator.this, cbb, custom);
 			}
 			
 		});
 		
 		initMapping();
 		
+	}
+	
+	
+	private static Map<Class<?>, Map<String, CustomNodeImpl>> codegenMap = new HashMap<Class<?>, Map<String, CustomNodeImpl>>();
+	
+	public static void registerCodegen(Class<?> codegenClass) {
+		codegenMap.put(codegenClass, new HashMap<String, CustomNodeImpl>());
+	}
+	
+	public static void registerCustomNode(Class<?> codegenClass, String identifier, CustomNodeImpl customNode) {
+		codegenMap.get(codegenClass).put(identifier, customNode);
+	}
+	
+	private CustomNodeImpl getCustomNodeImpl(String identifier) {
+		return codegenMap.get(this.getClass()).get(identifier);
 	}
 
 	/**

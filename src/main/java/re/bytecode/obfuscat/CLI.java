@@ -77,6 +77,9 @@ public class CLI {
 		case "emulate":
 			commandEmulate(argumentMap);
 			return;
+		case "info":
+			commandInfo(argumentMap);
+			return;
 		default:
 			System.out.println("Unknown command '" + command + "', try help for information");
 			return;
@@ -159,7 +162,7 @@ public class CLI {
 				}
 				return dataStr;
 			} else {
-				System.out.println("Unsupported Builder argument type " + type + " expected");
+				System.out.println("Unsupported argument type " + type + " expected");
 				return null;
 			}
 
@@ -372,7 +375,7 @@ public class CLI {
 		return true;
 	}
 
-	private static Object readInput(Map<String, List<String>> args, String defaultName) {
+	public static Object readInput(Map<String, List<String>> args, String defaultName) {
 		if (args.containsKey("input")) {
 			List<String> outputList = args.get("input");
 			if (outputList.size() != 1) {
@@ -601,6 +604,10 @@ public class CLI {
 			System.out.println("Reading the input file failed");
 			return;
 		}
+		
+		if(rI instanceof Boolean) {
+			return;
+		}
 
 		if (!(rI instanceof Function)) {
 			System.out.println("The read file object has the wrong type " + rI.getClass());
@@ -618,7 +625,7 @@ public class CLI {
 		if(f instanceof MergedFunction) { // the initial 0 does not need to be provided
 			Class<?>[] argsAfter = new Class<?>[expectedArgs.length - 1];
 			for (int i = 0; i < argsAfter.length; i++)
-				argsAfter[i] = expectedArgs[i];
+				argsAfter[i] = expectedArgs[i+1];
 			expectedArgs = argsAfter;
 		}
 		
@@ -670,7 +677,7 @@ public class CLI {
 				formatOutput.append(Arrays.toString((double[])arg));
 			else if(arg.getClass() == float[].class)
 				formatOutput.append(Arrays.toString((float[])arg));
-			else if(args.getClass().isArray())
+			else if(arg.getClass().isArray())
 				formatOutput.append(Arrays.toString((Object[])arg));
 			else
 				formatOutput.append(arg.toString());
@@ -678,6 +685,29 @@ public class CLI {
 		}
 		System.out.println(formatOutput.toString());
 
+	}
+	
+	private static void commandInfo(Map<String, List<String>> argsRaw) {
+
+		Object rI = readInput(argsRaw, "obfuscated.fbin");
+
+		if (rI == null) {
+			System.out.println("Reading the input file failed");
+			return;
+		}
+		
+		if(rI instanceof Boolean) {
+			return;
+		}
+
+		if (!(rI instanceof Function)) {
+			System.out.println("The read file object has the wrong type " + rI.getClass());
+			return;
+		}
+
+		Function f = (Function) rI;
+		System.out.println("Function Statistics: "+f.statistics());
+		
 	}
 
 	private static void commandHelp(String[] args) {
@@ -752,6 +782,8 @@ public class CLI {
 					"    compile <generator> [args]  [-input filename] [-output filename] [-seed someseed] - Compile for a platform with the provided arguments");
 			System.out.println(
 					"    emulate [args]  [-input filename] - Emulate the input function and print statistics");
+			System.out.println(
+					"    info [args] [-input filename] - Print statistics about the input function");
 			System.out.println("    help - Provide an overview over supported commands");
 			System.out.println("    help builder - List all registered builders");
 			System.out.println("    help obfuscate - List all registered obfuscation passes");

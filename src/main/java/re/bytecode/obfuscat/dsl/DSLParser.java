@@ -72,7 +72,8 @@ public class DSLParser {
 
 			if (verifyMethod(classReader, method)) {
 				Class<?>[] args = convertFunctionDescriptor(method.getDescriptor());
-				boolean returnValue = convertDescriptor(method.getDescriptor().split("\\x29")[1].charAt(0)) != null;
+				String desc = method.getDescriptor().split("\\x29")[1];
+				boolean returnValue = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
 				// System.out.println("Processing: " + method.getName());
 				List<BasicBlock> bbs = processMethod(classReader, method);
 				// System.out.println(bbs);
@@ -98,7 +99,7 @@ public class DSLParser {
 	}
 
 	// Convert a descriptor character to a class
-	private Class<?> convertDescriptor(char desc) {
+	private Class<?> convertDescriptor(char desc, char snd) {
 		if (desc == 'V')
 			return null;
 		else if (desc == 'Z')
@@ -117,9 +118,17 @@ public class DSLParser {
 			return long.class;
 		else if (desc == 'D')
 			return double.class;
-		else if (desc == '[')
-			return Array.class;
-		else if (desc == 'L')
+		else if (desc == '[') {
+			if(snd == 'B') return byte[].class;
+			else if(snd == 'C') return char[].class;
+			else if(snd == 'D') return double[].class;
+			else if(snd == 'F') return float[].class;
+			else if(snd == 'I') return int[].class;
+			else if(snd == 'J') return long[].class;
+			else if(snd == 'S') return short[].class;
+			else if(snd == 'Z') return boolean[].class;
+			else return Array.class;
+		}else if (desc == 'L')
 			return Object.class;
 		else
 			return Method.class;
@@ -132,18 +141,18 @@ public class DSLParser {
 		ArrayList<Class<?>> list = new ArrayList<Class<?>>();
 		for (int i = 0; i < variables.length(); i++) {
 			if (variables.charAt(i) == '[') {
-				list.add(convertDescriptor(variables.charAt(i)));
+				list.add(convertDescriptor(variables.charAt(i), variables.charAt(i+1)));
 				if (variables.charAt(i + 1) == 'L') {
 					while (variables.charAt(i) != ';')
 						i++;
 				} else
 					i++;
 			} else if (variables.charAt(i) == 'L') {
-				list.add(convertDescriptor(variables.charAt(i)));
+				list.add(convertDescriptor(variables.charAt(i), variables.charAt(i+1)));
 				while (variables.charAt(i) != ';')
 					i++;
 			} else
-				list.add(convertDescriptor(variables.charAt(i)));
+				list.add(convertDescriptor(variables.charAt(i), (char)0));
 		}
 		// list.add(convertDescriptor(output.charAt(0)));
 		return list.toArray(new Class<?>[list.size()]);
@@ -567,6 +576,7 @@ public class DSLParser {
 					Node op1;
 					Node op2;
 					BranchCondition cond;
+					String desc;
 
 					switch (inst.getTypeOfBranch()) {
 					case InstBranch.BRANCH_CC:
@@ -639,8 +649,8 @@ public class DSLParser {
 						currentBlock.setUnconditionalBranch(blockMap.get(inst.getBranchInstructionPos()).get(0));
 						break;
 					case InstBranch.BRANCH_RETURN:
-						boolean returnValue = convertDescriptor(
-								method.getDescriptor().split("\\x29")[1].charAt(0)) != null;
+						desc = method.getDescriptor().split("\\x29")[1];
+						boolean returnValue = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
 
 						// if there is suppost to be a return value then pop it from the stack
 						if (returnValue) {
@@ -678,7 +688,8 @@ public class DSLParser {
 							for(int i=0;i<argsNode.length;i++)
 								argsNode[argsNode.length-1-i] = stack.pop();
 							
-							boolean returnsSomething = convertDescriptor(type.split("\\x29")[1].charAt(0)) != null;
+							desc = type.split("\\x29")[1];
+							boolean returnsSomething = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
 							
 							// add the custom node
 							NodeCustom custom = new NodeCustom(name, argsNode);
@@ -703,7 +714,8 @@ public class DSLParser {
 							//	currentBlock.getNodes().add(functionID);
 							argsNode[0] = functionID;
 							
-							boolean returnsSomething = convertDescriptor(type.split("\\x29")[1].charAt(0)) != null;
+							desc = type.split("\\x29")[1];
+							boolean returnsSomething = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
 							
 							NodeCustom custom = new NodeCustom("call_unresolved", argsNode); // this needs to be resolved / replaced by a resolved version by the merger
 							if(returnsSomething)

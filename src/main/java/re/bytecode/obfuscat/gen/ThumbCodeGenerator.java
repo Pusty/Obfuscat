@@ -22,6 +22,13 @@ import re.bytecode.obfuscat.cfg.nodes.NodeStore;
  */
 public class ThumbCodeGenerator extends CodeGenerator {
 
+	
+	static {
+		registerCodegen(ThumbCodeGenerator.class);
+		registerCustomNode(ThumbCodeGenerator.class, "readInt", new ThumbNodeReadInt());
+		registerCustomNode(ThumbCodeGenerator.class, "call", new ThumbNodeCall());
+	}
+	
 	/**
 	 * Create a new ThumbCodeGenerator (recommended way of creating an instance is
 	 * through {@link re.bytecode.obfuscat.Obfuscat#generateCode(String, Function)})
@@ -1144,23 +1151,20 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	 */
 	public static class ThumbNodeReadInt extends CustomNodeImpl {
 
-		public ThumbNodeReadInt(Context context, CodeGenerator generator) {
-			super(context, generator);
-			assert (generator instanceof ThumbCodeGenerator);
-		}
-
 		@Override
-		public void process(CompiledBasicBlock cbb, NodeCustom node) {
+		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
+			assert (generator instanceof ThumbCodeGenerator);
 			assert (cbb instanceof ThumbCompiledBasicBlock);
+			
 
-			int[] data = new int[getGenerator().getNodeSize()];
+			int[] data = new int[generator.getNodeSize()];
 
-			((ThumbCodeGenerator) getGenerator()).loadNode(data, 0, 0, node.children()[0]);
+			((ThumbCodeGenerator) generator).loadNode(data, 0, 0, node.children()[0]);
 
 			// LDR r0, [r0] - 00 68
 			data[2] = 0x00;
 			data[3] = 0x68;
-			((ThumbCodeGenerator) getGenerator()).storeNode(data, 4, node);
+			((ThumbCodeGenerator) generator).storeNode(data, 4, node);
 
 			data[6] = 0xAF; // NOP.W
 			data[7] = 0xF3;
@@ -1187,30 +1191,26 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	 */
 	public static class ThumbNodeCall extends CustomNodeImpl {
 
-		public ThumbNodeCall(Context context, CodeGenerator generator) {
-			super(context, generator);
-			assert (generator instanceof ThumbCodeGenerator);
-		}
-
 		@Override
-		public void process(CompiledBasicBlock cbb, NodeCustom node) {
+		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
+			assert (generator instanceof ThumbCodeGenerator);
 			assert (cbb instanceof ThumbCompiledBasicBlock);
-			if (!(this.getGenerator().getFunction() instanceof MergedFunction))
+			if (!(generator.getFunction() instanceof MergedFunction))
 				throw new RuntimeException("Can't branch in a non merged function");
 
-			int[] data = new int[getGenerator().getNodeSize()];
+			int[] data = new int[generator.getNodeSize()];
 
 			Node[] children = node.children();
 
 			if (children.length >= 1) {
-				((ThumbCodeGenerator) getGenerator()).loadNode(data, 0, 0, children[0]);
+				((ThumbCodeGenerator)generator).loadNode(data, 0, 0, children[0]);
 			} else {
 				data[0] = 0x00; // NOP
 				data[1] = 0xBF;
 			}
 
 			if (children.length >= 2) {
-				((ThumbCodeGenerator) getGenerator()).loadNode(data, 2, 1, children[1]);
+				((ThumbCodeGenerator)generator).loadNode(data, 2, 1, children[1]);
 			} else {
 				data[2] = 0x00; // NOP
 				data[3] = 0xBF;
@@ -1220,7 +1220,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				// ((ThumbCodeGenerator) getGenerator()).loadNode(data, 4, 2, children[2]);
 
 				// ldr r2, [sp, #1019] - DD F8 FB 23
-				int v = ((ThumbCodeGenerator) getGenerator()).getNodeID(children[2]) * 4;
+				int v = ((ThumbCodeGenerator)generator).getNodeID(children[2]) * 4;
 				data[4] = 0xDD;
 				data[5] = 0xF8;
 				data[6] = v & 0xFF;
@@ -1237,7 +1237,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				// ((ThumbCodeGenerator) getGenerator()).loadNode(data, 6, 3, children[3]);
 
 				// ldr r3, [sp, #1019] - DD F8 FB 23
-				int v = ((ThumbCodeGenerator) getGenerator()).getNodeID(children[3]) * 4;
+				int v = ((ThumbCodeGenerator)generator).getNodeID(children[3]) * 4;
 				data[8] = 0xDD;
 				data[9] = 0xF8;
 				data[10] = v & 0xFF;
@@ -1255,7 +1255,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			data[12] = 0xC0;
 			data[13] = 0x47;
 
-			((ThumbCodeGenerator) getGenerator()).storeNode(data, 14, node);
+			((ThumbCodeGenerator)generator).storeNode(data, 14, node);
 
 			// 6 instructions
 

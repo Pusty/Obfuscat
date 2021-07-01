@@ -68,7 +68,7 @@ public class NodeALoad extends Node {
 		this.index = index.equals(search) ? replace : index.replace(search, replace);
 		return this;
 	}
-	
+
 	@Override
 	public Node clone() {
 		return new NodeALoad(array.clone(), index.clone(), loadSize);

@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * A node is an abstraction from one "instruction" / operation
  */
-public abstract class Node implements Cloneable, Serializable {
+public abstract class Node implements Serializable {
 	
 	private static final long serialVersionUID = -1984474441856451816L;
 
@@ -72,7 +72,7 @@ public abstract class Node implements Cloneable, Serializable {
 	 */
 	public Node[] children() { return null; }
 	
-	@Override
+	//@Override
 	public abstract Node clone();
 	
 	

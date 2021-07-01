@@ -252,17 +252,17 @@ public class ThumbCodeGenerationTest {
 		globalUnicorn.mem_write(ADDRESS, codeData);
 
 		// initialize machine registers
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_LR, new Long(DEAD_ADDRESS));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_SP, new Long(sp));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_LR, Long.valueOf(DEAD_ADDRESS));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_SP, Long.valueOf(sp));
 
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R0, new Long(r0));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R1, new Long(r1));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R2, new Long(r2));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R3, new Long(r3));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R4, new Long(r4));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R5, new Long(r5));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R6, new Long(r6));
-		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R7, new Long(r7));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R0, Long.valueOf(r0));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R1, Long.valueOf(r1));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R2, Long.valueOf(r2));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R3, Long.valueOf(r3));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R4, Long.valueOf(r4));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R5, Long.valueOf(r5));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R6, Long.valueOf(r6));
+		globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R7, Long.valueOf(r7));
 
 		// r8 = function address - this would be annoying to do in C
 		// globalUnicorn.reg_write(Unicorn.UC_ARM_REG_R8, new Long(ADDRESS | 1));

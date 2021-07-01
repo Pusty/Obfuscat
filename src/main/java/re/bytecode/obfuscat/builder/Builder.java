@@ -43,7 +43,8 @@ public abstract class Builder {
 			// Check if the arguments provided are all supported (possibly want to ignore or warn for not supported instead)
 			if(!supported.containsKey(e.getKey())) throw new BuilderArgumentException(this.getClass()+" doesn't supported argument '"+e.getKey()+"'");
 			// Check if the provided arguments type is derivable from the specified parameter type
-			if(!supported.get(e.getKey()).isAssignableFrom(e.getValue().getClass())) throw new BuilderArgumentException("Argument "+e.getKey()+" has wrong type "+e.getValue().getClass()+" which should be "+supported.get(e.getKey()));
+			//if(!supported.get(e.getKey()).isAssignableFrom(e.getValue().getClass())) throw new BuilderArgumentException("Argument "+e.getKey()+" has wrong type "+e.getValue().getClass()+" which should be "+supported.get(e.getKey()));
+			// ^ this check is correct but causes some errors in GWT compilation, do in CLI instead
 		}
 		
 		return generateFunction(args);
