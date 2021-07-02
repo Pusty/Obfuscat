@@ -2,7 +2,7 @@ package re.bytecode.obfuscat.dsl;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Array;
-import java.lang.reflect.Method;
+//import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,7 +69,6 @@ public class DSLParser {
 		Map<String, Function> functions = new HashMap<String, Function>();
 		
 		for (MethodInfo method : classReader.getMethodTable().getIndexes()) {
-
 			if (verifyMethod(classReader, method)) {
 				Class<?>[] args = convertFunctionDescriptor(method.getDescriptor());
 				String desc = method.getDescriptor().split("\\x29")[1];
@@ -131,7 +130,7 @@ public class DSLParser {
 		}else if (desc == 'L')
 			return Object.class;
 		else
-			return Method.class;
+			return null;
 	}
 
 	// Convert a method signature to a list of parameters
@@ -162,6 +161,7 @@ public class DSLParser {
 	private boolean verifyMethod(ClassReader classReader, MethodInfo method) throws Exception {
 
 		// Check Method Attributes for special properties
+		
 		for (AttributeInfo info : method.getInfo().getIndexes()) {
 
 			if (info.getAttribute().equals("RuntimeInvisibleAnnotations")) {
