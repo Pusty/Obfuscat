@@ -19,6 +19,7 @@ import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.test.util.DSLGenerationUtil;
 import re.bytecode.obfuscat.test.util.JavaGenerationUtil;
 import re.bytecode.obfuscat.test.util.SampleLoader;
+import re.bytecode.obfuscat.test.util.VMGenerationUtil;
 
 public class DSLCodeParsingTest {
 	
@@ -53,8 +54,55 @@ public class DSLCodeParsingTest {
 		ef.add(runTest("Sample3", "entry", passes));
 		ef.add(runTest("Sample4", "crc32", passes, new byte[] {0x12, 0x23, 0x45, 0x67, (byte) 0x89}, 5));
 		ef.add(runTest("Sample5", "entry", passes)); 
-		
+		ef.add(runTest("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}}));
 		return ef;
+	}
+	
+	public static void runTestVM(String fileName, String functionName, String[] passes, Object... args) throws Exception {
+		
+		byte[] data = SampleLoader.loadFile(fileName);
+		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
+		Integer fib = (Integer) m.invoke(null, args);
+
+		byte[] vmcode = VMGenerationUtil.generateCode(data, functionName, passes);
+		
+		EmulateFunction code = new EmulateFunction(VMGenerationUtil.generateVM());
+		Integer res = (Integer) code.run(-1, new Object[] {vmcode, new int[0x100 + 0x100], args});
+		assertEquals("Java and Thumb Result don't match", fib.intValue(), res.intValue());
+	}
+	
+	public static void runTestVMinVM(String fileName, String functionName, String[] passes, Object... args) throws Exception {
+		
+		byte[] data = SampleLoader.loadFile(fileName);
+		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
+		Integer fib = (Integer) m.invoke(null, args);
+
+		byte[] codeofvm = VMGenerationUtil.generateCode(VMGenerationUtil.generateVM(), passes);
+		byte[] vmcode = VMGenerationUtil.generateCode(data, functionName, passes);
+		
+		EmulateFunction code = new EmulateFunction(VMGenerationUtil.generateVM());
+		
+		Integer res = (Integer) code.run(-1, new Object[] {codeofvm, new int[0x100 + 0x100], new Object[] {vmcode, new int[0x100 + 0x100], args}});
+		assertEquals("Java and Thumb Result don't match", fib.intValue(), res.intValue());
+	}
+	
+	@Test
+	public void testVM() throws Exception {
+		String[] passes = new String[0];
+		runTestVM("Sample1", "entry", passes);
+		runTestVM("Sample2", "entry", passes);
+		runTestVM("Sample3", "entry", passes);
+		runTestVM("Sample4", "crc32", passes, new byte[] { 0x12, 0x23, 0x45, 0x67, (byte) 0x89 }, 5);
+		runTestVM("Sample5", "entry", passes);
+		runTestVM("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
+		
+		runTestVMinVM("Sample1", "entry", passes);
+		//runTestVMinVM("Sample2", "entry", passes); // this just takes too long
+		runTestVMinVM("Sample3", "entry", passes);
+		runTestVMinVM("Sample4", "crc32", passes, new byte[] { 0x12, 0x23, 0x45, 0x67, (byte) 0x89 }, 5);
+		runTestVMinVM("Sample5", "entry", passes);
+		runTestVMinVM("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
+		
 	}
 	
 	public static List<EmulateFunction> mergedTestCases(String[] passes) throws Exception {

@@ -283,6 +283,9 @@ public class DSLParser {
 
 				Instruction instRaw = code.getInst().getInstructionMap().get(key);
 				
+				// Checkcast can be safely ignored
+				if((instRaw.getInstruction()&0xFF) == Opcodes.CHECKCAST) continue;
+				
 				if (instRaw instanceof InstLocalVar) {
 					// parse local variable instruction
 					InstLocalVar inst = (InstLocalVar) instRaw;
@@ -508,7 +511,8 @@ public class DSLParser {
 						arraySize = MemorySize.BYTE;
 					else if (inst.getType() == char.class)
 						arraySize = MemorySize.SHORT;
-					// maybe add support for array of arrays later
+					else if (inst.getType() == Array.class)
+						arraySize = MemorySize.POINTER;
 					else
 						throw new RuntimeException("Not supported: " + inst.getType());
 
@@ -663,8 +667,7 @@ public class DSLParser {
 						lastBlockExitBlock = true;
 						break;
 					case InstBranch.BRANCH_INVOKE:
-						if((inst.getInstruction()&0xFF) != Opcodes.INVOKESTATIC) 
-							throw new RuntimeException("Not implemented: " + inst.getName());
+
 						
 						MethodReference mr = (MethodReference) inst.getConstantPool().get(inst.getPoolIndex());
 						NameAndTypeDescriptor natr = (NameAndTypeDescriptor)inst.getConstantPool().get(mr.getNameAndType());
@@ -672,6 +675,14 @@ public class DSLParser {
 						String type = (String) inst.getConstantPool().get(natr.getEncodedTypeDescriptor());
 						
 						MethodInfo info = classReader.getMethodTable().getMethod(inst.getConstantPool(), name);
+						
+						if(info == null) {
+							throw new RuntimeException("Method "+name+" not found");
+						}
+						
+						if((inst.getInstruction()&0xFF) != Opcodes.INVOKESTATIC) 
+							throw new RuntimeException("Not implemented: " + inst.getName());
+						
 						
 						// NOTE: If the nodes have return values and these are not used / voided , the function call will be optimized out
 						// So functions with side effects need to have the void type or be handled carefully
@@ -692,7 +703,14 @@ public class DSLParser {
 							boolean returnsSomething = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
 							
 							// add the custom node
-							NodeCustom custom = new NodeCustom(name, argsNode);
+							
+							Node custom;
+							if(name.equals("int2obj") || name.equals("obj2int") ) {
+								custom = new NodeMath(MathOperation.NOP, argsNode[0]);
+							}else {
+								custom = new NodeCustom(name, argsNode);
+							}
+							
 							if(returnsSomething)
 								stack.push(custom);
 							else
@@ -717,7 +735,10 @@ public class DSLParser {
 							desc = type.split("\\x29")[1];
 							boolean returnsSomething = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
 							
-							NodeCustom custom = new NodeCustom("call_unresolved", argsNode); // this needs to be resolved / replaced by a resolved version by the merger
+							
+							Node custom;
+							custom = new NodeCustom("call_unresolved", argsNode); // this needs to be resolved / replaced by a resolved version by the merger
+							
 							if(returnsSomething)
 								stack.push(custom);
 							else

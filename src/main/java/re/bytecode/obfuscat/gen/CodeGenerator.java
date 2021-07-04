@@ -82,6 +82,8 @@ public abstract class CodeGenerator {
 	}
 	
 	private CustomNodeImpl getCustomNodeImpl(String identifier) {
+		if(codegenMap.get(this.getClass()).get(identifier) == null)
+			throw new RuntimeException("No implemention for "+identifier+" in "+this.getClass());
 		return codegenMap.get(this.getClass()).get(identifier);
 	}
 
@@ -207,13 +209,9 @@ public abstract class CodeGenerator {
 		
 		if(!countOccurances.containsKey(node)) {
 			countOccurances.put(node, 0);
-			List<Node> already = new ArrayList<Node>(); // don't count references to the same child from one parent multiple times
 			if (children != null)
 				for (int i = 0; i < children.length; i++) {
-					if(!already.contains(children[i])) {
-						countOccurances.put(children[i], countOccurances.getOrDefault(children[i], 0)+1);
-						already.add(children[i]);
-					}
+					countOccurances.put(children[i], countOccurances.getOrDefault(children[i], 0)+1);
 				}
 		}
 	}
@@ -292,8 +290,6 @@ public abstract class CodeGenerator {
 				countOccurances.put(bb.getReturnValue(), countOccurances.getOrDefault(bb.getReturnValue(), 0)+1);
 			
 			amountBlocks.put(bb, countOccurances.size());
-			
-			//System.out.println(countOccurances);
 			
 			slots = new HashMap<Integer, Node>();
 			

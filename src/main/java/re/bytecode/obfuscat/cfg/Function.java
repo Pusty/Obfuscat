@@ -99,6 +99,14 @@ public class Function implements Serializable {
 				jumpBlocks++;
 		}
 		
+		map.put("const", map.getOrDefault("const", 0));
+		map.put("math", map.getOrDefault("math", 0));
+		map.put("store", map.getOrDefault("store", 0));
+		map.put("load", map.getOrDefault("load", 0));
+		map.put("astore", map.getOrDefault("astore", 0));
+		map.put("aload", map.getOrDefault("aload", 0));
+		map.put("custom", map.getOrDefault("custom", 0));
+		
 		map.put("conditionalBlocks", conditionalBlocks);
 		map.put("switchBlocks", switchBlocks);
 		map.put("exitBlocks", exitBlocks);

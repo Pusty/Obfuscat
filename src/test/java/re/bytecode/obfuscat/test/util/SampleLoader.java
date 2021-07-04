@@ -8,7 +8,7 @@ import java.nio.file.Paths;
 public class SampleLoader {
 
 	public static byte[] loadFile(String name) throws IOException {
-    	byte[] fileData  = Files.readAllBytes(Paths.get(new File(System.getProperty("user.dir")+"/bin/re/bytecode/obfuscat/samples/"+name+".class").toURI()));
+    	byte[] fileData  = Files.readAllBytes(Paths.get(new File(System.getProperty("user.dir")+"/bin/test/re/bytecode/obfuscat/samples/"+name+".class").toURI()));
     	return fileData;
 	}
 

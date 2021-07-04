@@ -99,16 +99,22 @@ public class EmulateFunction {
 			} else if (obj instanceof Integer) {
 				value = (Integer) obj;
 			} else if (obj instanceof String) {
-				if(constMap == null)
-					throw new RuntimeException("String Constants not supported");
-				if(constMap.containsKey((String)obj))
-					value = (Integer)constMap.get((String)obj);
-				else
-					throw new RuntimeException("Keyword "+obj+" not supported as a constant");
+				String str = (String)obj;
+				if(constMap == null) {
+					output = str;
+					// throw new RuntimeException("String Constants not supported");
+				}else {
+					if(constMap.containsKey(str))
+						value = (Integer)constMap.get(str);
+					else
+						throw new RuntimeException("Keyword "+str+" not supported as a constant "+constMap);
+					
+				}
 			}else {
 				throw new RuntimeException("Constant Type not supported");
 			}
-			output = value;
+			if(value != null)
+				output = value;
 		} else if (node instanceof NodeLoad) {
 			// If the node is a variable load node then read the variable and convert it to
 			// an Integer (or keep it as what it was if already an Integer / Array)
@@ -178,7 +184,7 @@ public class EmulateFunction {
 
 			Object[] array = (Object[]) arrayTable.get(input[0]);
 			Integer index = (Integer) input[1];
-
+			
 			switch (ns.getStoreSize()) {
 			case BYTE:
 				array[index] = Integer.valueOf((int) (((Integer) input[2]).byteValue()));
@@ -293,6 +299,7 @@ public class EmulateFunction {
 	private int registerArray(Object[] arr) {
 		int ar = arrayAddressSeed&0x7FFFFFFF;
 		arrayTable.put(ar, arr);
+		//System.out.println(Integer.toHexString(ar)+" # "+Arrays.toString(arr));
 		arrayAddressSeed = arrayRandom.nextInt();
 		return ar;
 	}
@@ -336,6 +343,103 @@ public class EmulateFunction {
 		
 		return run0(blockLimit, true, args);
 	}
+	
+	
+	private Object registerArrayRecursive(Object argV, boolean check, int i) {
+		
+		Class<?> arg = argV.getClass();
+		
+		// Convert arrays to boxed integer versions
+		if (arg.isArray()) {
+			if (arg == byte[].class) {
+				byte[] ba = ((byte[]) argV);
+				Object[] oa = new Object[ba.length];
+				for (int j = 0; j < ba.length; j++)
+					oa[j] = Integer.valueOf(ba[j]);
+				argV = registerArray(oa);
+			} else if (arg == short[].class) {
+				short[] sa = ((short[]) argV);
+				Object[] oa = new Object[sa.length];
+				for (int j = 0; j < sa.length; j++)
+					oa[j] = Integer.valueOf(sa[j]);
+				argV = registerArray(oa);
+			} else if (arg == char[].class) {
+				char[] ca = ((char[]) argV);
+				Object[] oa = new Object[ca.length];
+				for (int j = 0; j < ca.length; j++)
+					oa[j] = Integer.valueOf(ca[j]);
+				argV = registerArray(oa);
+			} else if (arg == int[].class) {
+				int[] ia = ((int[]) argV);
+				Object[] oa = new Object[ia.length];
+				for (int j = 0; j < ia.length; j++)
+					oa[j] = Integer.valueOf(ia[j]);
+				argV = registerArray(oa);
+			} else if (arg == Object[].class) {
+				Object[] oa = ((Object[]) argV);
+				Object[] replacedRef = new Object[oa.length];
+				for(int j=0;j<oa.length;j++)
+					replacedRef[j] = registerArrayRecursive(oa[j], false, i);
+				argV = registerArray(replacedRef);
+			} else
+				throw new RuntimeException("Unsupported Array Type "+argV);
+		}
+		
+		// Check Type
+		if (arg == Integer.class)
+			arg = int.class;
+		else if (arg == Short.class)
+			arg = short.class;
+		else if (arg == Character.class)
+			arg = char.class;
+		else if (arg == Byte.class)
+			arg = byte.class;
+		else if (arg.isArray())
+			arg = Array.class;
+		
+		if (check && (function.getArguments()[i] != arg) && (!function.getArguments()[i].isArray() || arg != Array.class))
+			throw new RuntimeException("Type of Argument " + i + " doesn't match signature ("+arg+" != "+function.getArguments()[i]+")");
+
+		return argV;
+	}
+	
+	
+	private void writebackRecursive(Object argV, Integer addr ) {
+		
+		Class<?> arg = argV.getClass();
+		
+		if (arg.isArray()) {
+
+			if (arg == byte[].class) {
+				byte[] ba = ((byte[]) argV);
+				Object[] oa = (Object[]) arrayTable.get(addr);
+				for (int j = 0; j < ba.length; j++)
+					ba[j] = ((Integer)oa[j]).byteValue();
+			} else if (arg == short[].class) {
+				short[] sa = ((short[]) argV);
+				Object[] oa = (Object[]) arrayTable.get(addr);
+				for (int j = 0; j < sa.length; j++)
+					sa[j] = ((Integer)oa[j]).shortValue();
+			} else if (arg == char[].class) {
+				char[] ca = ((char[]) argV);
+				Object[] oa = (Object[]) arrayTable.get(addr);
+				for (int j = 0; j < ca.length; j++)
+					ca[j] = (char) ((Integer)oa[j]).shortValue();
+			} else if (arg == int[].class) {
+				int[] ia = ((int[]) argV);
+				Object[] oa = (Object[]) arrayTable.get(addr);
+				for (int j = 0; j < ia.length; j++)
+					ia[j] = ((Integer)oa[j]).intValue();
+			} else if (arg == Object[].class) {
+				Object[] oa = ((Object[]) argV);
+				Object[] tmpArray = (Object[]) arrayTable.get(addr);
+				for (int j = 0; j < tmpArray.length; j++) {
+					writebackRecursive(oa[j],(Integer)tmpArray[j]); // oa for the array, tmpArray for the internal address
+				}
+			}else
+				throw new RuntimeException("Not supported");
+		}
+	}
 
 	public Object run0(int blockLimit, boolean check, Object... args) {
 		
@@ -349,66 +453,23 @@ public class EmulateFunction {
 		runtimeStatistics.put("exitBlocks", 0);
 		runtimeStatistics.put("jumpBlocks", 0);
 		
+		// Default values
+		runtimeStatistics.put("const", runtimeStatistics.getOrDefault("const", 0));
+		runtimeStatistics.put("math", runtimeStatistics.getOrDefault("math", 0));
+		runtimeStatistics.put("store", runtimeStatistics.getOrDefault("store", 0));
+		runtimeStatistics.put("load", runtimeStatistics.getOrDefault("load", 0));
+		runtimeStatistics.put("astore", runtimeStatistics.getOrDefault("astore", 0));
+		runtimeStatistics.put("aload", runtimeStatistics.getOrDefault("aload", 0));
+		runtimeStatistics.put("custom", runtimeStatistics.getOrDefault("custom", 0));
+		
 		// Check if the argument length matches
 		if (check && function.getArguments().length != args.length)
 			throw new RuntimeException("Amount of arguments don't match");
 		
 		// Argument Checking
 		for (int i = 0; i < args.length; i++) {
-
-			Object argV = args[i];
-			Class<?> arg = argV.getClass();
-
-			// Convert arrays to boxed integer versions
-			if (arg.isArray()) {
-				if (arg == byte[].class) {
-					byte[] ba = ((byte[]) argV);
-					Object[] oa = new Object[ba.length];
-					for (int j = 0; j < ba.length; j++)
-						oa[j] = Integer.valueOf(ba[j]);
-					argV = registerArray(oa);
-				} else if (arg == short[].class) {
-					short[] sa = ((short[]) argV);
-					Object[] oa = new Object[sa.length];
-					for (int j = 0; j < sa.length; j++)
-						oa[j] = Integer.valueOf(sa[j]);
-					argV = registerArray(oa);
-				} else if (arg == char[].class) {
-					char[] ca = ((char[]) argV);
-					Object[] oa = new Object[ca.length];
-					for (int j = 0; j < ca.length; j++)
-						oa[j] = Integer.valueOf(ca[j]);
-					argV = registerArray(oa);
-				} else if (arg == int[].class) {
-					int[] ia = ((int[]) argV);
-					Object[] oa = new Object[ia.length];
-					for (int j = 0; j < ia.length; j++)
-						oa[j] = Integer.valueOf(ia[j]);
-					argV = registerArray(oa);
-				} else if (arg == Object[].class) {
-					Object[] oa = ((Object[]) argV);
-					argV = registerArray(oa);
-				} else
-					throw new RuntimeException("Unsupported Array Type "+argV);
-			}
-
-			// Check Type
-			if (arg == Integer.class)
-				arg = int.class;
-			else if (arg == Short.class)
-				arg = short.class;
-			else if (arg == Character.class)
-				arg = char.class;
-			else if (arg == Byte.class)
-				arg = byte.class;
-			else if (arg.isArray())
-				arg = Array.class;
-			
-			if (check && (function.getArguments()[i] != arg) && (!function.getArguments()[i].isArray() || arg != Array.class))
-				throw new RuntimeException("Type of Argument " + i + " doesn't match signature ("+arg+" != "+function.getArguments()[i]+")");
-
 			// Store converted array as variables in the fitting slots
-			variables.put(i, argV);
+			variables.put(i, registerArrayRecursive(args[i], check, i));
 		}
 		
 		// init variables with random input data
@@ -430,36 +491,7 @@ public class EmulateFunction {
 
 		// Write back arrays
 		for (int i = 0; i < args.length; i++) {
-
-			Object argV = args[i];
-			Class<?> arg = argV.getClass();
-			
-
-			if (arg.isArray()) {
-
-				if (arg == byte[].class) {
-					byte[] ba = ((byte[]) argV);
-					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
-					for (int j = 0; j < ba.length; j++)
-						ba[j] = ((Integer)oa[j]).byteValue();
-				} else if (arg == short[].class) {
-					short[] sa = ((short[]) argV);
-					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
-					for (int j = 0; j < sa.length; j++)
-						sa[j] = ((Integer)oa[j]).shortValue();
-				} else if (arg == char[].class) {
-					char[] ca = ((char[]) argV);
-					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
-					for (int j = 0; j < ca.length; j++)
-						ca[j] = (char) ((Integer)oa[j]).shortValue();
-				} else if (arg == int[].class) {
-					int[] ia = ((int[]) argV);
-					Object[] oa = (Object[]) arrayTable.get(variables.get(i));
-					for (int j = 0; j < ia.length; j++)
-						ia[j] = ((Integer)oa[j]).intValue();
-				}
-			}
-
+			writebackRecursive(args[i], (Integer)variables.get(i));
 		}
 
 		if (returnedSomething) {

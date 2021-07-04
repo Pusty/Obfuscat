@@ -194,7 +194,7 @@ public class OperationEncodePass extends Pass {
 		Node c = cst(0);
 		switch(seed) {
 		case 0:
-			return add(and(neg(not(x[0])), not(c)), c); // 5m 1c
+			return add(and(not(not(x[0])), not(c)), c); // 5m 1c
 		default: throw new RuntimeException("Not handled");
 		}
 	}

@@ -15,9 +15,11 @@ import org.junit.Test;
 
 import re.bytecode.obfuscat.Obfuscat;
 import re.bytecode.obfuscat.cfg.Function;
+import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
 import re.bytecode.obfuscat.test.util.JavaGenerationUtil;
 import re.bytecode.obfuscat.test.util.SampleLoader;
 import re.bytecode.obfuscat.test.util.ThumbGenerationUtil;
+import re.bytecode.obfuscat.test.util.VMGenerationUtil;
 import unicorn.CodeHook;
 import unicorn.EventMemHook;
 import unicorn.Unicorn;
@@ -161,7 +163,7 @@ public class ThumbCodeGenerationTest {
 					byte[] oa = unicorn.mem_read(HEAP_POSITION, ia.length * 4);
 					for (int j = 0; j < ia.length; j++)
 						ia[j] = ((oa[j * 2] & 0xFF) | ((oa[j * 2 + 1] & 0xFF) << 8) | ((oa[j * 2 + 2] & 0xFF) << 16)
-								| ((oa[j * 2 + 13] & 0xFF) << 24));
+								| ((oa[j * 2 + 3] & 0xFF) << 24));
 				} else {
 					byte[] oa = new byte[ia.length * 4];
 					for (int j = 0; j < ia.length; j++) {
@@ -173,6 +175,38 @@ public class ThumbCodeGenerationTest {
 					unicorn.mem_write(HEAP_POSITION, oa);
 				}
 				HEAP_POSITION += ia.length * 4;
+			} else if (argT == Object[].class) {
+				
+				Object[] ooa = ((Object[]) arg);
+				int curheappos = HEAP_POSITION;
+				HEAP_POSITION += ooa.length * 4;
+				
+				if (write) {
+					//byte[] oa = unicorn.mem_read(curheappos, ooa.length * 4);
+					// the assumption is that the host array can't be edited
+					/*
+					for (int j = 0; j < ooa.length; j++) {
+						long address = ((oa[j * 2] & 0xFFL) | ((oa[j * 2 + 1] & 0xFFL) << 8L) | ((oa[j * 2 + 2] & 0xFFL) << 16L)
+								| ((oa[j * 2 + 3] & 0xFFL) << 24L));
+						
+					}*/
+					
+					for (int j = 0; j < ooa.length; j++) {
+						convertArgument(unicorn, ooa[j], write);
+					}
+					
+				} else {
+					byte[] oa = new byte[ooa.length * 4];
+					for (int j = 0; j < ooa.length; j++) {
+						long ia = convertArgument(unicorn, ooa[j], write);
+						oa[j * 4] = (byte) (ia & 0xFF);
+						oa[j * 4 + 1] = (byte) ((ia >> 8) & 0xFF);
+						oa[j * 4 + 2] = (byte) ((ia >> 16) & 0xFF);
+						oa[j * 4 + 3] = (byte) ((ia >> 24) & 0xFF);
+					}
+					unicorn.mem_write(curheappos, oa);
+				}
+
 			} else
 				throw new RuntimeException("Array type not supported " + arg.getClass());
 
@@ -418,6 +452,8 @@ public class ThumbCodeGenerationTest {
 		data.add(new int[] { INST_SIZE, INST_COUNT });
 		runTest("Sample6", "entry", passes);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		runTest("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
+		data.add(new int[] { INST_SIZE, INST_COUNT });
 		return data;
 	}
 
@@ -442,6 +478,35 @@ public class ThumbCodeGenerationTest {
 		}
 		assertEquals("Byte Array Generation Processed Too Much", byteArray[7], byteArray2[7]);
 
+	}
+	
+	
+	public static void runTestVM(String fileName, String functionName, String[] passes, Object... args) throws Exception {
+		
+		byte[] data = SampleLoader.loadFile(fileName);
+		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
+		Integer fib = (Integer) m.invoke(null, args);
+
+		if(VERBOSE) System.out.println("Testing VM: "+fileName+"."+functionName+(passes==null?"":" with "+Arrays.toString(passes)));
+		
+		byte[] vmcode = VMGenerationUtil.generateCode(data, functionName, passes);
+		
+		ThumbCodeGenerator gen = new ThumbCodeGenerator(null, VMGenerationUtil.generateVM());
+		int[] code  = gen.generate();
+		
+		long returnValue = test_thumb(code, new Object[] {vmcode, new int[0x100 + 0x100], args});
+		assertEquals("Java and Thumb Result don't match", fib.intValue(), returnValue);
+	}
+	
+	@Test
+	public void testVM() throws Exception {
+		String[] passes = new String[0];
+		runTestVM("Sample1", "entry", passes);
+		//runTestVM("Sample2", "entry", passes); // this just takes too long
+		runTestVM("Sample3", "entry", passes);
+		runTestVM("Sample4", "crc32", passes, new byte[] { 0x12, 0x23, 0x45, 0x67, (byte) 0x89 }, 5);
+		runTestVM("Sample5", "entry", passes);
+		runTestVM("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
 	}
 	
 	//@Test
