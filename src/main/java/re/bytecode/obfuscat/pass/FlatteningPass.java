@@ -40,7 +40,8 @@ public class FlatteningPass extends Pass {
 		else
 			nf = new Function(function.getName(), new ArrayList<BasicBlock>(), function.getArguments(), function.getVariables()+1, function.hasReturnValue());
 		
-
+		nf.setDataMap(function.getDataMap());
+		
 		BasicBlock dispatcher = new BasicBlock();
 		NodeLoad dispatchValue = new NodeLoad(MemorySize.INT, cfv);
 		dispatcher.getNodes().add(dispatchValue);

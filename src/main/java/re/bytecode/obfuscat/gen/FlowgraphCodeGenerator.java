@@ -254,6 +254,12 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 		return 0;
 	}
 
+
+	@Override
+	protected int countProgramSize() {
+		return 0;
+	}
+	
 	@Override
 	public void link(List<CompiledBasicBlock> blocks) {
 
@@ -380,5 +386,6 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 		}
 
 	}
+
 
 }

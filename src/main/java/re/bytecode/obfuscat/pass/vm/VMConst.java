@@ -60,6 +60,18 @@ public class VMConst {
 	public static final int OP_JUMP = 0x2A; // JUMP <JUMP J> 08 00 00 JJ JJ 00
 	public static final int OP_RETURN = 0x2B; // RETURN < <VALUE V> 09 VV 00 00 00 00
 	public static final int OP_RETURNV = 0x2C; 
+	
+	public static final int OP_ALLOC8 = 0x2D; // ALLOC <COUNT CC> - 2D CC 00 00 RR 00
+	public static final int OP_ALLOC16 = 0x2E;
+	public static final int OP_ALLOC32 = 0x2F;
+	public static final int OP_ALLOCP = 0x30;
+	
+	public static final int OP_PSTORE8  = 0x31; // STORE <SLOT S> <STORE CC> - 02 SS SS 00 CC 00
+	public static final int OP_PSTORE16 = 0x32; 
+	public static final int OP_PSTORE32 = 0x33; 
+	public static final int OP_PSTOREP  = 0x34; 
+	
+	public static final int OP_OCONST  = 0x35;  // OCONST <X> - 00 XX XX XX RR XX
 
 	public static int size2value(MemorySize size) {
 		switch (size) {

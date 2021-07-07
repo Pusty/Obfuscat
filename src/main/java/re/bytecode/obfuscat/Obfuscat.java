@@ -15,6 +15,7 @@ import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
 import re.bytecode.obfuscat.pass.Pass;
 import re.bytecode.obfuscat.pass.VariableEncodePass;
+import re.bytecode.obfuscat.pass.vm.VMPass;
 import re.bytecode.obfuscat.pass.FakeDependencyPass;
 import re.bytecode.obfuscat.pass.FlatteningPass;
 import re.bytecode.obfuscat.pass.LiteralEncodePass;
@@ -54,6 +55,7 @@ public class Obfuscat {
 		registerPass("VariableEncode", VariableEncodePass.class);
 		registerPass("FakeDependency", FakeDependencyPass.class);
 		registerPass("Flatten", FlatteningPass.class);
+		registerPass("Virtualize", VMPass.class);
 		
 		registerBuilder("Class", JavaClassBuilder.class);
 		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);

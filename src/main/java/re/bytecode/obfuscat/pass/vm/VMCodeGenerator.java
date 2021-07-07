@@ -9,6 +9,7 @@ import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
+import re.bytecode.obfuscat.cfg.nodes.NodeAlloc;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath;
@@ -46,7 +47,25 @@ public class VMCodeGenerator extends CodeGenerator {
 		return "A code generator for VM code";
 	}
 	
-	
+
+	@Override
+	protected int countProgramSize() {
+		
+		int size = 0;
+		for (BasicBlock bb : getFunction().getBlocks()) {
+			size += getBlockSize(bb) * getNodeSize();
+			size += bb.isConditionalBlock()?getNodeSize():0;
+			
+			if(bb.isSwitchCase()) { // switch cases
+				int swc = (bb.getSwitchBlocks().size()/getSwitchCaseCount());
+				if(bb.getSwitchBlocks().size() % getSwitchCaseCount() != 0)
+					swc++;
+				size += swc * getNodeSize();
+			}
+			size += getNodeSize(); // the size for a unconditional jump or return
+		}
+		return size;
+	}
 
 	@Override
 	protected void initMapping() {
@@ -74,6 +93,7 @@ public class VMCodeGenerator extends CodeGenerator {
 				NodeConst node = (NodeConst) n;
 				Object constObj = node.getObj();
 				int value = 0;
+				boolean offset=false;
 				if (constObj instanceof Integer) {
 					value = ((Integer) constObj).intValue();
 				} else if (constObj instanceof Short) {
@@ -82,11 +102,23 @@ public class VMCodeGenerator extends CodeGenerator {
 					value = ((Byte) constObj).intValue();
 				} else if (constObj instanceof Character) {
 					value = (int) ((Character) constObj).charValue();
+				} else if(constObj.getClass().isArray()) {
+					Object dataEntry = getFunction().getData(constObj);		
+					if(dataEntry == null)
+						throw new RuntimeException("Constant array not registered "+constObj);
+					value = getAppendedDataOffset(dataEntry);
+					offset = true;
+					
 				} else {
 					throw new RuntimeException("Const type " + constObj.getClass() + " not implemented");
 				}
 				
-				data[0] = OP_CONST;
+				if(!offset) {
+					data[0] = OP_CONST;
+				}else {
+					data[0] = OP_OCONST;
+				}
+				
 				data[1] = value&0xFF;
 				data[2] = (value>>8)&0xFF;
 				data[3] = (value>>16)&0xFF;
@@ -134,8 +166,7 @@ public class VMCodeGenerator extends CodeGenerator {
 					slot = slot - args;
 					data[0] = OP_STORE8+size2value(node.getStoreSize());
 				}else {
-					throw new RuntimeException("Trying to use PSTORE - which does not exist");
-					//data[0] = OP_PSTORE8+size2value(node.getStoreSize());
+					data[0] = OP_PSTORE8+size2value(node.getStoreSize());
 				}
 
 				Node[] children = node.children();
@@ -216,6 +247,28 @@ public class VMCodeGenerator extends CodeGenerator {
 
 		});
 
+		// Encode Math Operations
+		codeMapping.put(NodeAlloc.class, new VMNodeCodeGenerator(new int[getNodeSize()]) {
+
+			@Override
+			public void writeData(Node n, int[] data) {
+				assert (n instanceof NodeAlloc);
+				NodeAlloc node = (NodeAlloc) n;
+
+				Node[] children = node.children();
+				
+				data[0] = OP_ALLOC8 + size2value(node.getAllocationSize());
+				data[1] = getNodeID(children[0]);
+				data[2] = 0;
+				data[3] = 0;
+				data[4] = getNodeID(node);
+				data[5] = 0;
+			
+			}
+
+		});
+
+		
 	}
 
 	@Override
@@ -246,6 +299,21 @@ public class VMCodeGenerator extends CodeGenerator {
 	public int getSwitchCaseCount() {
 		return 3;
 	}
+	
+	@Override
+	protected int[] processAppendedData() {
+		int size = 0;
+		Object[] data = getFunction().getData();
+		
+		for(int i=0;i<data.length;i++) {
+			if(dataOffsetMap.containsKey(data[i])) // this should never occur
+				throw new RuntimeException(data[i]+" is registered more than once");
+			dataOffsetMap.put(data[i], size);
+			size++;
+		}
+		
+		return new int[] {};
+	}
 
 	@Override
 	protected void link(List<CompiledBasicBlock> blocks) {
@@ -271,6 +339,8 @@ public class VMCodeGenerator extends CodeGenerator {
 			curPos += getNodeSize(); // the size for a unconditional jump or return
 		}
 		
+		if(curPos != getProgramSize())
+			throw new RuntimeException("Actual program size is not equal to calculated program size");
 
 		// Iterate the basic blocks and add the conditional and unconditional jumps
 		for (CompiledBasicBlock cbb : blocks) {

@@ -27,7 +27,11 @@ public abstract class CodeGenerator {
 
 	private Function function;
 	private int[] data;
+	private int[] appenedDataOuput;
 	private Context context;
+	
+	protected Map<Object, Integer> dataOffsetMap;
+	private int programSize;
 
 	/**
 	 * Create a new code generator given a context and a function to synthesize code for
@@ -44,6 +48,9 @@ public abstract class CodeGenerator {
 		numberedBlocks = new HashMap<BasicBlock, Integer>();
 		amountBlocks = new HashMap<BasicBlock, Integer>();
 		numberedNodes = new HashMap<Node, Integer>();
+		
+		dataOffsetMap = new HashMap<Object, Integer>();
+		
 		blockID = 0;
 		maxNodeID = 0;
 		this.function = function;
@@ -366,7 +373,111 @@ public abstract class CodeGenerator {
 			generateBlockRecursive(compiledBlocks, processedBlocks, block.getUnconditionalBranch());
 
 	}
-
+	
+	protected int getAppendedDataOffset(Object o) {
+		return dataOffsetMap.get(o);
+	}
+	
+	protected  int getProgramSize() {
+		return programSize;
+	}
+	
+	protected abstract int countProgramSize();
+	
+	protected int[] getAppendedData() {
+		return appenedDataOuput;
+	}
+	
+	protected int[] processAppendedData() {
+		int size = 0;
+		
+		Object[] data = function.getData();
+		
+		// initial alignment
+		if(getProgramSize()%4 != 0)
+			size += 4-(getProgramSize()%4);
+		
+		for(int i=0;i<data.length;i++) {
+			
+			if(dataOffsetMap.containsKey(data[i])) // this should never occur
+				throw new RuntimeException(data[i]+" is registered more than once");
+			
+			dataOffsetMap.put(data[i], size);
+			if(data[i] instanceof boolean[])
+				size += ((boolean[])data[i]).length;
+			else if(data[i] instanceof byte[])
+				size += ((byte[])data[i]).length;
+			else if(data[i] instanceof short[])
+				size += ((short[])data[i]).length*2;
+			else if(data[i] instanceof char[])
+				size += ((char[])data[i]).length*2;
+			else if(data[i] instanceof int[])
+				size += ((int[])data[i]).length*4;
+			else
+				throw new RuntimeException("Unexpected Data of type "+data[i].getClass());
+			
+			// align by 4 bytes
+			if(size%4 != 0)
+				size += 4-(size%4);
+		}
+		
+		// padding at the end
+		if(size%getNodeSize() != 0)
+			size += getNodeSize()-(size%getNodeSize());
+		
+		
+		int[] dataOuput = new int[size];
+		
+		// Note that this way be overwritten for endian reasons
+		int currentPos = 0;
+		
+		// initial alignment
+		if(getProgramSize()%4 != 0)
+			currentPos += 4-(getProgramSize()%4);
+		
+		for(int i=0;i<data.length;i++) {
+			if(data[i] instanceof boolean[]) {
+				boolean[] a = (boolean[])data[i];
+				for(int j=0;j<a.length;j++) {
+					dataOuput[currentPos++] = a[j]?1:0;
+				}
+			}else if(data[i] instanceof byte[]) {
+				byte[] a = (byte[])data[i];
+				for(int j=0;j<a.length;j++) {
+					dataOuput[currentPos++] = a[j]&0xFF;
+				}
+			}else if(data[i] instanceof short[]) {
+				short[] a = (short[])data[i];
+				for(int j=0;j<a.length;j++) {
+					dataOuput[currentPos++] = a[j]&0xFF;
+					dataOuput[currentPos++] = (a[j]>>8)&0xFF;
+				}
+			}
+			else if(data[i] instanceof char[]) {
+				char[] a = (char[])data[i];
+				for(int j=0;j<a.length;j++) {
+					dataOuput[currentPos++] = a[j]&0xFF;
+					dataOuput[currentPos++] = (a[j]>>8)&0xFF;
+				}
+			}else if(data[i] instanceof int[]) {
+				int[] a = (int[])data[i];
+				for(int j=0;j<a.length;j++) {
+					dataOuput[currentPos++] = a[j]&0xFF;
+					dataOuput[currentPos++] = (a[j]>>8)&0xFF;
+					dataOuput[currentPos++] = (a[j]>>16)&0xFF;
+					dataOuput[currentPos++] = (a[j]>>24)&0xFF;
+				}
+			}else
+				throw new RuntimeException("Unexpected Data of type "+data[i].getClass());
+			
+			
+			if(currentPos%4 != 0)
+				currentPos += 4-(currentPos%4);
+		}
+		
+		return dataOuput;
+	}
+	
 	/**
 	 * Generate an array of bytes (in int[] format) for a list of connected basic blocks
 	 * @param f the list of connected basic blocks to process
@@ -374,10 +485,14 @@ public abstract class CodeGenerator {
 	 */
 	protected int[] generate(List<BasicBlock> f) {
 		
+		
 		// Number and Count the Blocks and Nodes
 		for (BasicBlock bb : f) {
 			iterateBlocks(bb);
 		}
+		
+		programSize = countProgramSize();
+		appenedDataOuput = processAppendedData();
 		
 		// The output list of compiled basic blocks
 		ArrayList<CompiledBasicBlock> blocks = new ArrayList<CompiledBasicBlock>();

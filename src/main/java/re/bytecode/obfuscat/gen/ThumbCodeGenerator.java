@@ -11,6 +11,7 @@ import re.bytecode.obfuscat.cfg.MergedFunction;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
+import re.bytecode.obfuscat.cfg.nodes.NodeAlloc;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
@@ -26,6 +27,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	static {
 		registerCodegen(ThumbCodeGenerator.class);
 		registerCustomNode(ThumbCodeGenerator.class, "readInt", new ThumbNodeReadInt());
+		registerCustomNode(ThumbCodeGenerator.class, "prepare_call", new ThumbNodePrepareCall());
 		registerCustomNode(ThumbCodeGenerator.class, "call", new ThumbNodeCall());
 	}
 	
@@ -214,6 +216,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				NodeConst node = (NodeConst) n;
 				Object constObj = node.getObj();
 				int value = 0;
+				boolean offset = false;
+				
 				if (constObj instanceof Integer) {
 					value = ((Integer) constObj).intValue();
 				} else if (constObj instanceof Short) {
@@ -222,10 +226,18 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					value = ((Byte) constObj).intValue();
 				} else if (constObj instanceof Character) {
 					value = (int) ((Character) constObj).charValue();
+				}  else if(constObj.getClass().isArray()) {
+					Object dataEntry = getFunction().getData(constObj);
+					
+					if(dataEntry == null)
+						throw new RuntimeException("Constant array not registered "+constObj);
+					
+					value = getAppendedDataOffset(dataEntry)+getProgramSize()-0x11; // offset 17 because r8 will be at +0x11
+					offset = true;
+					
 				} else {
 					throw new RuntimeException("Const type " + constObj.getClass() + " not implemented");
 				}
-
 				// MOVW r0, 0x1234 - 41 F2 34 20
 				// MOVT r0, 0x5678 - C5 F2 78 60
 
@@ -241,16 +253,23 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				data[6] = value & 0xFF;
 				data[7] = (((value >> 8) & 0x7) << 4);
 
-				storeNode(data, 8, node);
-
+				if(!offset) {
+					data[8] = 0x00; // NOP
+					data[9] = 0xBF;
+				}else {
+					// add r0, r8 - 40 44
+					data[8] = 0x40;
+					data[9] = 0x44;
+				}
+				
 				data[10] = 0x00; // NOP
 				data[11] = 0xBF;
 
 				data[12] = 0x00; // NOP
 				data[13] = 0xBF;
 
-				data[14] = 0x00; // NOP
-				data[15] = 0xBF;
+				storeNode(data, 14, node);
+
 
 				// 6 Instructions
 			}
@@ -658,6 +677,69 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			}
 
 		});
+		
+
+		// Encode Array Allocation Operations
+		codeMapping.put(NodeAlloc.class, new ThumbNodeCodeGenerator(new int[getNodeSize()]) {
+			@Override
+			public void writeData(Node n, int[] data) {
+				assert (n instanceof NodeAlloc);
+				NodeAlloc node = (NodeAlloc) n;
+				
+				
+				//if ((ThumbCodeGenerator.this.getFunction() instanceof MergedFunction))
+				//	throw new RuntimeException("Can't dynamically allocate memory in a merged function (yet)");
+
+				Node[] children = node.children();
+
+				loadNode(data, 0, 0, children[0]); // count
+				
+
+				data[2] = 0xAF; // NOP.W
+				data[3] = 0xF3;
+				data[4] = 0x00;
+				data[5] = 0x80;
+				
+				switch (node.getAllocationSize()) {
+				case BYTE:
+					// sub r6, r0, LSL #0 - A6 EB 00 06
+					data[6] = 0xA6;
+					data[7] = 0xEB;
+					data[8] = 0x00;
+					data[9] = 0x06;
+					break;
+				case SHORT:
+					// sub r6, r0, LSL #1 - A6 EB 40 06
+					data[6] = 0xA6;
+					data[7] = 0xEB;
+					data[8] = 0x40;
+					data[9] = 0x06;
+					break;
+				case INT:
+				case POINTER:
+					// sub r6, r0, LSL #2 - A6 EB 80 06
+					data[6] = 0xA6;
+					data[7] = 0xEB;
+					data[8] = 0x80;
+					data[9] = 0x06;
+					break;
+				default:
+					throw new RuntimeException("Not implemented");
+				}
+				
+				
+				data[10] = 0x00; // NOP
+				data[11] = 0xBF;
+				
+				// mov r0, r6 - 30 46
+				data[12] = 0x30; // NOP
+				data[13] = 0x46;
+				
+				storeNode(data, 14, node);
+
+				// 6 instructions
+			}
+		});
 
 	}
 
@@ -690,6 +772,30 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	public int getSwitchCaseCount() {
 		return 8;
 	}
+	
+	@Override
+	protected int countProgramSize() {
+		int size = 0;
+		size += getNodeSize(); // entry point
+		size += getNodeSize(); // pretext
+		size += getNodeSize(); // pretext2
+
+		for (BasicBlock bb : getFunction().getBlocks()) {
+			
+			size += this.getBlockSize(bb) * getNodeSize(); // the size for the nodes
+			size += bb.isConditionalBlock()?getNodeSize():0; // conditional jumps
+			
+			if(bb.isSwitchCase()) { // switch cases
+				int swc = (bb.getSwitchBlocks().size()/getSwitchCaseCount());
+				if(bb.getSwitchBlocks().size() % getSwitchCaseCount() != 0)
+					swc++;
+				size += swc * getNodeSize();
+			}
+			size += getNodeSize(); // the size for a unconditional jump or return
+		}
+		
+		return size;
+	}
 
 	@Override
 	public void link(List<CompiledBasicBlock> blocks) {
@@ -699,10 +805,12 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 		curPos += getNodeSize(); // entry point
 		curPos += getNodeSize(); // pretext
+		curPos += getNodeSize(); // pretext2
 
 		// Map BasicBlocks to their position in compiled format
 		for (CompiledBasicBlock cbb : blocks) {
 			positionMap.put(cbb.getBlock(), curPos);
+			
 			curPos += this.getBlockSize(cbb.getBlock()) * getNodeSize(); // the size for the nodes
 			curPos += cbb.getBlock().isConditionalBlock()?getNodeSize():0; // conditional jumps
 			
@@ -714,6 +822,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			}
 			curPos += getNodeSize(); // the size for a unconditional jump or return
 		}
+		
+		if(curPos != getProgramSize())
+			throw new RuntimeException("Actual program size is not equal to calculated program size");
 		
 
 		// Iterate the basic blocks and add the conditional and unconditional jumps
@@ -855,8 +966,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				done[12] = 0x00; // NOP
 				done[13] = 0xBF;
 
-				// pop {pc, r6, r7} - C0 BD
-				done[14] = 0xC0;
+				// pop {pc, r5, r6, r7} - E0 BD
+				done[14] = 0xE0;
 				done[15] = 0xBD;
 				
 				((ThumbCompiledBasicBlock) cbb).appendBytes(done);
@@ -904,6 +1015,17 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 		// This entry point code is to streamline MergedFunctions
 		int[] entrypoint = new int[getNodeSize()];
+		
+		/* Virtual function prolog
+		   push {lr, r6, r7}
+			mov r2, r0
+			mov r0, #0x60000 // size
+			add r0, r0, pc
+			mov r1, sp
+			sub sp, #0x200
+			
+			// need to return #0x200 on exit as well
+		 */
 
 		// point r8 to pretext for calls
 		// add r8, pc, 13 - 0F F2 0D 08
@@ -912,6 +1034,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		entrypoint[2] = 0x0D;
 		entrypoint[3] = 0x08;
 
+		
 		entrypoint[4] = 0xAF; // NOP.W
 		entrypoint[5] = 0xF3;
 		entrypoint[6] = 0x00;
@@ -958,8 +1081,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 
 		// set r8 = current address
 
-		// push {lr, r6, r7} - C0 B5
-		pretext[0] = 0xC0;
+		// push {lr, r5, r6, r7} - E0 B5
+		pretext[0] = 0xE0;
 		pretext[1] = 0xB5;
 
 		int variableCount = this.getFunction().getVariables();
@@ -1054,11 +1177,42 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		// 6 instructions
 
 		l.add(pretext);
+		
+		// add more arguments?
+		
+		int[] pretext2 = new int[getNodeSize()];
+
+		pretext2[0] = 0x00; // NOP
+		pretext2[1] = 0xBF;
+
+		pretext2[2] = 0x00; // NOP
+		pretext2[3] = 0xBF;
+		
+		pretext2[4] = 0xAF; // NOP.W
+		pretext2[5] = 0xF3;
+		pretext2[6] = 0x00;
+		pretext2[7] = 0x80;
+		
+		pretext2[8] = 0xAF; // NOP.W
+		pretext2[9] = 0xF3;
+		pretext2[10] = 0x00;
+		pretext2[11] = 0x80;
+
+		pretext2[12] = 0x00; // NOP
+		pretext2[13] = 0xBF;
+
+		// mov r6, sp - 6E 46
+		pretext2[14] = 0x6E;
+		pretext2[15] = 0x46;
+		
+		l.add(pretext2);
 
 		for (CompiledBasicBlock cbb : compiledBlocks) {
 			assert (cbb instanceof ThumbCompiledBasicBlock);
 			l.add(((ThumbCompiledBasicBlock) cbb).getBytes());
 		}
+		
+		l.add(this.getAppendedData());
 
 		return mapFlat(l);
 	}
@@ -1187,9 +1341,9 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	}
 
 	/**
-	 * CustomNodeImpl for "call" for the Thumb Architecture
+	 * CustomNodeImpl for "prepare_call" for the Thumb Architecture
 	 */
-	public static class ThumbNodeCall extends CustomNodeImpl {
+	public static class ThumbNodePrepareCall extends CustomNodeImpl {
 
 		@Override
 		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
@@ -1249,19 +1403,82 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				data[10] = 0x00;
 				data[11] = 0x80;
 			}
+			
+			data[12] = 0x00; // NOP
+			data[13] = 0xBF;
+			
+			data[14] = 0x00; // NOP
+			data[15] = 0xBF;
 
 			// This requires r8 to point at the address
 			// BLX r8 - C0 47
-			data[12] = 0xC0;
-			data[13] = 0x47;
+			//data[12] = 0xC0;
+			//data[13] = 0x47;
+
+			//((ThumbCodeGenerator)generator).storeNode(data, 14, node);
+
+			// 6 instructions
+
+			((ThumbCompiledBasicBlock) cbb).appendBytes(data);
+			
+		}
+
+	}
+	
+	/**
+	 * CustomNodeImpl for "call" for the Thumb Architecture
+	 */
+	public static class ThumbNodeCall extends CustomNodeImpl {
+
+		@Override
+		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
+			assert (generator instanceof ThumbCodeGenerator);
+			assert (cbb instanceof ThumbCompiledBasicBlock);
+			if (!(generator.getFunction() instanceof MergedFunction))
+				throw new RuntimeException("Can't branch in a non merged function");
+
+			int[] data = new int[generator.getNodeSize()];
+
+			// Node[] children = node.children();
+
+			// these adjustments are for dynamically allocated arrays
+			// the stack needs to be adjusted to account for these when calling
+			// as normally the stack pointer is not actually moved for these temporary allocations
+			
+			// mov r5, sp  - 6D 46
+			data[0] = 0x6D;
+			data[1] = 0x46;
+
+			// mov sp, r6  - B5 46
+			data[2] = 0xB5;
+			data[3] = 0x46;
+			
+			data[4] = 0xAF; // NOP.W
+			data[5] = 0xF3;
+			data[6] = 0x00;
+			data[7] = 0x80;
+			
+			// This requires r8 to point at the address
+			// BLX r8 - C0 47
+			data[8] = 0xC0;
+			data[9] = 0x47;
+			
+			// mov.w sp, r5 - 4F EA 05 0D
+			data[10] = 0x4F;
+			data[11] = 0xEA;
+			data[12] = 0x05;
+			data[13] = 0x0D;
 
 			((ThumbCodeGenerator)generator).storeNode(data, 14, node);
 
 			// 6 instructions
 
-			((ThumbCompiledBasicBlock) cbb).appendBytes(data.clone());
+			((ThumbCompiledBasicBlock) cbb).appendBytes(data);
+			
 		}
 
 	}
+
+
 
 }

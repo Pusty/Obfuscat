@@ -11,6 +11,7 @@ import java.util.Random;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
+import re.bytecode.obfuscat.cfg.nodes.NodeAlloc;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
@@ -43,6 +44,13 @@ public class EmulateFunction {
 	// Runtime statistics, will reset on run
 	private Map<String, Integer> runtimeStatistics;
 	
+	
+	// temporary variable for argument preparations  (NodeCustom("prepare_call") and NodeCustom("call"))
+	private Object[] nextcallArgs;
+	
+	// map for caching constant arrays
+	private Map<Object, Object[]> constarray2objarray;
+	
 
 	/**
 	 * Create a function emulator based on a function
@@ -56,8 +64,13 @@ public class EmulateFunction {
 		currentBlock = f.getBlocks().get(0);
 		variables = new HashMap<Integer, Object>();
 		arrayTable = new HashMap<Integer, Object>();
+		
+		constarray2objarray = new HashMap<Object, Object[]>();
 	}
 	
+	
+
+
 
 	// Execute a node
 	private void executeNode(Node node) {
@@ -92,6 +105,8 @@ public class EmulateFunction {
 			Integer value = null;
 			if (obj instanceof Byte) {
 				value = ((Byte) obj).intValue();
+			} else if (obj instanceof Boolean) {
+				value = ((Boolean) obj).booleanValue()?1:0;
 			} else if (obj instanceof Character) {
 				value = (int) ((Character) obj).charValue();
 			} else if (obj instanceof Short) {
@@ -110,8 +125,24 @@ public class EmulateFunction {
 						throw new RuntimeException("Keyword "+str+" not supported as a constant "+constMap);
 					
 				}
+			} else if(obj.getClass().isArray()) {
+				Object data = function.getData(obj);
+				
+				if(data == null)
+					throw new RuntimeException("Constant array not registered "+obj);
+				
+				Object[] oarray;
+				if(constarray2objarray.containsKey(data))
+					oarray = constarray2objarray.get(data);
+				else {
+					oarray = convertToObjectArray(data); 
+					constarray2objarray.put(data, oarray);
+				}
+				
+				output = (Integer)registerArray(oarray);
+				
 			}else {
-				throw new RuntimeException("Constant Type not supported");
+				throw new RuntimeException("Constant Type not supported "+obj.getClass());
 			}
 			if(value != null)
 				output = value;
@@ -247,6 +278,27 @@ public class EmulateFunction {
 			default:
 				throw new RuntimeException("Not implemented");
 			}
+		} else if (node instanceof NodeAlloc) {
+			
+			NodeAlloc alloc = (NodeAlloc) node;
+			Integer count = (Integer) input[0];
+			
+			
+			Object[] array;
+			
+			switch (alloc.getAllocationSize()) {
+			case BYTE:
+			case SHORT:
+			case INT:
+			case POINTER:
+				array = new Integer[count];
+				break;
+			default:
+				throw new RuntimeException("Not implemented");
+			}
+			
+			output = registerArray(array);
+
 		} else if (node instanceof NodeCustom) {
 			NodeCustom custom = (NodeCustom) node;
 
@@ -257,12 +309,17 @@ public class EmulateFunction {
 				EmulateFunction tef = new EmulateFunction(function);
 				tef.arrayTable = arrayTable;
 				tef.constMap = constMap;
-				output = tef.run0(-1, false, input);
+				output = tef.run0(-1, false, nextcallArgs);
 				
 				// add call statistics to this one
 				for(Entry<String, Integer> e:tef.runtimeStatistics.entrySet())
 					runtimeStatistics.put(e.getKey(), runtimeStatistics.getOrDefault(e.getKey(), 0)+e.getValue());
 				
+			}else if (custom.getIdentifier().equals("prepare_call")) {
+				if (!(function instanceof MergedFunction))
+					throw new RuntimeException("Can't call in unmerged function");
+	
+				nextcallArgs = input;
 			}else if(custom.getIdentifier().equals("debugPrint")) {
 				// Debug Print in emulation
 				StringBuilder sb = new StringBuilder("[debugPrint]: ");
@@ -297,11 +354,19 @@ public class EmulateFunction {
 	private int arrayAddressSeed = arrayRandom.nextInt();
 	
 	private int registerArray(Object[] arr) {
-		int ar = arrayAddressSeed&0x7FFFFFFF;
-		arrayTable.put(ar, arr);
-		//System.out.println(Integer.toHexString(ar)+" # "+Arrays.toString(arr));
-		arrayAddressSeed = arrayRandom.nextInt();
-		return ar;
+		if(arrayTable.containsValue(arr)) {
+			for(Entry<Integer, Object> e:arrayTable.entrySet()) {
+				if(e.getValue() == arr)
+					return e.getKey();
+			}
+			throw new RuntimeException("Object "+arr+" should have been in the array table");
+		}else {
+			int ar = arrayAddressSeed&0x7FFFFFFF;
+			arrayTable.put(ar, arr);
+			//System.out.println(Integer.toHexString(ar)+" # "+Arrays.toString(arr));
+			arrayAddressSeed = arrayRandom.nextInt();
+			return ar;
+		}
 	}
 	
 	
@@ -345,6 +410,48 @@ public class EmulateFunction {
 	}
 	
 	
+	private Object[] convertToObjectArray(Object argV) {
+		Class<?> arg = argV.getClass();
+		
+		if (!arg.isArray()) 
+			throw new IllegalArgumentException("Can only convert arrays");
+		
+		if (arg == byte[].class) {
+			byte[] ba = ((byte[]) argV);
+			Object[] oa = new Object[ba.length];
+			for (int j = 0; j < ba.length; j++)
+				oa[j] = Integer.valueOf(ba[j]);
+			return oa;
+		}else if (arg == boolean[].class) {
+			boolean[] ba = ((boolean[]) argV);
+			Object[] oa = new Object[ba.length];
+			for (int j = 0; j < ba.length; j++)
+				oa[j] = Integer.valueOf(ba[j]?1:0);
+			return oa;
+		}  else if (arg == short[].class) {
+			short[] sa = ((short[]) argV);
+			Object[] oa = new Object[sa.length];
+			for (int j = 0; j < sa.length; j++)
+				oa[j] = Integer.valueOf(sa[j]);
+			return oa;
+		} else if (arg == char[].class) {
+			char[] ca = ((char[]) argV);
+			Object[] oa = new Object[ca.length];
+			for (int j = 0; j < ca.length; j++)
+				oa[j] = Integer.valueOf(ca[j]);
+			return oa;
+		} else if (arg == int[].class) {
+			int[] ia = ((int[]) argV);
+			Object[] oa = new Object[ia.length];
+			for (int j = 0; j < ia.length; j++)
+				oa[j] = Integer.valueOf(ia[j]);
+			return oa;
+		} else
+			throw new RuntimeException("Unsupported Array Type "+argV);
+		
+	}
+	
+	
 	private Object registerArrayRecursive(Object argV, boolean check, int i) {
 		
 		Class<?> arg = argV.getClass();
@@ -352,34 +459,22 @@ public class EmulateFunction {
 		// Convert arrays to boxed integer versions
 		if (arg.isArray()) {
 			if (arg == byte[].class) {
-				byte[] ba = ((byte[]) argV);
-				Object[] oa = new Object[ba.length];
-				for (int j = 0; j < ba.length; j++)
-					oa[j] = Integer.valueOf(ba[j]);
-				argV = registerArray(oa);
-			} else if (arg == short[].class) {
-				short[] sa = ((short[]) argV);
-				Object[] oa = new Object[sa.length];
-				for (int j = 0; j < sa.length; j++)
-					oa[j] = Integer.valueOf(sa[j]);
-				argV = registerArray(oa);
+				argV = registerArray(convertToObjectArray(argV));
+			}else if (arg == boolean[].class) {
+				argV = registerArray(convertToObjectArray(argV));
+			}  else if (arg == short[].class) {
+				argV = registerArray(convertToObjectArray(argV));
 			} else if (arg == char[].class) {
-				char[] ca = ((char[]) argV);
-				Object[] oa = new Object[ca.length];
-				for (int j = 0; j < ca.length; j++)
-					oa[j] = Integer.valueOf(ca[j]);
-				argV = registerArray(oa);
+				argV = registerArray(convertToObjectArray(argV));
 			} else if (arg == int[].class) {
-				int[] ia = ((int[]) argV);
-				Object[] oa = new Object[ia.length];
-				for (int j = 0; j < ia.length; j++)
-					oa[j] = Integer.valueOf(ia[j]);
-				argV = registerArray(oa);
+				argV = registerArray(convertToObjectArray(argV));
 			} else if (arg == Object[].class) {
 				Object[] oa = ((Object[]) argV);
 				Object[] replacedRef = new Object[oa.length];
-				for(int j=0;j<oa.length;j++)
+				for(int j=0;j<oa.length;j++) {
+					if(oa[j] == null) continue;
 					replacedRef[j] = registerArrayRecursive(oa[j], false, i);
+				}
 				argV = registerArray(replacedRef);
 			} else
 				throw new RuntimeException("Unsupported Array Type "+argV);
@@ -394,6 +489,8 @@ public class EmulateFunction {
 			arg = char.class;
 		else if (arg == Byte.class)
 			arg = byte.class;
+		else if (arg == Boolean.class)
+			arg = boolean.class;
 		else if (arg.isArray())
 			arg = Array.class;
 		
@@ -415,6 +512,11 @@ public class EmulateFunction {
 				Object[] oa = (Object[]) arrayTable.get(addr);
 				for (int j = 0; j < ba.length; j++)
 					ba[j] = ((Integer)oa[j]).byteValue();
+			}else if (arg == boolean[].class) {
+				boolean[] ba = ((boolean[]) argV);
+				Object[] oa = (Object[]) arrayTable.get(addr);
+				for (int j = 0; j < ba.length; j++)
+					ba[j] = ((Integer)oa[j]).byteValue() != 0;
 			} else if (arg == short[].class) {
 				short[] sa = ((short[]) argV);
 				Object[] oa = (Object[]) arrayTable.get(addr);
@@ -461,6 +563,7 @@ public class EmulateFunction {
 		runtimeStatistics.put("astore", runtimeStatistics.getOrDefault("astore", 0));
 		runtimeStatistics.put("aload", runtimeStatistics.getOrDefault("aload", 0));
 		runtimeStatistics.put("custom", runtimeStatistics.getOrDefault("custom", 0));
+		runtimeStatistics.put("allocate", runtimeStatistics.getOrDefault("allocate", 0));
 		
 		// Check if the argument length matches
 		if (check && function.getArguments().length != args.length)

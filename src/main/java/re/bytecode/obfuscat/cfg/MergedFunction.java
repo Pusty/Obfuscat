@@ -114,7 +114,7 @@ public class MergedFunction extends Function {
 					Node[] args = unresolvedCall.children();
 					args[0] =  new NodeConst(resolvedCalls.get(callHash)); // replace with resolved constant
 					
-					NodeCustom resolvedCall = new NodeCustom("call", args);
+					NodeCustom resolvedCall = new NodeCustom("call", new NodeCustom("prepare_call", args));
 					currentBlock.replace(unresolvedCall, resolvedCall);
 				}
 				blocks.add(currentBlock);

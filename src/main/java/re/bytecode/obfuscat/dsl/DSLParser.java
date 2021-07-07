@@ -27,6 +27,7 @@ import pusty.f0cr.inst.types.InstMath;
 import pusty.f0cr.inst.types.InstStack;
 import pusty.f0cr.inst.types.InstTable;
 import pusty.f0cr.inst.types.Instruction;
+import pusty.f0cr.types.ClassReference;
 import pusty.f0cr.types.MethodReference;
 import pusty.f0cr.types.NameAndTypeDescriptor;
 import pusty.f0cr.util.AccessFlags;
@@ -40,6 +41,7 @@ import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
+import re.bytecode.obfuscat.cfg.nodes.NodeAlloc;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
@@ -751,6 +753,31 @@ public class DSLParser {
 						throw new RuntimeException("Not implemented: " + inst.getName());
 					}
 
+				}else if((instRaw.getInstruction()&0xFF) == Opcodes.NEWARRAY) {
+					int arrayType = instRaw.getData()[0];
+					Node count = stack.pop();
+					MemorySize memSize;
+					switch(arrayType) {
+					case 4: // T_BOOLEAN
+					case 8: // T_BYTE
+						memSize = MemorySize.BYTE;
+						break;
+					case 5: // T_CHAR
+					case 9: // T_SHORT
+						memSize = MemorySize.SHORT;
+						break;
+					case 10: // T_INT
+						memSize = MemorySize.INT;
+						break;
+					default:
+						throw new RuntimeException("NEWARRAY not implemented for type "+arrayType);
+					}
+					stack.push(new NodeAlloc(memSize, count));
+				}else if((instRaw.getInstruction()&0xFF) == Opcodes.ANEWARRAY) {
+					ClassReference cr = (ClassReference) classReader.getPool().get((instRaw.getData()[0]&0xFF << 8) | instRaw.getData()[1]);
+					if(!classReader.getPool().get(cr.getIndex()).equals("java/lang/Object"))
+						throw new RuntimeException("Not implemented Object Array Creation for classes not Object.class");
+					stack.push(new NodeAlloc(MemorySize.POINTER, stack.pop()));
 				}
 
 				else {

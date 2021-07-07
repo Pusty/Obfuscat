@@ -47,7 +47,8 @@ public class Sample7 {
 	}
 	
 	// key len = 8, plaintext len = 8, buffer len = 256
-	public static void rc4(byte[] key, byte[] plaintext, byte[] buffer) {
+	public static void rc4(byte[] key, byte[] plaintext, byte[] buffer2) {
+		byte[] buffer = new byte[256];
 	    KSA(key, buffer);
 	    PRGA(buffer, plaintext);
 	    return;

@@ -2,6 +2,7 @@ package re.bytecode.obfuscat.cfg;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,8 @@ public class Function implements Serializable {
 	private int variableSlots; // includes arguments, so: "void a(int a) { int i=a; return i; }" has 2 variableSlots
 	private boolean returnsSomething;
 	
+	private Map<Integer, Object> dataMap;
+	
 	/**
 	 * Create a function based on a name, the basic blocks, their parameters, the used variables and whether it returns something
 	 * @param name the name of this function
@@ -34,6 +37,7 @@ public class Function implements Serializable {
 		this.argumentTypes = argumentTypes;
 		this.variableSlots = variableSlots;
 		this.returnsSomething = returnsSomething;
+		this.dataMap = new HashMap<Integer, Object>();
 	}
 	
 	/**
@@ -60,6 +64,58 @@ public class Function implements Serializable {
 	 */
 	public int getVariables() { return variableSlots; }
 	public boolean hasReturnValue() { return returnsSomething; }
+
+	
+	public void registerData(boolean[] data) {
+		dataMap.put(Arrays.hashCode(data), data);
+	}
+	
+	public void registerData(byte[] data) {
+		dataMap.put(Arrays.hashCode(data), data);
+	}
+	
+	public void registerData(short[] data) {
+		dataMap.put(Arrays.hashCode(data), data);
+	}
+	
+	public void registerData(char[] data) {
+		dataMap.put(Arrays.hashCode(data), data);
+	}
+	
+	public void registerData(int[] data) {
+		dataMap.put(Arrays.hashCode(data), data);
+	}
+	
+	public Object getData(Object key) {
+		Class<?> keyClass = key.getClass();
+		if(keyClass == boolean[].class)
+			return getData(Arrays.hashCode((boolean[])key));
+		else if(keyClass == byte[].class)
+			return getData(Arrays.hashCode((byte[])key));
+		else if(keyClass == short[].class)
+			return getData(Arrays.hashCode((short[])key));
+		else if(keyClass == char[].class)
+			return getData(Arrays.hashCode((char[])key));
+		else if(keyClass == int[].class)
+			return getData(Arrays.hashCode((int[])key));
+		
+		return null;
+	}
+	
+	public Map<Integer, Object> getDataMap() { return dataMap; }
+	public void setDataMap(Map<Integer, Object> m) { dataMap = m; }
+	
+	public Object getData(int key) {
+		return dataMap.get(key);
+	}
+	
+	public Object[] getData() {
+		Object[] data = new Object[dataMap.size()];
+		int index = 0;
+		for(Integer key:dataMap.keySet())
+			data[index++] = dataMap.get(key);
+		return data;
+	}
 
 	
 	private void traverseNode(List<Node> already, Node node, Map<String, Integer> map) {
@@ -106,6 +162,7 @@ public class Function implements Serializable {
 		map.put("astore", map.getOrDefault("astore", 0));
 		map.put("aload", map.getOrDefault("aload", 0));
 		map.put("custom", map.getOrDefault("custom", 0));
+		map.put("allocate", map.getOrDefault("allocate", 0));
 		
 		map.put("conditionalBlocks", conditionalBlocks);
 		map.put("switchBlocks", switchBlocks);

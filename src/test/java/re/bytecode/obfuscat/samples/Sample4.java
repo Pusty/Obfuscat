@@ -19,6 +19,8 @@ public class Sample4 {
             }
             crc = (crc >>> 8) ^ temp;
 		}
+		
+		len = 5;
 		return ~crc;
 	}
 

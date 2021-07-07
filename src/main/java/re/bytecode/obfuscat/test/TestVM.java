@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import re.bytecode.obfuscat.pass.vm.VMBuilder;
 import re.bytecode.obfuscat.pass.vm.VMCodeGenerator;
 import re.bytecode.obfuscat.pass.vm.VMRefImpl;
 import re.bytecode.obfuscat.Context;
@@ -30,18 +29,18 @@ public class TestVM {
     	
     	
     	
-    	//fileData = Files.readAllBytes(Paths.get(new File(System.getProperty("user.dir")+"/bin/test/re/bytecode/obfuscat/samples/Sample1.class").toURI()));
+    	//fileData = Files.readAllBytes(Paths.get(new File(System.getProperty("user.dir")+"/bin/test/re/bytecode/obfuscat/samples/Sample8.class").toURI()));
     	//p = new DSLParser();
-        //functions = p.processFile(fileData);
+        // functions = p.processFile(fileData);
     	//Function f = functions.get("entry");
     	
-		//HashMap<String, Object> map = new HashMap<String, Object>();
-		//Function f = Obfuscat.buildFunction("Test", map);
-    	
-    	
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		map.put("data", new byte[] { 1, 2, 3, 4 });
-		Function f = Obfuscat.buildFunction("KeyBuilder", map );
+		Function f = Obfuscat.buildFunction("Test", map);
+    	
+    	
+		//HashMap<String, Object> map = new HashMap<String, Object>();
+		//map.put("data", new byte[] { 1, 2, 3, 4 });
+		//Function f = Obfuscat.buildFunction("KeyBuilder", map );
 		
     	f = Obfuscat.applyPass(f, "Flatten");
 		f = Obfuscat.applyPass(f, "OperationEncode");
@@ -61,42 +60,27 @@ public class TestVM {
 
 		
 		
-		VMBuilder vmb = new VMBuilder(new Context(System.currentTimeMillis()));
-		
-		HashMap<String, Object> vmMap = new HashMap<String, Object>();
-		Function vm = vmb.generate(vmMap);
 		
 		EmulateFunction eFB = new EmulateFunction(f);
 		byte[] arr = new byte[] {0, 0, 0, 0};
 		System.out.println("Emulate Original => "+eFB.run(-1, arr));
 		System.out.println(Arrays.toString(arr));
 		
-		EmulateFunction eF = new EmulateFunction(vm);
-		arr = new byte[] {0, 0, 0, 0};
-		System.out.println("Emulate Generated VM => "+eF.run(-1, gen, new int[0x100+0x100], new Object[] {arr}));
-		System.out.println(Arrays.toString(arr));
-		
 		
 		arr = new byte[] {0, 0, 0, 0};
-		System.out.println("Java Reference => "+VMRefImpl.process(vmcode, new int[0x100+0x100], new Object[]{arr}));
+		System.out.println("Java Reference => "+VMRefImpl.process(vmcode, f.getData() ,new Object[]{arr}));
 		System.out.println(Arrays.toString(arr));
 		
 		EmulateFunction eFRef = new EmulateFunction(refF);
 		arr = new byte[] {0, 0, 0, 0};
-		System.out.println("Emulated Reference => "+eFRef.run(-1, gen, new int[0x100+0x100], new Object[] {arr}));
+		System.out.println("Emulated Reference => "+eFRef.run(-1, gen, f.getData(), new Object[] {arr}));
 		System.out.println(Arrays.toString(arr));
 		
+		EmulateFunction eFPass = new EmulateFunction(Obfuscat.applyPass(f, "Virtualize"));
+		arr = new byte[] {0, 0, 0, 0};
+		System.out.println("Emulate Pass VM => "+eFPass.run(-1,  arr ));
+		System.out.println(Arrays.toString(arr));
 		
-		
-		int[] data = Obfuscat.getGenerator("Thumb", vm).generate();
-		sb = new StringBuilder();
-		for (int i = 0; i < data.length; i++) {
-			sb.append(String.format("%02X", data[i] & 0xFF));
-		}
-		System.out.println(sb.toString().substring(0, 10000));
-		System.out.println(sb.toString().substring(10000));
-		
-		System.out.println("=========================================");
 
     }
     

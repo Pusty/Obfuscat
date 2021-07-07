@@ -15,11 +15,9 @@ import org.junit.Test;
 
 import re.bytecode.obfuscat.Obfuscat;
 import re.bytecode.obfuscat.cfg.Function;
-import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
 import re.bytecode.obfuscat.test.util.JavaGenerationUtil;
 import re.bytecode.obfuscat.test.util.SampleLoader;
 import re.bytecode.obfuscat.test.util.ThumbGenerationUtil;
-import re.bytecode.obfuscat.test.util.VMGenerationUtil;
 import unicorn.CodeHook;
 import unicorn.EventMemHook;
 import unicorn.Unicorn;
@@ -110,7 +108,8 @@ public class ThumbCodeGenerationTest {
 			returnValue = (long) (((Character) arg).charValue() & 0xFFFF);
 		} else if (argT == Byte.class) {
 			returnValue = (long) (((Byte) arg).intValue() & 0xFF);
-			;
+		} else if (argT == Boolean.class) {
+			returnValue = (long) (((Boolean) arg).booleanValue()?1:0);
 		} else if (argT.isArray()) {
 
 			returnValue = (long) HEAP_POSITION;
@@ -127,7 +126,21 @@ public class ThumbCodeGenerationTest {
 					unicorn.mem_write(HEAP_POSITION, ba);
 
 				HEAP_POSITION += ba.length;
-			} else if (argT == short[].class) {
+			} else if (argT == boolean[].class) {
+				
+				boolean[] ba = ((boolean[]) arg);
+				if (write) {
+					byte[] data = unicorn.mem_read(HEAP_POSITION, ba.length);
+					for (int j = 0; j < ba.length; j++)
+						ba[j] = data[j]!=0;
+				} else {
+					byte[] oa = new byte[ba.length];
+					for(int j=0;j<ba.length;j++)
+						oa[j] = (byte) (ba[j]?1:0);
+					unicorn.mem_write(HEAP_POSITION, oa);
+				}
+				HEAP_POSITION += ba.length;
+			}  else if (argT == short[].class) {
 				short[] sa = ((short[]) arg);
 				if (write) {
 					byte[] oa = unicorn.mem_read(HEAP_POSITION, sa.length * 2);
@@ -437,23 +450,41 @@ public class ThumbCodeGenerationTest {
 		// System.out.println("Return Value: "+returnValue);
 		return returnValue;
 	}
-
+	
 	public static List<int[]> normalTestCases(String[] passes) throws Exception {
+		return normalTestCases(passes, new ArrayList<Integer>());
+	}
+
+	public static List<int[]> normalTestCases(String[] passes, List<Integer> exclude) throws Exception {
 		List<int[]> data = new ArrayList<int[]>();
-		runTest("Sample1", "entry", passes);
-		data.add(new int[] { INST_SIZE, INST_COUNT });
+		if(!exclude.contains(1)) {
+			runTest("Sample1", "entry", passes);
+			data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
+		if(!exclude.contains(2)) {
 		runTest("Sample2", "entry", passes);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
+		if(!exclude.contains(3)) {
 		runTest("Sample3", "entry", passes);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
+		if(!exclude.contains(4)) {
 		runTest("Sample4", "crc32", passes, new byte[] { 0x12, 0x23, 0x45, 0x67, (byte) 0x89 }, 5);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
+		if(!exclude.contains(5)) {
 		runTest("Sample5", "entry", passes);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
+		if(!exclude.contains(6)) {
 		runTest("Sample6", "entry", passes);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
+		if(!exclude.contains(8)) {
 		runTest("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
 		data.add(new int[] { INST_SIZE, INST_COUNT });
+		}
 		return data;
 	}
 
@@ -461,6 +492,7 @@ public class ThumbCodeGenerationTest {
 	public void testARMThumb() throws Exception {
 		normalTestCases(null);
 	}
+	
 
 	@Test
 	public void testHWKeyBuilder() throws Exception {
@@ -478,35 +510,6 @@ public class ThumbCodeGenerationTest {
 		}
 		assertEquals("Byte Array Generation Processed Too Much", byteArray[7], byteArray2[7]);
 
-	}
-	
-	
-	public static void runTestVM(String fileName, String functionName, String[] passes, Object... args) throws Exception {
-		
-		byte[] data = SampleLoader.loadFile(fileName);
-		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
-		Integer fib = (Integer) m.invoke(null, args);
-
-		if(VERBOSE) System.out.println("Testing VM: "+fileName+"."+functionName+(passes==null?"":" with "+Arrays.toString(passes)));
-		
-		byte[] vmcode = VMGenerationUtil.generateCode(data, functionName, passes);
-		
-		ThumbCodeGenerator gen = new ThumbCodeGenerator(null, VMGenerationUtil.generateVM());
-		int[] code  = gen.generate();
-		
-		long returnValue = test_thumb(code, new Object[] {vmcode, new int[0x100 + 0x100], args});
-		assertEquals("Java and Thumb Result don't match", fib.intValue(), returnValue);
-	}
-	
-	@Test
-	public void testVM() throws Exception {
-		String[] passes = new String[0];
-		runTestVM("Sample1", "entry", passes);
-		//runTestVM("Sample2", "entry", passes); // this just takes too long
-		runTestVM("Sample3", "entry", passes);
-		runTestVM("Sample4", "crc32", passes, new byte[] { 0x12, 0x23, 0x45, 0x67, (byte) 0x89 }, 5);
-		runTestVM("Sample5", "entry", passes);
-		runTestVM("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
 	}
 	
 	//@Test

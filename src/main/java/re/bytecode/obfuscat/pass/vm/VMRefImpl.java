@@ -47,8 +47,9 @@ public class VMRefImpl {
 	
 	
 	// memory + 0x100 = mem
-	public static int process(byte[] program, int[] memory, Object[] pars) {
+	public static int process(byte[] program, Object[] appendedData, Object[] pars) {
 		
+		int[] memory = new int[0x100+0x100];
 		int pc = 0;
 		
 		while(true) {
@@ -110,6 +111,18 @@ public class VMRefImpl {
 				break;
 			case OP_STOREP:
 				memory[memslot+0x100] = memory[stackslot];
+				break;
+			case OP_PSTORE8:
+				pars[memslot] = native_int2obj(memory[stackslot]&0xFF);
+				break;
+			case OP_PSTORE16:
+				pars[memslot] = native_int2obj(memory[stackslot]&0xFFFF);
+				break;
+			case OP_PSTORE32:
+				pars[memslot] = native_int2obj(memory[stackslot]);
+				break;
+			case OP_PSTOREP:
+				pars[memslot] = native_int2obj(memory[stackslot]);
 				break;
 			case OP_ALOAD8:
 				memory[stackslot] = (int)((byte[])native_int2obj(memory[op1]))[(memory[op2])];
@@ -212,6 +225,21 @@ public class VMRefImpl {
 				return 0;
 			case OP_RETURNV:
 				return memory[op1];
+			case OP_ALLOC8:
+				memory[stackslot] = native_obj2int(new byte[memory[op1]]);
+				break;
+			case OP_ALLOC16:
+				memory[stackslot] = native_obj2int(new short[memory[op1]]);
+				break;
+			case OP_ALLOC32:
+				memory[stackslot] = native_obj2int(new int[memory[op1]]);
+				break;
+			case OP_ALLOCP:
+				memory[stackslot] = native_obj2int(new Object[memory[op1]]);
+				break;
+			case OP_OCONST:
+				memory[stackslot] = native_obj2int(appendedData[memory[op1]]);
+				break;
 			default:
 				return 0;
 			//	throw new RuntimeException("Illegal Opcode "+opcode+" @ "+pc);
