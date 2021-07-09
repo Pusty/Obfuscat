@@ -1,11 +1,9 @@
 package re.bytecode.obfuscat.builder;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.nio.file.InvalidPathException;
 import java.util.HashMap;
 import java.util.Map;
 import re.bytecode.obfuscat.Context;
+import re.bytecode.obfuscat.Obfuscat;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MergedFunction;
 import re.bytecode.obfuscat.dsl.DSLParser;
@@ -22,43 +20,6 @@ public class JavaClassBuilder extends Builder {
 	public JavaClassBuilder(Context context) {
 		super(context);
 	}
-	
-	
-	private byte[] readClassFile(String path) {
-		
-		File file = new File(path);
-
-		try {
-			file.toPath(); // this fails if the path is invalid
-		} catch (InvalidPathException ipe) {
-			throw new BuilderArgumentException("The input path is invalid");
-		}
-
-		if (!file.exists()) {
-			throw new BuilderArgumentException("The input file does not exist");
-		}
-
-		if (file.isDirectory()) {
-			throw new BuilderArgumentException("The input path is a directory");
-		}
-
-		if (!file.canRead()) {
-			throw new BuilderArgumentException("The input file is not readable");
-		}
-
-		byte[] data;
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(file);
-			data = new byte[fis.available()];
-			fis.read(data);
-			fis.close();
-		} catch (Exception ex) {
-			throw new BuilderArgumentException("Reading input failed", ex);
-		}
-		
-		return data;
-	}
 
 	@Override
 	protected Function generateFunction(Map<String, Object> args) {
@@ -73,7 +34,7 @@ public class JavaClassBuilder extends Builder {
 		
 		boolean merge = args.containsKey("merge") ? (Boolean)args.get("merge") : false;
 
-		byte[] data = readClassFile(path);
+		byte[] data = Obfuscat.readFile(path);
 		DSLParser p = new DSLParser();
 		Map<String, Function> fs;
 		try {

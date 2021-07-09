@@ -43,8 +43,7 @@ public class CLI {
 
 	public static void main(String[] args) {
 
-		// Parse Arguments
-
+		// Parse Arguments		
 		if (args.length == 0) {
 			System.out.println("Usage ./CLI <command>");
 			return;
@@ -56,6 +55,8 @@ public class CLI {
 			commandHelp(args);
 			return;
 		}
+		
+		Obfuscat.setReadFileFunction(readFile);
 
 		Map<String, List<String>> argumentMap = parseCommandLine(args);
 
@@ -63,6 +64,7 @@ public class CLI {
 			System.out.println("Error parsing arguments");
 			return;
 		}
+		
 
 		switch (command) {
 		case "builder":
@@ -86,6 +88,43 @@ public class CLI {
 		}
 
 	}
+	
+	
+	
+	private static java.util.function.Function<String, byte[]> readFile = (path) -> {
+		File file = new File(path);
+
+		try {
+			file.toPath(); // this fails if the path is invalid
+		} catch (InvalidPathException ipe) {
+			throw new IllegalArgumentException("The input path is invalid");
+		}
+
+		if (!file.exists()) {
+			throw new IllegalArgumentException("The input file does not exist");
+		}
+
+		if (file.isDirectory()) {
+			throw new IllegalArgumentException("The input path is a directory");
+		}
+
+		if (!file.canRead()) {
+			throw new IllegalArgumentException("The input file is not readable");
+		}
+
+		byte[] data;
+		FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(file);
+			data = new byte[fis.available()];
+			fis.read(data);
+			fis.close();
+		} catch (Exception ex) {
+			throw new IllegalArgumentException("Reading input failed", ex);
+		}
+		
+		return data;
+	};
 
 	private static Map<String, List<String>> parseCommandLine(String[] args) {
 
@@ -719,7 +758,7 @@ public class CLI {
 			for(String key:Obfuscat.passes.keySet()) {
 				System.out.println(key+" : "+Obfuscat.getPass(key).description());
 			}
-		}else if(args.length == 2 && args[1].equals("generator")) {
+		}else if(args.length == 2 && args[1].equals("compile")) {
 			for(String key:Obfuscat.generators.keySet()) {
 				System.out.println(key+" : "+Obfuscat.getGenerator(key, null).description());
 			}
@@ -779,7 +818,7 @@ public class CLI {
 			System.out.println(
 					"    obfuscate <pass> [args]  [-input filename] [-output filename] [-seed someseed] - Run an obfuscation pass with the provided arguments");
 			System.out.println(
-					"    compile <generator> [args]  [-input filename] [-output filename] [-seed someseed] - Compile for a platform with the provided arguments");
+					"    compile <compile> [args]  [-input filename] [-output filename] [-seed someseed] - Compile for a platform with the provided arguments");
 			System.out.println(
 					"    emulate [args]  [-input filename] - Emulate the input function and print statistics");
 			System.out.println(
@@ -787,7 +826,7 @@ public class CLI {
 			System.out.println("    help - Provide an overview over supported commands");
 			System.out.println("    help builder - List all registered builders");
 			System.out.println("    help obfuscate - List all registered obfuscation passes");
-			System.out.println("    help generator - List all registered generators");
+			System.out.println("    help compile - List all registered generators");
 			System.out.println("    help info <builder/pass/generator> - List information for the provided builder/pass or generator");
 		}
 	}

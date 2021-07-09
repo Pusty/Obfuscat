@@ -1,9 +1,8 @@
 package re.bytecode.obfuscat;
 
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.function.BiFunction;
 import re.bytecode.obfuscat.builder.Builder;
 import re.bytecode.obfuscat.builder.HWKeyBuilder;
 import re.bytecode.obfuscat.builder.JavaClassBuilder;
@@ -20,47 +19,47 @@ import re.bytecode.obfuscat.pass.FakeDependencyPass;
 import re.bytecode.obfuscat.pass.FlatteningPass;
 import re.bytecode.obfuscat.pass.LiteralEncodePass;
 import re.bytecode.obfuscat.pass.OperationEncodePass;
-import re.bytecode.obfuscat.gen.CustomNodeImpl;
 import re.bytecode.obfuscat.gen.FlowgraphCodeGenerator;
 
 /** Main Class */
 public class Obfuscat {
 	
 	
-	protected static Map<String, Class<? extends Builder>> builders = new HashMap<String, Class<? extends Builder>>();
+	protected static Map<String, java.util.function.Function<Context, Builder>> builders = new HashMap<String, java.util.function.Function<Context, Builder>>();
 	
 	
-	protected static Map<String, Class<? extends CodeGenerator>> generators = new HashMap<String, Class<? extends CodeGenerator>>();
+	//protected static Map<String, CodeGeneratorFactoryInterface> generators = new HashMap<String, CodeGeneratorFactoryInterface>();
+	protected static Map<String, BiFunction<Context, Function, CodeGenerator>> generators = new HashMap<String,  BiFunction<Context, Function, CodeGenerator>>();
 	
-	protected static Map<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>> customNodes = new HashMap<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>>();
+	//protected static Map<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>> customNodes = new HashMap<Class<? extends CodeGenerator>, Map<String, Class<? extends CustomNodeImpl>>>();
 
-	protected static Map<String, Class<? extends Pass>> passes = new HashMap<String, Class<? extends Pass>>();
+	protected static Map<String, java.util.function.Function<Context, Pass>> passes = new HashMap<String, java.util.function.Function<Context, Pass>>();
 	
 	
 	static {
 		
 		
-		registerGenerator("Thumb", ThumbCodeGenerator.class);
+		registerGenerator("Thumb", (ctx, func) -> new ThumbCodeGenerator(ctx, func));
 		//registerCustomNode("Thumb", "readInt", ThumbCodeGenerator.ThumbNodeReadInt.class);
 		//registerCustomNode("Thumb", "call", ThumbCodeGenerator.ThumbNodeCall.class);
 		
-		registerGenerator("Flowgraph", FlowgraphCodeGenerator.class);
+		registerGenerator("Flowgraph", (ctx, func) -> new FlowgraphCodeGenerator(ctx, func));
 		//registerCustomNode("Flowgraph", "readInt", FlowgraphCodeGenerator.FlowgraphNodeReadInt.class);
 		//registerCustomNode("Flowgraph", "call", FlowgraphCodeGenerator.FlowgraphNodeCall.class);
 		
 		// TODO: Reconnect adding custom nodes from Obfuscat again
 		
-		registerPass("OperationEncode", OperationEncodePass.class);
-		registerPass("LiteralEncode", LiteralEncodePass.class);
-		registerPass("VariableEncode", VariableEncodePass.class);
-		registerPass("FakeDependency", FakeDependencyPass.class);
-		registerPass("Flatten", FlatteningPass.class);
-		registerPass("Virtualize", VMPass.class);
+		registerPass("OperationEncode", (ctx) -> new OperationEncodePass(ctx));
+		registerPass("LiteralEncode", (ctx) -> new LiteralEncodePass(ctx));
+		registerPass("VariableEncode", (ctx) -> new VariableEncodePass(ctx));
+		registerPass("FakeDependency", (ctx) -> new FakeDependencyPass(ctx));
+		registerPass("Flatten", (ctx) -> new FlatteningPass(ctx));
+		registerPass("Virtualize", (ctx) -> new VMPass(ctx));
 		
-		registerBuilder("Class", JavaClassBuilder.class);
-		registerBuilder("HWKeyBuilder", HWKeyBuilder.class);
-		registerBuilder("KeyBuilder", KeyBuilder.class);
-		registerBuilder("Test", TestBuilder.class);
+		registerBuilder("Class", (ctx) -> new JavaClassBuilder(ctx));
+		registerBuilder("HWKeyBuilder", (ctx) -> new HWKeyBuilder(ctx));
+		registerBuilder("KeyBuilder", (ctx) -> new KeyBuilder(ctx));
+		registerBuilder("Test", (ctx) -> new TestBuilder(ctx));
 		
 	}
 	
@@ -69,7 +68,7 @@ public class Obfuscat {
 	 * @param name the name of the registered builder
 	 * @param cl the builder class to register
 	 */
-	public static void registerBuilder(String name, Class<? extends Builder> cl) {
+	public static void registerBuilder(String name, java.util.function.Function<Context, Builder> cl) {
 		if(name == null || cl == null) throw new IllegalArgumentException("The builder can't be null");
 		if(builders.containsKey(name)) throw new IllegalArgumentException("A Builder with the name '"+name+"' is already registered");
 		builders.put(name, cl);
@@ -80,11 +79,11 @@ public class Obfuscat {
 	 * @param name the name of the code generator
 	 * @param cl the code generator class
 	 */
-	public static void registerGenerator(String name, Class<? extends CodeGenerator> cl) {
+	public static void registerGenerator(String name, BiFunction<Context, Function, CodeGenerator> cl) {
 		if(name == null || cl == null) throw new IllegalArgumentException("The code generator can't be null");
 		if(generators.containsKey(name)) throw new IllegalArgumentException("A Code Generator with the name '"+name+"' is already registered");
 		generators.put(name, cl);
-		customNodes.put(cl, new HashMap<String, Class<? extends CustomNodeImpl>>());
+		//customNodes.put(factory.generatorClass(), new HashMap<String, Class<? extends CustomNodeImpl>>());
 	}
 	
 	/**
@@ -92,7 +91,7 @@ public class Obfuscat {
 	 * @param name the tag of the obfuscation pass
 	 * @param cl the class of the added obfuscation pass
 	 */
-	public static void registerPass(String name, Class<? extends Pass> cl) {
+	public static void registerPass(String name, java.util.function.Function<Context, Pass> cl) {
 		if(name == null || cl == null) throw new IllegalArgumentException("The pass can't be null");
 		if(passes.containsKey(name)) throw new IllegalArgumentException("A Pass with the name '"+name+"' is already registered");
 		passes.put(name, cl);
@@ -118,10 +117,7 @@ public class Obfuscat {
 		Context context = new Context(seed);
 		Pass pass;
 		try {
-			Constructor<? extends Pass> c = passes.get(passName).getConstructor(Context.class);
-			pass = c.newInstance(context);
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException("Constructor for pass not found", e);
+			pass = passes.get(passName).apply(context);
 		} catch (Exception e) {
 			throw new RuntimeException("Pass Construction Exception", e);
 		}
@@ -142,14 +138,14 @@ public class Obfuscat {
 	 * @param nodeName the custom node to to implement
 	 * @param customImpl the implementation
 	 */
-	public static void registerCustomNode(String generatorName, String nodeName,  Class<? extends CustomNodeImpl> customImpl) {
+	/*public static void registerCustomNode(String generatorName, String nodeName,  Class<? extends CustomNodeImpl> customImpl) {
 		if(generatorName == null) throw new IllegalArgumentException("The generator can't be null");
 		if(!generators.containsKey(generatorName))  throw new IllegalArgumentException("The generator with name '"+generatorName+"' isn't registered");
 		if(nodeName == null || customImpl == null) throw new IllegalArgumentException("The custom node can't be null");
-		Map<String, Class<? extends CustomNodeImpl>> map = customNodes.get(generators.get(generatorName));
+		Map<String, Class<? extends CustomNodeImpl>> map = customNodes.get(generators.get(generatorName).generatorClass());
 		if(map.containsKey(nodeName)) throw new IllegalArgumentException("A CustomNode Implementation  with the tag '"+nodeName+"' is already registered in "+generatorName);
 		map.put(nodeName, customImpl);
-	}
+	}*/
 	
 	/**
 	 * Create a generator instance for a given generator tag and function input
@@ -170,10 +166,7 @@ public class Obfuscat {
 		Context context = new Context(seed);
 		CodeGenerator generator;
 		try {
-			Constructor<? extends CodeGenerator> c = generators.get(generatorName).getConstructor(Context.class, Function.class);
-			generator = c.newInstance(context, function);
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException("Constructor for generator not found", e);
+			generator = generators.get(generatorName).apply(context, function); //generators.get(generatorName).construct(context, function);
 		} catch (Exception e) {
 			throw new RuntimeException("Generator Construction Exception", e);
 		}
@@ -207,10 +200,7 @@ public class Obfuscat {
 		Context context = new Context(seed);
 		Builder builder;
 		try {
-			Constructor<? extends Builder> c = builders.get(builderName).getConstructor(Context.class);
-			builder = c.newInstance(context);
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException("Constructor for Builder not found", e);
+			builder =  builders.get(builderName).apply(context);
 		} catch (Exception e) {
 			throw new RuntimeException("Builder Construction Exception", e);
 		}
@@ -223,7 +213,7 @@ public class Obfuscat {
 	 * @param nodeName the custom node identifier
 	 * @return the custom node implementation for this identifier
 	 */
-	public static CustomNodeImpl getCustomNodeImpl(CodeGenerator generator, String nodeName) {
+	/*public static CustomNodeImpl getCustomNodeImpl(CodeGenerator generator, String nodeName) {
 		if(generator == null) throw new IllegalArgumentException("The generator can't be null");
 		if(nodeName == null) throw new IllegalArgumentException("The node can't be null");
 		if(!generators.containsValue(generator.getClass()))  throw new IllegalArgumentException("The generator "+generator+" isn't registered");
@@ -238,7 +228,16 @@ public class Obfuscat {
 		} catch (Exception e) {
 			throw new RuntimeException("CustomNodeImpl Construction Exception", e);
 		}
-	}
+	}*/
+	
+	private static  java.util.function.Function<String, byte[]> readFileFunction;
 
+	public static void setReadFileFunction(java.util.function.Function<String, byte[]> readFile) {
+		readFileFunction = readFile;
+	}
+	
+	public static byte[] readFile(String path) {
+		return readFileFunction.apply(path);
+	}
 	
 }
