@@ -138,13 +138,24 @@ public class MergedFunction extends Function {
 		arguments += 1;
 		
 		Class<?>[] prevArgs = entryFunction.getArguments();
-		Class<?>[] afterArgs = new Class<?>[prevArgs.length+1];
+		Class<?>[] afterArgs = new Class<?>[arguments+1]; // actual initilize with correct size..
+		
+		for(int i=0;i<afterArgs.length;i++)
+			afterArgs[i] = null;
 		
 		for(int i=0;i<prevArgs.length;i++)
 			afterArgs[i+1] = prevArgs[0];
 		afterArgs[0] = int.class;
 		
-		return new MergedFunction(entryPoint+"_merged", blocks, afterArgs, variableSlots, returnSomething);
+		MergedFunction mergedFunction = new MergedFunction(entryPoint+"_merged", blocks, afterArgs, variableSlots, returnSomething);
+		
+		// Add all static data
+		for(Entry<String, Function> e: functions.entrySet()) {
+			mergedFunction.getDataMap().putAll(e.getValue().getDataMap());
+		}
+		
+		
+		return mergedFunction;
 	}
 	
 

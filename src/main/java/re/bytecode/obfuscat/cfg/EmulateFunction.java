@@ -128,8 +128,10 @@ public class EmulateFunction {
 			} else if(obj.getClass().isArray()) {
 				Object data = function.getData(obj);
 				
-				if(data == null)
+				if(data == null) {
+					System.err.println(function.getDataMap().keySet());
 					throw new RuntimeException("Constant array not registered "+obj);
+				}
 				
 				Object[] oarray;
 				if(constarray2objarray.containsKey(data))
@@ -399,10 +401,23 @@ public class EmulateFunction {
 		executedNodes = 0;
 		
 		if(this.getFunction() instanceof MergedFunction) { // this is here to make usage of merged functions more in line with normal usage
-			Object[] argsAfter = new Object[args.length + 1];
-			for (int i = 0; i < args.length; i++)
+			
+			if(args.length > function.getArguments().length) throw new RuntimeException("Too many argument in merged call "+Arrays.toString(function.getArguments()));
+			
+			Object[] argsAfter = new Object[function.getArguments().length];
+			int i=0;
+			for(i=0;i<args.length;i++) {
+				if(function.getArguments()[i] == null) throw new RuntimeException("Too many arguments "+Arrays.toString(function.getArguments()));
 				argsAfter[i + 1] = args[i];
+			}
 			argsAfter[0] = 0;
+			i++;
+			
+			for(;i<argsAfter.length;i++) {
+				if(function.getArguments()[i] != null) throw new RuntimeException("Not enough arguments "+Arrays.toString(function.getArguments()));
+				argsAfter[i] = 0;
+			}
+
 			args = argsAfter;
 		}
 		
@@ -494,7 +509,7 @@ public class EmulateFunction {
 		else if (arg.isArray())
 			arg = Array.class;
 		
-		if (check && (function.getArguments()[i] != arg) && (!function.getArguments()[i].isArray() || arg != Array.class))
+		if (check && (function.getArguments()[i] != null) && (function.getArguments()[i] != arg) && (!function.getArguments()[i].isArray() || arg != Array.class))
 			throw new RuntimeException("Type of Argument " + i + " doesn't match signature ("+arg+" != "+function.getArguments()[i]+")");
 
 		return argV;
@@ -545,7 +560,6 @@ public class EmulateFunction {
 
 	public Object run0(int blockLimit, boolean check, Object... args) {
 		
-		
 		// start runtime statistics
 		runtimeStatistics = new HashMap<String, Integer>();
 		
@@ -568,7 +582,7 @@ public class EmulateFunction {
 		// Check if the argument length matches
 		if (check && function.getArguments().length != args.length)
 			throw new RuntimeException("Amount of arguments don't match");
-		
+
 		// Argument Checking
 		for (int i = 0; i < args.length; i++) {
 			// Store converted array as variables in the fitting slots

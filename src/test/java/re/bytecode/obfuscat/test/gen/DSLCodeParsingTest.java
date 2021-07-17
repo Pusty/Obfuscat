@@ -67,9 +67,18 @@ public class DSLCodeParsingTest {
 		for(int i=0;i<encoded.length;i++)
 			assertEquals("RC4 didn't work "+Arrays.toString(encoded), res[i], encoded[i]);
 		
+		byte[] decryptMe = new byte[]{0x3d, 0x67, 0x33, (byte)0xe2, 0x34, 0x1d, 0x59, (byte)0xbc, (byte)0xdd, 0x23, 0x07, 0x72, (byte)0xa7, (byte)0xe8, 0x12, 0x43};
+		byte[] aesKey    = {0x2b, 0x7e, 0x15, 0x16, 0x28, (byte)0xae, (byte)0xd2, (byte)0xa6, (byte)0xab, (byte)0xf7, 0x15, (byte)0x88, 0x09, (byte)0xcf, 0x4f, 0x3c};
+		String decrypted = "Hello World /o/ ";
+		ef.add(runTestMerged("Sample9", "entry" , passes, aesKey, decryptMe));
+		
+		for(int i=0;i<decryptMe.length;i++)
+			assertEquals("AES128 didn't work "+Arrays.toString(decryptMe), decrypted.charAt(i)&0xFF, decryptMe[i]);
+		
 		return ef;
 	}
 	
+
 	
 
 	public static void evaluteSizeAndSpeed(List<List<EmulateFunction>> listOfList) {

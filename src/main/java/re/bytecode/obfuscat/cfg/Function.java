@@ -86,6 +86,22 @@ public class Function implements Serializable {
 		dataMap.put(Arrays.hashCode(data), data);
 	}
 	
+	public void registerDataGeneric(Object arr) {
+		if(arr.getClass() == boolean[].class)
+			registerData((boolean[])arr);
+		else if(arr.getClass() == byte[].class)
+			registerData((byte[])arr);
+		else if(arr.getClass() == short[].class)
+			registerData((short[])arr);
+		else if(arr.getClass() == char[].class)
+			registerData((char[])arr);
+		else if(arr.getClass() == int[].class)
+			registerData((int[])arr);
+		else 
+			throw new RuntimeException("Can't register generic object of type "+arr.getClass());
+	}
+	
+	
 	public Object getData(Object key) {
 		Class<?> keyClass = key.getClass();
 		if(keyClass == boolean[].class)

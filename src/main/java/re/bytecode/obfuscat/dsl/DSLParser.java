@@ -9,12 +9,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Stack;
 
 import pusty.f0cr.ClassReader;
 import pusty.f0cr.attribute.CodeAttribute;
 import pusty.f0cr.attribute.RuntimeInvisibleAnnotationsAttribute;
 import pusty.f0cr.data.AttributeInfo;
+import pusty.f0cr.data.FieldInfo;
 import pusty.f0cr.data.MethodInfo;
 import pusty.f0cr.data.RuntimeAnnotations;
 import pusty.f0cr.inst.Opcodes;
@@ -26,11 +28,14 @@ import pusty.f0cr.inst.types.InstLocalVar;
 import pusty.f0cr.inst.types.InstMath;
 import pusty.f0cr.inst.types.InstStack;
 import pusty.f0cr.inst.types.InstTable;
+import pusty.f0cr.inst.types.InstVar;
 import pusty.f0cr.inst.types.Instruction;
 import pusty.f0cr.types.ClassReference;
+import pusty.f0cr.types.FieldReference;
 import pusty.f0cr.types.MethodReference;
 import pusty.f0cr.types.NameAndTypeDescriptor;
 import pusty.f0cr.util.AccessFlags;
+import re.bytecode.obfuscat.dsl.api.ExcludeField;
 import re.bytecode.obfuscat.dsl.api.ExcludeMethod;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.BranchCondition;
@@ -68,15 +73,29 @@ public class DSLParser {
 
 		// Verify Class (not abstract, interface)
 
+		
+		Map<String, Object> globalVariableMap = new HashMap<String, Object>();
+		
+		// Verify correctness of all fields
+		verifyFields(classReader);
+		
 		Map<String, Function> functions = new HashMap<String, Function>();
+		
+		// process <clinit>
+		for (MethodInfo method : classReader.getMethodTable().getIndexes()) {
+			if(method.getName().equals("<clinit>")) {
+				CLINITEmulator.emulateCLINIT(classReader, method, globalVariableMap);
+				break;
+			}
+		}
 		
 		for (MethodInfo method : classReader.getMethodTable().getIndexes()) {
 			if (verifyMethod(classReader, method)) {
 				Class<?>[] args = convertFunctionDescriptor(method.getDescriptor());
 				String desc = method.getDescriptor().split("\\x29")[1];
 				boolean returnValue = convertDescriptor(desc.charAt(0), desc.length()>1?desc.charAt(1):0) != null;
-				// System.out.println("Processing: " + method.getName());
-				List<BasicBlock> bbs = processMethod(classReader, method);
+				//System.out.println("Processing: " + method.getName());
+				List<BasicBlock> bbs = processMethod(classReader, method, globalVariableMap);
 				// System.out.println(bbs);
 				String name = (method.getName()+method.getDescriptor());
 				
@@ -87,10 +106,15 @@ public class DSLParser {
 					id = method.getName()+ido;
 					ido++;
 				}
-					
-					
-				functions.put(id, new Function(name, bbs, args,
-						method.getCode().getLocalVariableTable().getTable().length, returnValue));
+				
+				Function function = new Function(name, bbs, args, method.getCode().getLocalVariableTable().getTable().length, returnValue);
+				
+				for(Entry<String, Object> entry:globalVariableMap.entrySet()) {
+					if(!entry.getKey().contains("[")) continue; // ignore non-array global variables
+					function.registerDataGeneric(entry.getValue());
+				}
+				
+				functions.put(id, function);
 			}
 
 			// method.getInfo().printOut();
@@ -98,6 +122,9 @@ public class DSLParser {
 		}
 		return functions;
 	}
+
+	
+	
 
 	// Convert a descriptor character to a class
 	private Class<?> convertDescriptor(char desc, char snd) {
@@ -158,6 +185,44 @@ public class DSLParser {
 		// list.add(convertDescriptor(output.charAt(0)));
 		return list.toArray(new Class<?>[list.size()]);
 	}
+	
+	
+	private void verifyFields(ClassReader classReader) throws Exception {
+		outer: for(FieldInfo field : classReader.getFieldTable().getIndexes()) {
+			
+			// Check Method Attributes for special properties
+			
+			for (AttributeInfo info : field.getInfo().getIndexes()) {
+
+				if (info.getAttribute().equals("RuntimeInvisibleAnnotations")) {
+
+					RuntimeInvisibleAnnotationsAttribute riaa = (RuntimeInvisibleAnnotationsAttribute) info.getInfo();
+
+					// Iterate the annotations
+					for (RuntimeAnnotations ra : riaa.getAttributeTable().getIndexes()) {
+						String annotationName = classReader.getPool().get(ra.getTypeIndex()).toString();
+
+						// silently ignore methods with the "ExcludeField" annotation
+						if (annotationName.contains(ExcludeField.class.getSimpleName())) {
+							continue outer;
+						}
+
+					}
+
+				}
+			}
+
+			if(!AccessFlags.isStatic(field.getAccessFlags()))
+				throw new RuntimeException("All global variables need to be static");
+			if(!AccessFlags.isFinal(field.getAccessFlags()))
+				throw new RuntimeException("All global variables need to be final");
+			
+			String desc = field.getDescription();
+			if(convertDescriptor(desc.charAt(0), desc.length() > 1?desc.charAt(1):0) == Object.class)
+				throw new RuntimeException("Object variables are not supported");
+			
+		}
+	}
 
 	// verify that this method is suppost to be analyzed
 	private boolean verifyMethod(ClassReader classReader, MethodInfo method) throws Exception {
@@ -191,6 +256,12 @@ public class DSLParser {
 		if (AccessFlags.isAbstract(method.getAccessFlags()))
 			throw new Exception("Can't translate abstract method " + method.getName());
 
+		
+		// ignore class constructor
+		if (method.getName().equals("<clinit>")) {
+			return false;
+		}
+		
 		// Constructor is a special case
 		if (method.getName().equals("<init>")) {
 			if (method.getCode().getCodeLength() > 5) // this is the size of the implicit constructor
@@ -207,11 +278,10 @@ public class DSLParser {
 		if (code.getExceptionTable() != null && code.getExceptionTable().getIndexes().length > 0)
 			throw new Exception("Can't translate exceptions " + method.getName());
 
-		Integer[] array;
-
-		array = code.getInst().getInstructionMap().keySet()
-				.toArray(new Integer[code.getInst().getInstructionMap().size()]);
-		Arrays.sort(array);
+		//Integer[] array;
+		//array = code.getInst().getInstructionMap().keySet()
+		//		.toArray(new Integer[code.getInst().getInstructionMap().size()]);
+		//Arrays.sort(array);
 
 		// for (Integer key : array) {
 
@@ -224,7 +294,7 @@ public class DSLParser {
 	}
 
 	// Process a analyzable method
-	private List<BasicBlock> processMethod(ClassReader classReader, MethodInfo method) {
+	private List<BasicBlock> processMethod(ClassReader classReader, MethodInfo method, Map<String, Object> globalVariableMap) {
 
 		CodeAttribute code = method.getCode();
 
@@ -753,6 +823,33 @@ public class DSLParser {
 						throw new RuntimeException("Not implemented: " + inst.getName());
 					}
 
+				}else if(instRaw instanceof InstVar) {
+					InstVar inst = (InstVar)instRaw;
+					
+					if(!inst.isStatic())
+						throw new RuntimeException("Load/Store Operations with Objects are not supported");
+					
+					if(inst.isStore())
+						throw new RuntimeException("Global Variables are read only");
+					
+					FieldReference fref = (FieldReference) inst.getConstantPool().get(inst.getIndex());
+
+					if(!inst.getConstantPool().get(((ClassReference)inst.getConstantPool().get(fref.getClassReference())).getIndex()).toString().equals(inst.getConstantPool().get(((ClassReference)inst.getConstantPool().get(classReader.getThisClassIndex())).getIndex()).toString())) {
+						// Check that the currently read class matches the class being accessed
+						throw new RuntimeException("No external constants may be referenced");
+					}
+					
+					NameAndTypeDescriptor nat = (NameAndTypeDescriptor)inst.getConstantPool().get(fref.getNameAndType());
+					String type = inst.getConstantPool().get(nat.getEncodedTypeDescriptor()).toString();
+					String name = inst.getConstantPool().get(nat.getIdentifier()).toString();
+					String identifier = name+type;
+					
+					if(!globalVariableMap.containsKey(identifier))
+						throw new RuntimeException("No global variable "+identifier+" found");
+					//Class<?> typeClass = convertDescriptor(type.charAt(0), type.length()>1?type.charAt(1):0);
+					
+					stack.push(new NodeConst(globalVariableMap.get(identifier)));
+					
 				}else if((instRaw.getInstruction()&0xFF) == Opcodes.NEWARRAY) {
 					int arrayType = instRaw.getData()[0];
 					Node count = stack.pop();

@@ -33,6 +33,12 @@ public class ThumbCodeGenerationTest {
 	private static final int ADDRESS = 0x1000000;
 	// memory address where the heap starts
 	private static final int HEAP = 0x2000000;
+	
+	// global stack size
+	private static final int STACK_SIZE = 0x100000;
+	
+	// global heap size
+	private static final int HEAP_SIZE = 0x100000;
 
 	// address reached at end of execution
 	private static final int DEAD_ADDRESS = 0xDEADC0DE;
@@ -65,15 +71,20 @@ public class ThumbCodeGenerationTest {
 		public void hook(Unicorn u, long address, int size, Object user_data) {
 			
 			
-			/*{
+			/*i{
 			Long r_pc = (Long) u.reg_read(Unicorn.UC_ARM_REG_PC);
 				
-				System.out.printf(">>> PC is 0x%x 0x%x\n", r_pc.intValue(), INST_COUNT);
+				//System.out.printf(">>> PC is 0x%x 0x%x\n", r_pc.intValue(), INST_COUNT);
 				
 				
-				if(r_pc.intValue()%0x10 == 0 && INST_COUNT % 6 != 0) {
-					System.out.println(Arrays.toString(u.mem_read(r_pc.longValue(), 8)));
-					System.out.println("^^^^^^^^^^^^^^^^");
+				f(r_pc.intValue() == ADDRESS+0x20) {
+					Long r_r0 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R0);
+					Long r_r1 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R1);
+					Long r_r2 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R2);
+					Long r_r3 = (Long) u.reg_read(Unicorn.UC_ARM_REG_R3);
+					Long r_sp = (Long) u.reg_read(Unicorn.UC_ARM_REG_SP);
+					System.out.printf(">>> PC is 0x%x - R0 0x%x R1 0x%x R2 0x%x R3 0x%x SP 0x%x \n", r_pc.intValue(),
+							r_r0.intValue(), r_r1.intValue(), r_r2.intValue(), r_r3.intValue(), r_sp.intValue());
 				}
 			}*/
 			
@@ -241,9 +252,9 @@ public class ThumbCodeGenerationTest {
 		// Map 1024 bytes at address 0 for system registers
 		globalUnicorn.mem_map(0, 1024, Unicorn.UC_PROT_ALL);
 		// map 2MB memory for this emulation
-		globalUnicorn.mem_map(ADDRESS, 0x200000, Unicorn.UC_PROT_ALL);
+		globalUnicorn.mem_map(ADDRESS, STACK_SIZE, Unicorn.UC_PROT_ALL);
 		// map 1MB memory for arrays
-		globalUnicorn.mem_map(HEAP, 0x10000, Unicorn.UC_PROT_ALL);
+		globalUnicorn.mem_map(HEAP, HEAP_SIZE, Unicorn.UC_PROT_ALL);
 		
 		// intercept invalid memory events
 		globalUnicorn.hook_add(new MyWriteInvalidHook(), Unicorn.UC_HOOK_MEM_WRITE_UNMAPPED, null);
@@ -268,7 +279,7 @@ public class ThumbCodeGenerationTest {
 		long r7 = 0x8eb618c1L;
 
 		HEAP_POSITION = HEAP;
-		long sp = ADDRESS + 0x200000;
+		long sp = ADDRESS + STACK_SIZE;
 
 		// System.out.print("Emulate ARM Thumb code\n");
 
@@ -286,11 +297,14 @@ public class ThumbCodeGenerationTest {
 			r3 = convertArgument(globalUnicorn, args[3], false);
 
 		writeSystemRegisters(globalUnicorn);
-
 		byte[] codeData = new byte[code.length];
 		for (int i = 0; i < code.length; i++) {
 			codeData[i] = (byte) code[i];
-			if(VERBOSE) System.out.print(String.format("%02X", codeData[i]));
+			if(VERBOSE) { 
+				System.out.print(String.format("%02X", codeData[i]));
+				if(i >= 0x1000 && i%0x1000 == 0)
+					System.out.println();
+			}
 		}
 		if(VERBOSE) System.out.println();
 		INST_SIZE = code.length;
@@ -327,7 +341,9 @@ public class ThumbCodeGenerationTest {
 			if (((Long) globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)).intValue() == DEAD_ADDRESS) {
 				// program ended normally
 			} else {
-				throw new RuntimeException("@ "+Long.toHexString((Long)globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)), ue);
+				//System.err.println(Long.toHexString((Long)globalUnicorn.reg_read(Unicorn.UC_ARM_REG_R0)&0xFFFFFFFFL));
+				//System.err.println(Long.toHexString((Long)globalUnicorn.reg_read(Unicorn.UC_ARM_REG_R1)&0xFFFFFFFFL));
+				throw new RuntimeException("@ "+Long.toHexString((Long)globalUnicorn.reg_read(Unicorn.UC_ARM_REG_PC)&0xFFFFFFFFL), ue);
 			}
 		}
 
@@ -500,10 +516,10 @@ public class ThumbCodeGenerationTest {
 		HashMap<String, Object> args = new HashMap<String, Object>();
 		args.put("length", 7);
 		byte[] byteArray = new byte[] { 0, 0, 0, 0, 0, 0, 0, 12 };
-		runTestBuilder("HWKeyBuilder", args, null, byteArray);
+		runTestBuilder("HWKey", args, null, byteArray);
 
 		byte[] byteArray2 = new byte[] { 0, 0, 0, 0, 0, 0, 0, 12 };
-		runTestBuilder("HWKeyBuilder", args, null, byteArray2);
+		runTestBuilder("HWKey", args, null, byteArray2);
 
 		for (int i = 0; i < 7; i++) {
 			assertNotEquals("Byte Array Generation Failed", byteArray[i], byteArray2[i]);
@@ -527,7 +543,7 @@ public class ThumbCodeGenerationTest {
 		args.put("data", constKey);
 
 		byte[] byteArray = new byte[constKey.length];
-		runTestBuilder("KeyBuilder", args, null, byteArray);
+		runTestBuilder("Key", args, null, byteArray);
 
 		for (int i = 0; i < byteArray.length; i++) {
 			assertEquals("Byte Array Generation Failed", constKey[i], byteArray[i]);
@@ -541,5 +557,15 @@ public class ThumbCodeGenerationTest {
 		runTestMerged("Sample7", "rc4", null, new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }, encoded, new byte[256]);
 		for (int i = 0; i < encoded.length; i++)
 			assertEquals("RC4 didn't work", res[i], encoded[i]);
+		
+		
+		byte[] decryptMe = new byte[]{0x3d, 0x67, 0x33, (byte)0xe2, 0x34, 0x1d, 0x59, (byte)0xbc, (byte)0xdd, 0x23, 0x07, 0x72, (byte)0xa7, (byte)0xe8, 0x12, 0x43};
+		byte[] aesKey    = {0x2b, 0x7e, 0x15, 0x16, 0x28, (byte)0xae, (byte)0xd2, (byte)0xa6, (byte)0xab, (byte)0xf7, 0x15, (byte)0x88, 0x09, (byte)0xcf, 0x4f, 0x3c};
+		String decrypted = "Hello World /o/ ";
+		runTestMerged("Sample9", "entry" , null, aesKey, decryptMe);
+		
+		for(int i=0;i<decryptMe.length;i++)
+			assertEquals("AES128 didn't work "+Arrays.toString(decryptMe), decrypted.charAt(i)&0xFF, decryptMe[i]);
+		
 	}
 }

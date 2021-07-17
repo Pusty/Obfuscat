@@ -224,6 +224,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					value = ((Short) constObj).intValue();
 				} else if (constObj instanceof Byte) {
 					value = ((Byte) constObj).intValue();
+				} else if (constObj instanceof Boolean) {
+					value = ((Boolean) constObj).booleanValue()?1:0;
 				} else if (constObj instanceof Character) {
 					value = (int) ((Character) constObj).charValue();
 				}  else if(constObj.getClass().isArray()) {

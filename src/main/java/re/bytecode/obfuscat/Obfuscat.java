@@ -8,6 +8,7 @@ import re.bytecode.obfuscat.builder.HWKeyBuilder;
 import re.bytecode.obfuscat.builder.JavaClassBuilder;
 import re.bytecode.obfuscat.builder.KeyBuilder;
 import re.bytecode.obfuscat.builder.TestBuilder;
+import re.bytecode.obfuscat.builder.VerifyBuilder;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.gen.CodeGenerator;
@@ -57,8 +58,9 @@ public class Obfuscat {
 		registerPass("Virtualize", (ctx) -> new VMPass(ctx));
 		
 		registerBuilder("Class", (ctx) -> new JavaClassBuilder(ctx));
-		registerBuilder("HWKeyBuilder", (ctx) -> new HWKeyBuilder(ctx));
-		registerBuilder("KeyBuilder", (ctx) -> new KeyBuilder(ctx));
+		registerBuilder("HWKey", (ctx) -> new HWKeyBuilder(ctx));
+		registerBuilder("Key", (ctx) -> new KeyBuilder(ctx));
+		registerBuilder("Verify", (ctx) -> new VerifyBuilder(ctx));
 		registerBuilder("Test", (ctx) -> new TestBuilder(ctx));
 		
 	}

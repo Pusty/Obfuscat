@@ -86,20 +86,6 @@ public class LiteralEncodePass extends Pass {
 		for(Node nodeRaw:constOps) {
 			NodeConst node = (NodeConst)nodeRaw;
 			
-			Object constObj = node.getObj();
-			int value = 0;
-			if (constObj instanceof Integer) {
-				value = ((Integer) constObj).intValue();
-			} else if (constObj instanceof Short) {
-				value = ((Short) constObj).intValue();
-			} else if (constObj instanceof Byte) {
-				value = ((Byte) constObj).intValue();
-			} else if (constObj instanceof Character) {
-				value = (int) ((Character) constObj).charValue();
-			} else {
-				throw new RuntimeException("Const type " + constObj.getClass() + " not implemented");
-			}
-			
 			int a = getContext().rand();
 			int b = getContext().rand();
 			int c = getContext().rand();
@@ -117,6 +103,24 @@ public class LiteralEncodePass extends Pass {
 			
 			int[] revQuad = reverseQuadratic(a, b, c);
 			//System.out.println("def g(x): return ("+revQuad[0]+"* x * x + "+revQuad[1]+"*x +"+revQuad[2]+") & 0xFFFFFFFF");
+			
+			
+			Object constObj = node.getObj();
+			int value = 0;
+			if (constObj instanceof Integer) {
+				value = ((Integer) constObj).intValue();
+			} else if (constObj instanceof Short) {
+				value = ((Short) constObj).intValue();
+			} else if (constObj instanceof Byte) {
+				value = ((Byte) constObj).intValue();
+			} else if (constObj instanceof Character) {
+				value = (int) ((Character) constObj).charValue();
+			} else {
+				Node cn = cst(constObj);
+				block.replace(node, add(mul(mul(mul(cst(0), cn), cst(revQuad[0])), mul(cst(revQuad[1]), cn)), cn));
+				return;
+				//throw new RuntimeException("Const type " + constObj.getClass() + " not implemented");
+			}
 			
 			int x = (a*value*value + b*value + c);
 			

@@ -5,6 +5,7 @@ import static re.bytecode.obfuscat.pass.vm.VMConst.*;
 import java.util.HashMap;
 import java.util.Random;
 
+import re.bytecode.obfuscat.dsl.api.ExcludeField;
 import re.bytecode.obfuscat.dsl.api.ExcludeMethod;
 
 /**
@@ -12,8 +13,11 @@ import re.bytecode.obfuscat.dsl.api.ExcludeMethod;
  */
 public class VMRefImpl {
 	
+	@ExcludeField
 	private static Random addressRandomiser;
+	@ExcludeField
 	private static HashMap<Integer, Object> dataMap;
+	@ExcludeField
 	private static HashMap<Object, Integer> reverseMap;
 	
 	@ExcludeMethod
