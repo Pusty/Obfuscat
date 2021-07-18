@@ -96,7 +96,7 @@ def mbaIdentity():
         else:
             print("??? Should not be contain 0 "+str(solMat))
        
-    formular = z3.simplify(formular)
+    #formular = z3.simplify(formular)
     
     print(str(formular).replace("\n", " ")+" = 0")
     solver = z3.Solver()

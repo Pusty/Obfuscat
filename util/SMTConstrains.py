@@ -9,7 +9,7 @@ def LoadTag(array, tag):
 
 def oe(prevArray):
     tmp = StoreTag(prevArray, "math", LoadTag(prevArray, "math") * 10)
-    tmp = StoreTag(tmp, "const"     , LoadTag(prevArray, "math") + LoadTag(prevArray, "math"))
+    tmp = StoreTag(tmp, "const"     , LoadTag(prevArray, "const") + LoadTag(prevArray, "math"))
     return tmp
     
 def fd(prevArray):
@@ -31,9 +31,6 @@ def ve(prevArray):
 
 def applyLevel(obfVar, prevArray):
     return If(obfVar == 1, oe(prevArray) , If(obfVar == 2, fd(prevArray), If(obfVar == 3, le(prevArray), If(obfVar == 4, ve(prevArray), prevArray))))
-
-
-varMap = {}
 
 
 initialArray = Array('initialArray', IntSort(), IntSort())
