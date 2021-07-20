@@ -212,7 +212,8 @@ public class FlatteningPass extends Pass {
 		map.put("conditionalBlocks", cst(0)); // all replaced!
 		map.put("switchBlocks", add(cst("switchBlocks"), cst(1)));
 		map.put("blocks", add(cst("blocks"), cst(2)));
-
+		map.put("variables", add(cst("variables"), cst(1)));
+		
 		return map;
 	}
 	
@@ -224,6 +225,7 @@ public class FlatteningPass extends Pass {
 		map.put("load", add(map.get("load"), add(cst("jumpBlocks"), cst("conditionalBlocks"))));
 		map.put("blocks", add(map.get("blocks"), sub(cst("blocks"), cst(1))));
 		map.put("switchBlocks", add(map.get("switchBlocks"), add(cst("jumpBlocks"), cst("conditionalBlocks"))));
+		map.put("conditionalBlocksFalse", cst(0)); // all replaced!
 		
 		return map;
 	}

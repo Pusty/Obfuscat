@@ -9,15 +9,14 @@ import re.bytecode.obfuscat.test.gen.DSLCodeParsingTest;
 import re.bytecode.obfuscat.test.gen.ThumbCodeGenerationTest;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class VMPassTest {
+public class BogusPassTest {
 	
 
 	private static final int REPEAT_COUNT = 2;
-	private static final String[] passNames = new String[] {"Virtualize"};
+	private static final String[] passNames = new String[] {"Bogus"};
 	
 	
 	@Test
@@ -32,6 +31,7 @@ public class VMPassTest {
 	}
 
 
+	
 	@Test
 	public void testConstrains() throws Exception {
 		
@@ -50,8 +50,6 @@ public class VMPassTest {
 		
 	}
 	
-	// Not supported
-	/*
 	@Test
 	public void testMergedDSL() throws Exception {
 		
@@ -62,7 +60,7 @@ public class VMPassTest {
 		
 		DSLCodeParsingTest.evaluteSizeAndSpeed(listOfList);
 	}
-	*/
+	
 	
 	
 	@Test
@@ -70,10 +68,8 @@ public class VMPassTest {
 		
 		List<List<int[]>> listOfList = new ArrayList<List<int[]>>();
 		
-		// 2 - is just super slow in the vm
-		// 6 - contains readInt which is native - need to somehow implement this? or ignore
 		for(int i=0;i<REPEAT_COUNT;i++)
-			listOfList.add(ThumbCodeGenerationTest.normalTestCases(passNames, Arrays.asList(2, 6)));
+			listOfList.add(ThumbCodeGenerationTest.normalTestCases(passNames));
 		
 		ThumbCodeGenerationTest.evaluteSizeAndSpeed(listOfList);
 		

@@ -565,9 +565,15 @@ public class EmulateFunction {
 		
 		runtimeStatistics.put("calls", 1); // useful for call custom nodes
 		runtimeStatistics.put("conditionalBlocks", 0);
+		runtimeStatistics.put("conditionalBlocksFalse", 0);
 		runtimeStatistics.put("switchBlocks", 0);
 		runtimeStatistics.put("exitBlocks", 0);
 		runtimeStatistics.put("jumpBlocks", 0);
+		
+		runtimeStatistics.put("arguments", function.getArguments().length);
+		runtimeStatistics.put("variables", function.getVariables());
+		runtimeStatistics.put("appendedData", function.getDataMap().size());
+		
 		
 		// Default values
 		runtimeStatistics.put("const", runtimeStatistics.getOrDefault("const", 0));
@@ -690,6 +696,7 @@ public class EmulateFunction {
 			}
 			
 			// if no jump was taken use default jump
+			runtimeStatistics.put("conditionalBlocksFalse", runtimeStatistics.getOrDefault("conditionalBlocksFalse", 0)+1);
 			currentBlock = currentBlock.getUnconditionalBranch();
 			return null;
 		}else if(currentBlock.isSwitchCase()){

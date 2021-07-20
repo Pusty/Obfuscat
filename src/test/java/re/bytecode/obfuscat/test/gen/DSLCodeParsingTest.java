@@ -150,8 +150,10 @@ public class DSLCodeParsingTest {
 					base = newbase; // commit changes after pass
 				}
 				
+				//System.out.println("=============");
 				for(String key:base.keySet()) {
 					assertEquals(key+" @ Nr. "+(i)+" Speed values don't match up with expected values ", base.get(key), changed.get(key));
+					//System.out.println(key+" @ Nr. "+(i)+" Speed values don't match up with expected values "+ base.get(key) +" "+ changed.get(key));
 				}
 			
 			}

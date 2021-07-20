@@ -15,7 +15,9 @@ import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
 import re.bytecode.obfuscat.pass.Pass;
 import re.bytecode.obfuscat.pass.VariableEncodePass;
+import re.bytecode.obfuscat.pass.vm.VMCodeGenerator;
 import re.bytecode.obfuscat.pass.vm.VMPass;
+import re.bytecode.obfuscat.pass.BogusControlFlowPass;
 import re.bytecode.obfuscat.pass.FakeDependencyPass;
 import re.bytecode.obfuscat.pass.FlatteningPass;
 import re.bytecode.obfuscat.pass.LiteralEncodePass;
@@ -48,6 +50,8 @@ public class Obfuscat {
 		//registerCustomNode("Flowgraph", "readInt", FlowgraphCodeGenerator.FlowgraphNodeReadInt.class);
 		//registerCustomNode("Flowgraph", "call", FlowgraphCodeGenerator.FlowgraphNodeCall.class);
 		
+		registerGenerator("VM", (ctx, func) -> new VMCodeGenerator(ctx, func));
+		
 		// TODO: Reconnect adding custom nodes from Obfuscat again
 		
 		registerPass("OperationEncode", (ctx) -> new OperationEncodePass(ctx));
@@ -55,6 +59,7 @@ public class Obfuscat {
 		registerPass("VariableEncode", (ctx) -> new VariableEncodePass(ctx));
 		registerPass("FakeDependency", (ctx) -> new FakeDependencyPass(ctx));
 		registerPass("Flatten", (ctx) -> new FlatteningPass(ctx));
+		registerPass("Bogus", (ctx) -> new BogusControlFlowPass(ctx));
 		registerPass("Virtualize", (ctx) -> new VMPass(ctx));
 		
 		registerBuilder("Class", (ctx) -> new JavaClassBuilder(ctx));

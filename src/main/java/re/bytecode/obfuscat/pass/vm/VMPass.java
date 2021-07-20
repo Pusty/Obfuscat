@@ -42,14 +42,12 @@ public class VMPass extends Pass {
 	protected Function processFunction(Function function, Map<String, Object> args) {
 
 		int[] genIntArray = new VMCodeGenerator(new Context(this.getContext().getInternalSeed()), function).generate();
-		
+
 		byte[] vmcode = new byte[genIntArray.length];
 		for (int i = 0; i < genIntArray.length; i++) {
 			vmcode[i] = (byte) genIntArray[i];
 		}
 		ArrayList<BasicBlock> blocks = new ArrayList<BasicBlock>();
-
-
 
 		int VARS = function.getArguments().length;
 		int index_args = VARS++;
@@ -68,24 +66,29 @@ public class VMPass extends Pass {
 		{
 			setup.getNodes().add(new NodeStore(MemorySize.INT, index_pc, cst(0))); // pc = 0;
 			setup.getNodes().add(new NodeStore(MemorySize.INT, index_program, cst(vmcode)));
-			setup.getNodes().add(new NodeStore(MemorySize.INT, index_memory, new NodeAlloc(MemorySize.INT, cst(0x100 + 0x100)))); 
-			
+			setup.getNodes().add(
+					new NodeStore(MemorySize.INT, index_memory, new NodeAlloc(MemorySize.INT, cst(0x100 + 0x100))));
+
 			Node dataArray = new NodeAlloc(MemorySize.POINTER, cst(function.getDataMap().size()));
 			Object[] dataArrayValues = function.getData();
-			setup.getNodes().add(new NodeStore(MemorySize.POINTER, index_staticdata, dataArray)); 
-			for(int i=0;i<function.getDataMap().size();i++) {
+			setup.getNodes().add(new NodeStore(MemorySize.POINTER, index_staticdata, dataArray));
+			for (int i = 0; i < function.getDataMap().size(); i++) {
 				setup.getNodes().add(new NodeAStore(dataArray, cst(i), cst(dataArrayValues[i]), MemorySize.POINTER));
 			}
-			
+
 			Node argArray = new NodeAlloc(MemorySize.POINTER, cst(function.getArguments().length));
 			Class<?>[] argArrayValues = function.getArguments();
-			setup.getNodes().add(new NodeStore(MemorySize.POINTER, index_args, argArray)); 
-			for(int i=0;i<argArrayValues.length;i++) {
-				setup.getNodes().add(new NodeAStore(argArray, cst(i), new NodeLoad(MemorySize.POINTER, i), MemorySize.POINTER));
+			setup.getNodes().add(new NodeStore(MemorySize.POINTER, index_args, argArray));
+			for (int i = 0; i < argArrayValues.length; i++) {
+				setup.getNodes()
+						.add(new NodeAStore(argArray, cst(i), new NodeLoad(MemorySize.POINTER, i), MemorySize.POINTER));
 			}
-			
+
 			blocks.add(setup); // first basic block
 		}
+		
+		//System.out.println(new Function("tmp", Arrays.asList(setup), new
+		// Class<?>[] {}, 0, false).statistics());
 
 		BasicBlock dispatcher = new BasicBlock();
 		setup.setUnconditionalBranch(dispatcher);
@@ -130,34 +133,32 @@ public class VMPass extends Pass {
 					add(new NodeLoad(MemorySize.INT, index_pc), cst(6)));
 
 			NodeLoad memory = new NodeLoad(MemorySize.POINTER, index_memory);
-			handler.getNodes().add(memory);
-
 			Node op1 = new NodeLoad(MemorySize.INT, index_op1);
 			Node op2 = new NodeLoad(MemorySize.INT, index_op2);
 			Node jumpPosition = new NodeLoad(MemorySize.SHORT, index_jumpPosition);
 			Node memslot = new NodeLoad(MemorySize.INT, index_memslot);
 			Node stackslot = new NodeLoad(MemorySize.INT, index_stackslot);
 
-			handler.getNodes().add(op1);
-			handler.getNodes().add(op2);
-			handler.getNodes().add(jumpPosition);
-			handler.getNodes().add(memslot);
-			handler.getNodes().add(stackslot);
-
 			Node tmp = null;
 
-			// TODO: Make sure each handler uses the same amount of nodes, and the same
-			// types
-			// This will introduce quite the overhead
-
 			switch (opcode) {
-			case OP_CONST:
-			{
+			case OP_CONST: {
 				Node data = new NodeLoad(MemorySize.INT, index_data);
 				if (DEBUG)
 					handler.getNodes().add(new NodeCustom("debugPrint", cst("CONST"), data));
+
+				// padding
+				NodeLoad staticdata = new NodeLoad(MemorySize.POINTER, index_data);
+				handler.getNodes().add(staticdata);
+				tmp = loadStack(memory, stackslot);
+				handler.getNodes().add(tmp);
+				tmp = loadStack(memory, stackslot);
+				handler.getNodes().add(tmp);
+				// end of padding
+
 				handler.getNodes().add(storeStack(memory, stackslot, data));
 			}
+
 				handler.getNodes().add(addPC6);
 				handler.setUnconditionalBranch(dispatcher);
 				break;
@@ -178,10 +179,12 @@ public class VMPass extends Pass {
 			case OP_LOAD32:
 			case OP_LOADP:
 				if (tmp == null) {
-					tmp = loadData(memory, memslot);
+					tmp = mul(add(nop(memslot), cst(0)), cst(1));
+					tmp = loadData(memory, tmp); // loadData(memory, memslot);
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("LOAD32/P"), tmp));
 				}
+				handler.getNodes().add(new NodeLoad(MemorySize.POINTER, index_data)); // padding
 				handler.getNodes().add(storeStack(memory, stackslot, tmp));
 				handler.getNodes().add(addPC6);
 				handler.setUnconditionalBranch(dispatcher);
@@ -207,10 +210,12 @@ public class VMPass extends Pass {
 			case OP_PLOADP:
 				if (tmp == null) {
 					NodeLoad arguments = new NodeLoad(MemorySize.POINTER, index_args);
-					tmp = new NodeALoad(arguments, memslot, MemorySize.POINTER);
+					tmp = mul(add(nop(memslot), cst(0)), cst(1));
+					tmp = new NodeALoad(arguments, tmp, MemorySize.POINTER);
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("PLOAD32/P"), tmp));
 				}
+				tmp = mul(tmp, cst(1));
 				handler.getNodes().add(storeStack(memory, stackslot, tmp));
 				handler.getNodes().add(addPC6);
 				handler.setUnconditionalBranch(dispatcher);
@@ -230,10 +235,12 @@ public class VMPass extends Pass {
 			case OP_STORE32:
 			case OP_STOREP:
 				if (tmp == null) {
-					tmp = loadStack(memory, stackslot);
+					tmp = add(stackslot, cst(0));
+					tmp = loadStack(memory, tmp);
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("STORE32/P"), tmp));
 				}
+				handler.getNodes().add(new NodeLoad(MemorySize.POINTER, index_data)); // padding
 				handler.getNodes().add(storeData(memory, memslot, tmp));
 				handler.getNodes().add(addPC6);
 				handler.setUnconditionalBranch(dispatcher);
@@ -271,11 +278,10 @@ public class VMPass extends Pass {
 
 			case OP_ASTORE8:
 				if (tmp == null) {
-					Node op1d = loadStack(memory, op1);
-					Node op2d = loadStack(memory, op2);
-					tmp = new NodeAStore(op1d, op2d, loadStack(memory, stackslot), MemorySize.BYTE);
+					tmp = new NodeAStore(loadStack(memory, op1), loadStack(memory, op2), loadStack(memory, stackslot),
+							MemorySize.BYTE);
 					if (DEBUG)
-						handler.getNodes().add(new NodeCustom("debugPrint", cst("ASTORE8"), op1d, op2d));
+						handler.getNodes().add(new NodeCustom("debugPrint", cst("ASTORE8"), op1, op2));
 				}
 			case OP_ASTORE16:
 				if (tmp == null) {
@@ -304,18 +310,21 @@ public class VMPass extends Pass {
 				break;
 			case OP_NOT:
 				if (tmp == null) {
+					handler.getNodes().add(loadStack(memory, op2));
 					tmp = not(loadStack(memory, op1));
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("NOT"), tmp));
 				}
 			case OP_NEG:
 				if (tmp == null) {
+					handler.getNodes().add(loadStack(memory, op2));
 					tmp = neg(loadStack(memory, op1));
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("NEG"), tmp));
 				}
 			case OP_NOP:
 				if (tmp == null) {
+					handler.getNodes().add(loadStack(memory, op2));
 					tmp = nop(loadStack(memory, op1));
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("NOP"), tmp));
@@ -399,6 +408,7 @@ public class VMPass extends Pass {
 				Node jmp = add(mul(cmp, sub(jumpPosition, cst(6))), cst(6));
 				if (DEBUG)
 					handler.getNodes().add(new NodeCustom("debugPrint", cst("COMPARE_EQUAL"), jmp));
+				jmp = nop(nop(nop(jmp)));
 				handler.getNodes()
 						.add(new NodeStore(MemorySize.INT, index_pc, add(new NodeLoad(MemorySize.INT, index_pc), jmp)));
 				handler.setUnconditionalBranch(dispatcher);
@@ -411,6 +421,7 @@ public class VMPass extends Pass {
 				Node jmp = add(mul(cmp, sub(jumpPosition, cst(6))), cst(6));
 				if (DEBUG)
 					handler.getNodes().add(new NodeCustom("debugPrint", cst("COMPARE_NOTEQUAL"), jmp));
+				jmp = nop(nop(nop(nop(jmp))));
 				handler.getNodes()
 						.add(new NodeStore(MemorySize.INT, index_pc, add(new NodeLoad(MemorySize.INT, index_pc), jmp)));
 				handler.setUnconditionalBranch(dispatcher);
@@ -428,6 +439,7 @@ public class VMPass extends Pass {
 				Node jmp = add(mul(cmp, sub(jumpPosition, cst(6))), cst(6));
 				if (DEBUG)
 					handler.getNodes().add(new NodeCustom("debugPrint", cst("COMPARE_LT/GT"), jmp));
+				jmp = nop(jmp);
 				handler.getNodes()
 						.add(new NodeStore(MemorySize.INT, index_pc, add(new NodeLoad(MemorySize.INT, index_pc), jmp)));
 				handler.setUnconditionalBranch(dispatcher);
@@ -473,8 +485,10 @@ public class VMPass extends Pass {
 				handler.setUnconditionalBranch(dispatcher);
 				break;
 			case OP_RETURN:
+				tmp = loadStack(memory, op1);
 				if (DEBUG)
 					handler.getNodes().add(new NodeCustom("debugPrint", cst("RETURN")));
+				handler.getNodes().add(tmp);
 				handler.setExitBlock(null);
 				break;
 			case OP_RETURNV:
@@ -516,7 +530,7 @@ public class VMPass extends Pass {
 				if (tmp == null) {
 					NodeLoad arguments = new NodeLoad(MemorySize.POINTER, index_args);
 					tmp = and(loadStack(memory, stackslot), cst(0xFF));
-					tmp = new NodeAStore(arguments, memslot, tmp, MemorySize.POINTER);
+					tmp = new NodeAStore(arguments, add(memslot, cst(0)), tmp, MemorySize.POINTER);
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("PSTORE8"), tmp));
 				}
@@ -524,7 +538,7 @@ public class VMPass extends Pass {
 				if (tmp == null) {
 					NodeLoad arguments = new NodeLoad(MemorySize.POINTER, index_args);
 					tmp = and(loadStack(memory, stackslot), cst(0xFFFF));
-					tmp = new NodeAStore(arguments, memslot, tmp, MemorySize.POINTER);
+					tmp = new NodeAStore(arguments, add(memslot, cst(0)), tmp, MemorySize.POINTER);
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("PSTORE16"), tmp));
 				}
@@ -532,17 +546,18 @@ public class VMPass extends Pass {
 			case OP_PSTOREP:
 				if (tmp == null) {
 					NodeLoad arguments = new NodeLoad(MemorySize.POINTER, index_args);
-					tmp = loadStack(memory, stackslot);
-					tmp = new NodeAStore(arguments, memslot, tmp, MemorySize.POINTER);
+					tmp = add(stackslot, cst(0));
+					tmp = loadStack(memory, tmp);
+					tmp = new NodeAStore(arguments, add(memslot, cst(0)), tmp, MemorySize.POINTER);
 					if (DEBUG)
 						handler.getNodes().add(new NodeCustom("debugPrint", cst("PSTORE32/P"), tmp));
 				}
+
 				handler.getNodes().add(tmp);
 				handler.getNodes().add(addPC6);
 				handler.setUnconditionalBranch(dispatcher);
 				break;
-			case OP_OCONST:
-			{
+			case OP_OCONST: {
 				Node data = new NodeLoad(MemorySize.INT, index_data);
 				NodeLoad staticdata = new NodeLoad(MemorySize.POINTER, index_staticdata);
 				tmp = loadStack(memory, data);
@@ -559,12 +574,17 @@ public class VMPass extends Pass {
 					handler.getNodes().add(new NodeCustom("debugPrint", cst("ILLEGAL OPCODE")));
 				handler.setExitBlock(null);
 			}
-
+			
+			//System.out.println(String.format("%02X: ", opcode) + (new Function("tmp", Arrays.asList(handler), new
+			// Class<?>[] {}, 0, false)).statistics());
 			handlers.add(handler);
 			blocks.add(handler);
 		}
 
 		dispatcher.setSwitchBlock(handlers, opcodeBlock);
+		
+		//System.out.println(new Function("tmp", Arrays.asList(dispatcher), new
+		// Class<?>[] {}, 0, false).statistics());
 
 		Function vmFunction = new Function(function.getName(), blocks, function.getArguments(), VARS, true);
 		vmFunction.setDataMap(function.getDataMap());
@@ -605,12 +625,73 @@ public class VMPass extends Pass {
 	@Override
 	public Map<String, Node> statistics() {
 		Map<String, Node> map = new HashMap<String, Node>();
+
+		// per data entry
+		// new NodeAStore(dataArray, cst(i), cst(dataArrayValues[i]),
+		// MemorySize.POINTER);
+
+		// per argument entry
+		// new NodeAStore(argArray, cst(i), new NodeLoad(MemorySize.POINTER, i),
+		// MemorySize.POINTER)
+
+		map.put("const", add(add(cst(149), mul(cst("appendedData"), cst(2))), cst("arguments")));
+		map.put("blocks", cst(56));
+		map.put("custom", cst(0));
+		map.put("store", cst(63));
+		map.put("aload", cst(105));
+		map.put("conditionalBlocks", cst(0));
+		map.put("astore", add(add(cst(44), cst("appendedData")), cst("arguments")));
+		map.put("allocate", cst(7));
+		map.put("switchBlocks", cst(1));
+		map.put("math", cst(230));
+		map.put("jumpBlocks", cst(53));
+		map.put("load", add(cst(258), cst("arguments")));
+		map.put("exitBlocks", cst(2));
+		map.put("variables", add(cst(11), cst("arguments")));
+		map.put("appendedData", add(cst("appendedData"), cst(1)));
+
 		return map;
 	}
 
+	
+	private static Node formular(Node initial, int dispatcher, int cst, int load, int store, int aload, int astore, int math, int alloc, int custom, int cond, int jmp, int swit, int exit) {
+		return  add(add(
+				add(add(add(add(
+						add(add(add(add(add(add(initial,
+								mul(cst("const"), cst(dispatcher+cst))),
+								mul(cst("load"), cst(dispatcher+load))),
+								mul(cst("store"), cst(dispatcher+store))),
+								mul(cst("aload"), cst(dispatcher+aload))),
+								mul(cst("astore"), cst(dispatcher+astore))), 
+								mul(cst("math"), cst(dispatcher+math))),
+						mul(cst("conditionalBlocks"), cst(dispatcher+cond))), 
+						mul(add(cst("jumpBlocks"), cst("conditionalBlocksFalse")), cst(dispatcher+jmp))),
+						mul(cst("switchBlocks"), cst(dispatcher+swit))),
+						mul(cst("exitBlocks"), cst(dispatcher+exit))),
+				mul(cst("allocate"), cst(dispatcher+alloc))),
+				mul(cst("custom"), cst(dispatcher+custom)));
+	}
+	
 	@Override
 	public Map<String, Node> statisticsRuntime() {
-		Map<String, Node> map = statistics();
+		Map<String, Node> map = new HashMap<String, Node>();
+		
+		map.put("const", formular(add(add(cst(5), cst("arguments")), mul(cst("appendedData"), cst(2))), 27, 1, 4, 3, 1, 1, 1, 1, 0, 4, 0, 9, 0));
+		map.put("store", formular(cst(5), 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0));
+		map.put("aload", formular(cst(0), 12, 2, 1, 1, 3, 3, 2, 1, 0, 2, 0, 3, 1));
+		map.put("astore", formular(add(add(cst(0), cst("appendedData")), cst("arguments")), 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0));
+		map.put("load", formular(add(cst(0),  cst("arguments")), 2, 5, 5, 5, 5, 5, 5, 4, 0, 5, 2, 4, 2));
+		map.put("allocate", formular(cst(3), 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0));
+		map.put("math", formular(cst(0), 32, 1, 5, 3, 1, 1, 2, 1, 0, 13, 1, 13, 0));
+		map.put("jumpBlocks", formular(cst(1), 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0));
+		map.put("switchBlocks", formular(cst(0), 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+		map.put("blocks", formular(cst(1), 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+		map.put("conditionalBlocks", cst(0));
+		map.put("conditionalBlocksFalse", cst(0));
+		map.put("exitBlocks", cst(1));
+		map.put("variables", add(cst(11), cst("arguments")));
+		map.put("appendedData", add(cst("appendedData"), cst(1)));
+
 		return map;
 	}
 

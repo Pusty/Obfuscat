@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import re.bytecode.obfuscat.cfg.nodes.Node;
 
 /**
@@ -171,6 +170,10 @@ public class Function implements Serializable {
 				jumpBlocks++;
 		}
 		
+		map.put("arguments", argumentTypes.length);
+		map.put("variables", variableSlots);
+		map.put("appendedData", getDataMap().size());
+		
 		map.put("const", map.getOrDefault("const", 0));
 		map.put("math", map.getOrDefault("math", 0));
 		map.put("store", map.getOrDefault("store", 0));
@@ -184,6 +187,7 @@ public class Function implements Serializable {
 		map.put("switchBlocks", switchBlocks);
 		map.put("exitBlocks", exitBlocks);
 		map.put("jumpBlocks", jumpBlocks);
+		
 		
 		return map;
 	}
