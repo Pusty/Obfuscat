@@ -497,10 +497,10 @@ public class ThumbCodeGenerationTest {
 		runTest("Sample6", "entry", passes);
 		data.add(new int[] { INST_SIZE, INST_COUNT });
 		}
-		if(!exclude.contains(8)) {
-		runTest("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
-		data.add(new int[] { INST_SIZE, INST_COUNT });
-		}
+		//if(!exclude.contains(8)) {
+		//runTest("Sample8", "entry", passes, new Object[] { new Object[]{ new int[] {1, 2, 3, 4}, new int[] {4, 3, 2, 1}}});
+		//data.add(new int[] { INST_SIZE, INST_COUNT });
+		//}
 		return data;
 	}
 
@@ -554,7 +554,7 @@ public class ThumbCodeGenerationTest {
 	public void testMerged() throws Exception {
 		byte[] res = new byte[] { -108, -110, -121, -119, -108, -16, -89, 2 };
 		byte[] encoded = new byte[] { 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48 };
-		runTestMerged("Sample7", "rc4", null, new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }, encoded, new byte[256]);
+		runTestMerged("Sample7", "rc4", new String[] {}, new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 }, encoded, new byte[256]);
 		for (int i = 0; i < encoded.length; i++)
 			assertEquals("RC4 didn't work", res[i], encoded[i]);
 		
@@ -562,7 +562,7 @@ public class ThumbCodeGenerationTest {
 		byte[] decryptMe = new byte[]{0x3d, 0x67, 0x33, (byte)0xe2, 0x34, 0x1d, 0x59, (byte)0xbc, (byte)0xdd, 0x23, 0x07, 0x72, (byte)0xa7, (byte)0xe8, 0x12, 0x43};
 		byte[] aesKey    = {0x2b, 0x7e, 0x15, 0x16, 0x28, (byte)0xae, (byte)0xd2, (byte)0xa6, (byte)0xab, (byte)0xf7, 0x15, (byte)0x88, 0x09, (byte)0xcf, 0x4f, 0x3c};
 		String decrypted = "Hello World /o/ ";
-		runTestMerged("Sample9", "entry" , null, aesKey, decryptMe);
+		runTestMerged("Sample9", "entry" , new String[] {}, aesKey, decryptMe);
 		
 		for(int i=0;i<decryptMe.length;i++)
 			assertEquals("AES128 didn't work "+Arrays.toString(decryptMe), decrypted.charAt(i)&0xFF, decryptMe[i]);

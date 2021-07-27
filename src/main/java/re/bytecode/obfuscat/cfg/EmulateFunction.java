@@ -191,7 +191,6 @@ public class EmulateFunction {
 			// If the node is an array load node then read from the array and convert the
 			// result to an integer
 			NodeALoad nl = (NodeALoad) node;
-
 			Object[] array = (Object[]) arrayTable.get(input[0]);
 			Integer index = (Integer) input[1];
 			
@@ -320,8 +319,8 @@ public class EmulateFunction {
 			}else if (custom.getIdentifier().equals("prepare_call")) {
 				if (!(function instanceof MergedFunction))
 					throw new RuntimeException("Can't call in unmerged function");
-	
 				nextcallArgs = input;
+				//System.out.println(Arrays.toString(input));
 			}else if(custom.getIdentifier().equals("debugPrint")) {
 				// Debug Print in emulation
 				StringBuilder sb = new StringBuilder("[debugPrint]: ");
@@ -468,6 +467,7 @@ public class EmulateFunction {
 	
 	
 	private Object registerArrayRecursive(Object argV, boolean check, int i) {
+		if(argV == null) return null;
 		
 		Class<?> arg = argV.getClass();
 		
@@ -517,7 +517,7 @@ public class EmulateFunction {
 	
 	
 	private void writebackRecursive(Object argV, Integer addr ) {
-		
+		if(argV == null) return;
 		Class<?> arg = argV.getClass();
 		
 		if (arg.isArray()) {

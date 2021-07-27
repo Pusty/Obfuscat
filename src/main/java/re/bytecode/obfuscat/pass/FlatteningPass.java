@@ -30,7 +30,6 @@ public class FlatteningPass extends Pass {
 	@Override
 	protected Function processFunction(Function function, Map<String, Object> args) {
 		
-		
 		int cfv = function.getVariables(); // Variable to store the id of the next basic block in
 
 		Function nf = null;

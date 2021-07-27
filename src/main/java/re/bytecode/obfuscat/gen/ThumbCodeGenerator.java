@@ -1351,8 +1351,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
 			assert (generator instanceof ThumbCodeGenerator);
 			assert (cbb instanceof ThumbCompiledBasicBlock);
-			if (!(generator.getFunction() instanceof MergedFunction))
-				throw new RuntimeException("Can't branch in a non merged function");
+			//if (!(generator.getFunction() instanceof MergedFunction))
+			//	throw new RuntimeException("Can't branch in a non merged function");
 
 			int[] data = new int[generator.getNodeSize()];
 
@@ -1436,8 +1436,8 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
 			assert (generator instanceof ThumbCodeGenerator);
 			assert (cbb instanceof ThumbCompiledBasicBlock);
-			if (!(generator.getFunction() instanceof MergedFunction))
-				throw new RuntimeException("Can't branch in a non merged function");
+			//if (!(generator.getFunction() instanceof MergedFunction))
+			//	throw new RuntimeException("Can't branch in a non merged function");
 
 			int[] data = new int[generator.getNodeSize()];
 

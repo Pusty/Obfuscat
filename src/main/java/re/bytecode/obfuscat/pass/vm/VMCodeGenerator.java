@@ -11,11 +11,13 @@ import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
 import re.bytecode.obfuscat.cfg.nodes.NodeAlloc;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
+import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeMath;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.CompiledBasicBlock;
+import re.bytecode.obfuscat.gen.CustomNodeImpl;
 import re.bytecode.obfuscat.gen.NodeCodeGenerator;
 
 import static re.bytecode.obfuscat.pass.vm.VMConst.*;
@@ -28,6 +30,8 @@ public class VMCodeGenerator extends CodeGenerator {
 	
 	static {
 		registerCodegen(VMCodeGenerator.class);
+		registerCustomNode(VMCodeGenerator.class, "prepare_call", new VMNodePrepareCall());
+		registerCustomNode(VMCodeGenerator.class, "call", new VMNodeCall());
 	}
 	
 	/**
@@ -560,5 +564,51 @@ public class VMCodeGenerator extends CodeGenerator {
 
 	}
 
+	public static class VMNodePrepareCall extends CustomNodeImpl {
 
+		@Override
+		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
+			assert (generator instanceof VMCodeGenerator);
+			assert (cbb instanceof VMCompiledBasicBlock);
+			//if (!(generator.getFunction() instanceof MergedFunction))
+			//	throw new RuntimeException("Can't branch in a non merged function");
+			int[] data = new int[generator.getNodeSize()];
+			
+			Node[] children = node.children();
+			
+			data[0] = OP_CUSTOM_PREPCALL;
+			data[1] = (children == null || children.length < 1)?0:((VMCodeGenerator)generator).getNodeID(children[0]);
+			data[2] = (children == null || children.length < 2)?0:((VMCodeGenerator)generator).getNodeID(children[1]);
+			data[3] = (children == null || children.length < 3)?0:((VMCodeGenerator)generator).getNodeID(children[2]);
+			data[5] = (children == null || children.length < 4)?0:((VMCodeGenerator)generator).getNodeID(children[3]);
+			data[4] = ((VMCodeGenerator)generator).getNodeID(node);
+			
+			((VMCompiledBasicBlock) cbb).appendBytes(data);
+		}
+	}
+	
+	public static class VMNodeCall extends CustomNodeImpl {
+
+		@Override
+		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
+			assert (generator instanceof VMCodeGenerator);
+			assert (cbb instanceof VMCompiledBasicBlock);
+			//if (!(generator.getFunction() instanceof MergedFunction))
+			//	throw new RuntimeException("Can't branch in a non merged function");
+			int[] data = new int[generator.getNodeSize()];
+			
+			Node[] children = node.children();
+			
+			data[0] = OP_CUSTOM_CALL;
+			data[1] = ((VMCodeGenerator)generator).getNodeID(children[0]);
+			data[2] = 0;
+			data[3] = 0;
+			data[5] = 0;
+			data[4] = ((VMCodeGenerator)generator).getNodeID(node);
+			
+			
+			((VMCompiledBasicBlock) cbb).appendBytes(data);
+		}
+	}
+	
 }

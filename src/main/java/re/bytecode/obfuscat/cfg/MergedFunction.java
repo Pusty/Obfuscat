@@ -138,7 +138,7 @@ public class MergedFunction extends Function {
 		arguments += 1;
 		
 		Class<?>[] prevArgs = entryFunction.getArguments();
-		Class<?>[] afterArgs = new Class<?>[arguments+1]; // actual initilize with correct size..
+		Class<?>[] afterArgs = new Class<?>[arguments]; // actual initialize with correct size..
 		
 		for(int i=0;i<afterArgs.length;i++)
 			afterArgs[i] = null;

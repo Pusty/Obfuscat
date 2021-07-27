@@ -50,19 +50,16 @@ public class VMPassTest {
 		
 	}
 	
-	// Not supported
-	/*
 	@Test
 	public void testMergedDSL() throws Exception {
 		
 		List<List<EmulateFunction>> listOfList = new ArrayList<List<EmulateFunction>>();
 		
 		for(int i=0;i<REPEAT_COUNT;i++)
-			listOfList.add(DSLCodeParsingTest.mergedTestCases(passNames));
+			listOfList.add(DSLCodeParsingTest.mergedTestCases(passNames, Arrays.asList(9)));
 		
 		DSLCodeParsingTest.evaluteSizeAndSpeed(listOfList);
 	}
-	*/
 	
 	
 	@Test

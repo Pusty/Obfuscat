@@ -32,12 +32,20 @@ public class VMRefImpl {
 	private static Object native_int2obj(int a) {
 		init();
 		if(dataMap.containsKey(a)) return dataMap.get(a);
-		throw new RuntimeException("Can't convert integer "+a+" to object");
+		return a;
+		//throw new RuntimeException("Can't convert integer "+a+" to object");
 	}
 	
 	@ExcludeMethod
 	private static int native_obj2int(Object o) {
 		init();
+		
+		if(o instanceof Integer) return ((Integer)o).intValue();
+		if(o instanceof Byte) return ((Byte)o).intValue();
+		if(o instanceof Short) return ((Short)o).intValue();
+		if(o instanceof Character) return (int)((Character)o).charValue();
+		if(o instanceof Boolean) return ((Boolean)o).booleanValue()?1:0;
+		
 		if(reverseMap.containsKey(o)) {
 			return reverseMap.get(o);
 		}else {
@@ -59,16 +67,21 @@ public class VMRefImpl {
 		while(true) {
 			int opcode = program[pc]&0xFF;
 			
+
 			int data;
 			int memslot;
 			int op1;
 			int op2;
+			int op3;
+			int op4;
 			short jumpPosition;
 			int stackslot;
 			
 			data = (program[pc+1]&0xFF)|((program[pc+2]&0xFF)<<8)|((program[pc+3]&0xFF)<<16)|(program[pc+5]<<24);
 			op1     = program[pc+1]&0xFF;
 			op2     = program[pc+2]&0xFF;
+			op3     = program[pc+3]&0xFF;
+			op4     = program[pc+5]&0xFF;
 			jumpPosition = (short) ((program[pc+3]&0xFF) | (program[pc+4]<<8));
 			memslot = (program[pc+1]&0xFF)|((program[pc+2]&0xFF)<<8);
 			stackslot = (program[pc+4]&0xFF);
@@ -243,6 +256,12 @@ public class VMRefImpl {
 				break;
 			case OP_OCONST:
 				memory[stackslot] = native_obj2int(appendedData[memory[op1]]);
+				break;
+			case OP_CUSTOM_PREPCALL:
+				memory[stackslot] = native_obj2int(new Object[] {native_int2obj(memory[op1]), native_int2obj(memory[op2]), native_int2obj(memory[op3]), native_int2obj(memory[op4])});
+				break;
+			case OP_CUSTOM_CALL:
+				memory[stackslot] = process(program, appendedData, (Object[])native_int2obj(memory[op1]));
 				break;
 			default:
 				return 0;

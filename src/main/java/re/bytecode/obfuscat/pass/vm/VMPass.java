@@ -8,6 +8,7 @@ import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.MemorySize;
+import re.bytecode.obfuscat.cfg.MergedFunction;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
@@ -119,19 +120,21 @@ public class VMPass extends Pass {
 			dispatcher.getNodes().add(opcodeBlock);
 			blocks.add(dispatcher);
 
-			// if (DEBUG)
-			// dispatcher.getNodes().add(new NodeCustom("debugPrint", cst("Opcode"),
-			// opcodeBlock));
+			 //if (DEBUG)
+			 //dispatcher.getNodes().add(new NodeCustom("debugPrint", cst("Opcode"),
+			 //opcodeBlock));
 		}
 
 		ArrayList<BasicBlock> handlers = new ArrayList<BasicBlock>();
 
-		for (int opcode = 0; opcode < 0x36; opcode++) {
+		for (int opcode = 0; opcode < 0x38; opcode++) {
 			BasicBlock handler = new BasicBlock();
 
+			NodeLoad pc = new NodeLoad(MemorySize.INT, index_pc);
 			NodeStore addPC6 = new NodeStore(MemorySize.INT, index_pc,
-					add(new NodeLoad(MemorySize.INT, index_pc), cst(6)));
+					add(pc, cst(6)));
 
+			NodeLoad program = new NodeLoad(MemorySize.POINTER, index_program);
 			NodeLoad memory = new NodeLoad(MemorySize.POINTER, index_memory);
 			Node op1 = new NodeLoad(MemorySize.INT, index_op1);
 			Node op2 = new NodeLoad(MemorySize.INT, index_op2);
@@ -463,9 +466,6 @@ public class VMPass extends Pass {
 			}
 				break;
 			case OP_SWITCH: {
-
-				NodeLoad program = new NodeLoad(MemorySize.POINTER, index_program);
-				handler.getNodes().add(program);
 				Node curpc = new NodeLoad(MemorySize.INT, index_pc);
 				Node switchVar = loadStack(memory, op1);
 				if (DEBUG)
@@ -560,10 +560,31 @@ public class VMPass extends Pass {
 			case OP_OCONST: {
 				Node data = new NodeLoad(MemorySize.INT, index_data);
 				NodeLoad staticdata = new NodeLoad(MemorySize.POINTER, index_staticdata);
-				tmp = loadStack(memory, data);
-				tmp = new NodeALoad(staticdata, tmp, MemorySize.POINTER);
 				if (DEBUG)
-					handler.getNodes().add(new NodeCustom("debugPrint", cst("OCONST"), tmp));
+					handler.getNodes().add(new NodeCustom("debugPrint", cst("OCONST"), data));
+				tmp = new NodeALoad(staticdata, data, MemorySize.POINTER);
+			}
+				handler.getNodes().add(storeStack(memory, stackslot, tmp));
+				handler.getNodes().add(addPC6);
+				handler.setUnconditionalBranch(dispatcher);
+				break;
+			case OP_CUSTOM_PREPCALL: {
+				Node s1 = loadStack(memory, op1);
+				Node s2 = loadStack(memory, op2);
+				Node s3 = loadStack(memory, loadByte(program, pc, 3));
+				Node s4 = loadStack(memory, loadByte(program, pc, 5));
+				tmp = new NodeCustom("prepare_call", s1, s2, s3, s4);
+				if (DEBUG)
+					handler.getNodes().add(new NodeCustom("debugPrint", cst("CUSTOM_PREPCALL"), s1, s2, s3, s4));
+			}	
+				handler.getNodes().add(storeStack(memory, stackslot, new NodeCustom("call", tmp)));
+				handler.getNodes().add(addPC6);
+				handler.setUnconditionalBranch(dispatcher);
+				break;
+			case OP_CUSTOM_CALL: {
+				tmp = loadStack(memory, op1);
+				if (DEBUG)
+					handler.getNodes().add(new NodeCustom("debugPrint", cst("CUSTOM_CALL"), tmp));
 			}
 				handler.getNodes().add(storeStack(memory, stackslot, tmp));
 				handler.getNodes().add(addPC6);
@@ -586,7 +607,13 @@ public class VMPass extends Pass {
 		//System.out.println(new Function("tmp", Arrays.asList(dispatcher), new
 		// Class<?>[] {}, 0, false).statistics());
 
-		Function vmFunction = new Function(function.getName(), blocks, function.getArguments(), VARS, true);
+	
+		Function vmFunction;
+		if(function instanceof MergedFunction)
+			vmFunction = new MergedFunction(function.getName(), blocks, function.getArguments(), VARS, true);
+		else
+			vmFunction = new Function(function.getName(), blocks, function.getArguments(), VARS, true);
+		
 		vmFunction.setDataMap(function.getDataMap());
 		vmFunction.registerData(vmcode);
 
@@ -634,18 +661,18 @@ public class VMPass extends Pass {
 		// new NodeAStore(argArray, cst(i), new NodeLoad(MemorySize.POINTER, i),
 		// MemorySize.POINTER)
 
-		map.put("const", add(add(cst(149), mul(cst("appendedData"), cst(2))), cst("arguments")));
-		map.put("blocks", cst(56));
-		map.put("custom", cst(0));
-		map.put("store", cst(63));
-		map.put("aload", cst(105));
+		map.put("const", add(add(cst(155), mul(cst("appendedData"), cst(2))), cst("arguments")));
+		map.put("blocks", cst(58));
+		map.put("custom", cst(2));
+		map.put("store", cst(65));
+		map.put("aload", cst(111));
 		map.put("conditionalBlocks", cst(0));
-		map.put("astore", add(add(cst(44), cst("appendedData")), cst("arguments")));
+		map.put("astore", add(add(cst(46), cst("appendedData")), cst("arguments")));
 		map.put("allocate", cst(7));
 		map.put("switchBlocks", cst(1));
-		map.put("math", cst(230));
-		map.put("jumpBlocks", cst(53));
-		map.put("load", add(cst(258), cst("arguments")));
+		map.put("math", cst(236));
+		map.put("jumpBlocks", cst(55));
+		map.put("load", add(cst(268), cst("arguments")));
 		map.put("exitBlocks", cst(2));
 		map.put("variables", add(cst(11), cst("arguments")));
 		map.put("appendedData", add(cst("appendedData"), cst(1)));
@@ -675,6 +702,9 @@ public class VMPass extends Pass {
 	@Override
 	public Map<String, Node> statisticsRuntime() {
 		Map<String, Node> map = new HashMap<String, Node>();
+		
+		// TODO: considerations for calls/custom calls are missing here
+		// Given how inprecice runtime constrains are anyways, this is not a huge priority [and might not make it into the final release]
 		
 		map.put("const", formular(add(add(cst(5), cst("arguments")), mul(cst("appendedData"), cst(2))), 27, 1, 4, 3, 1, 1, 1, 1, 0, 4, 0, 9, 0));
 		map.put("store", formular(cst(5), 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0));

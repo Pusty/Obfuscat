@@ -6,10 +6,10 @@ import re.bytecode.obfuscat.Context;
 import re.bytecode.obfuscat.cfg.BasicBlock;
 import re.bytecode.obfuscat.cfg.CompareOperation;
 import re.bytecode.obfuscat.cfg.Function;
-import re.bytecode.obfuscat.cfg.MergedFunction;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeALoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeAStore;
+import re.bytecode.obfuscat.cfg.nodes.NodeAlloc;
 import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
@@ -24,6 +24,7 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 	static {
 		registerCodegen(FlowgraphCodeGenerator.class);
 		registerCustomNode(FlowgraphCodeGenerator.class, "readInt", new FlowgraphNodeReadInt());
+		registerCustomNode(FlowgraphCodeGenerator.class, "prepare_call", new FlowgraphNodeCall());
 		registerCustomNode(FlowgraphCodeGenerator.class, "call", new FlowgraphNodeCall());
 	}
 	
@@ -147,10 +148,13 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 					value = ((Short) constObj).intValue();
 				} else if (constObj instanceof Byte) {
 					value = ((Byte) constObj).intValue();
-				} else if (constObj instanceof Character) {
+				} else if (constObj instanceof Boolean) {
+					value = ((Boolean) constObj).booleanValue()?1:0;
+				}else if (constObj instanceof Character) {
 					value = (int) ((Character) constObj).charValue();
 				} else {
-					throw new RuntimeException("Const type " + constObj.getClass() + " not implemented");
+					return addNode(bb, n, constObj.toString(), new Node[] {});
+					//throw new RuntimeException("Const type " + constObj.getClass() + " not implemented");
 				}
 				
 				return addNode(bb, n, Integer.toString(value), new Node[] {});
@@ -222,6 +226,21 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 			}
 
 		});
+		
+		// Encode Math Operations
+		codeMapping.put(NodeAlloc.class, new FlowgraphNodeCodeGenerator() {
+
+			@Override
+			public String writeData(BasicBlock bb, Node n) {
+				assert (n instanceof NodeAlloc);
+				NodeAlloc node = (NodeAlloc) n;
+
+				Node[] children = node.children();
+
+				return addNode(bb, n,"Alloc"+node.getAllocationSize(), children);
+			}
+
+		});
 
 	}
 
@@ -262,9 +281,11 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 	
 	@Override
 	public void link(List<CompiledBasicBlock> blocks) {
-
-
-
+	}
+	
+	@Override
+	protected int[] processAppendedData() {
+		return new int[] {};
 	}
 
 
@@ -379,8 +400,8 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 		public void process(CodeGenerator generator, CompiledBasicBlock cbb, NodeCustom node) {
 			assert (generator instanceof FlowgraphCodeGenerator);
 			assert (cbb instanceof FlowgraphCompiledBasicBlock);
-			if (!(generator.getFunction() instanceof MergedFunction))
-				throw new RuntimeException("Can't branch in a non merged function");
+			//if (!(generator.getFunction() instanceof MergedFunction))
+			//	throw new RuntimeException("Can't branch in a non merged function");
 
 			((FlowgraphCompiledBasicBlock) cbb).appendLine(addNode(cbb.getBlock(), node, node.getIdentifier() ,node.children()));
 		}

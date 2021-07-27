@@ -788,7 +788,7 @@ public class DSLParser {
 							else
 								currentBlock.getNodes().add(custom);
 							
-						}else if(AccessFlags.isPrivate(info.getAccessFlags()) && AccessFlags.isStatic(info.getAccessFlags())){
+						}else if((AccessFlags.isPrivate(info.getAccessFlags()) || info.getName().equals(method.getName())) && AccessFlags.isStatic(info.getAccessFlags())){
 
 							// normal function calls (only works if merged)
 							Class<?>[] args = convertFunctionDescriptor(type);

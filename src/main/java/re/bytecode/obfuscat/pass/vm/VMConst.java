@@ -72,6 +72,9 @@ public class VMConst {
 	public static final int OP_PSTOREP  = 0x34; 
 	
 	public static final int OP_OCONST  = 0x35;  // OCONST <X> - 00 XX XX XX RR XX
+	
+	public static final int OP_CUSTOM_PREPCALL  = 0x36;  // PREPCALL <X> <X> <X> <X> - 00 XX XX XX RR XX
+	public static final int OP_CUSTOM_CALL      = 0x37;  // CALL <X> - 00 XX 00 00 RR 00
 
 	public static int size2value(MemorySize size) {
 		switch (size) {
