@@ -1,5 +1,6 @@
 package re.bytecode.obfuscat.samples;
 
+// AES-128
 public class Sample9 {
 
 	// Original Version from

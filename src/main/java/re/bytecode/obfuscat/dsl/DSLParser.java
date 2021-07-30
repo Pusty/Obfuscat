@@ -381,7 +381,9 @@ public class DSLParser {
 						throw new RuntimeException("Not supported: " + inst.getType());
 					
 					if (inst.isLoad()) {
-						stack.push(new NodeLoad(localVarSize, inst.getVariable()));
+						NodeLoad nl = new NodeLoad(localVarSize, inst.getVariable());
+						stack.push(nl);
+						currentBlock.getNodes().add(nl); // add loads so they get evaluated before following nodes
 					}
 					if (inst.isStore()) {
 						currentBlock.getNodes().add(new NodeStore(localVarSize, inst.getVariable(), stack.pop()));
@@ -591,7 +593,9 @@ public class DSLParser {
 					if (inst.isLoad()) {
 						Node ind = stack.pop();
 						Node ar = stack.pop();
-						stack.push(new NodeALoad(ar, ind, arraySize));
+						Node nal = new NodeALoad(ar, ind, arraySize);
+						stack.push(nal);
+						currentBlock.getNodes().add(nal); // add loads so they get evaluated before following nodes
 					}
 					if (inst.isStore()) {
 						Node val = stack.pop();

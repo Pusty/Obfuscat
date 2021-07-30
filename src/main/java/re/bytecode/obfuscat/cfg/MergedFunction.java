@@ -144,7 +144,8 @@ public class MergedFunction extends Function {
 			afterArgs[i] = null;
 		
 		for(int i=0;i<prevArgs.length;i++)
-			afterArgs[i+1] = prevArgs[0];
+			afterArgs[i+1] = prevArgs[i];
+		
 		afterArgs[0] = int.class;
 		
 		MergedFunction mergedFunction = new MergedFunction(entryPoint+"_merged", blocks, afterArgs, variableSlots, returnSomething);

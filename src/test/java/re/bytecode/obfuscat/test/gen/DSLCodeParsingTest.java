@@ -3,6 +3,7 @@ package re.bytecode.obfuscat.test.gen;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.lang.reflect.Method;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -99,6 +100,26 @@ public class DSLCodeParsingTest {
 			
 			for(int i=0;i<decryptMe.length;i++)
 				assertEquals("AES128 didn't work "+Arrays.toString(decryptMe), decrypted.charAt(i)&0xFF, decryptMe[i]);
+		}
+		
+		if(!exclude.contains(10)) {
+			
+			byte[] byteHash = new byte[20];
+			byte[] byteHashReference = null;
+			String hashString = "POTATO";
+			
+			ef.add(runTestMerged("Sample10", "hash" , passes, byteHash, hashString.getBytes(), hashString.length()));
+			try {
+	            MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+	            sha1.update(hashString.getBytes());
+	            byteHashReference = sha1.digest();
+	            sha1.reset();
+	        } catch (Exception e) {
+	            System.err.println("getHashedValue failed: " + e.getMessage());
+	        }
+
+			for(int i=0;i<byteHash.length;i++)
+				assertEquals("SHA1 didn't work "+Arrays.toString(byteHash), byteHash[i], byteHashReference[i]);
 		}
 		
 		return ef;
