@@ -15,6 +15,5 @@ public class BuilderArgumentException extends IllegalArgumentException {
 	public BuilderArgumentException(String s, Throwable t) {
 		super(s, t);
 	}
-	
 
 }

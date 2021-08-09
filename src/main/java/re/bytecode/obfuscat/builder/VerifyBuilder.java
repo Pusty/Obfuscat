@@ -1,7 +1,7 @@
 package re.bytecode.obfuscat.builder;
 
 import java.util.ArrayList;
-import java.util.Collections;
+//import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ public class VerifyBuilder extends Builder {
 
 
 		List<Integer> intList = IntStream.rangeClosed(0, data.length-1).boxed().collect(Collectors.toList());
-		Collections.shuffle(intList, getContext().random()); // shuffle when which array entry is written
+		//Collections.shuffle(intList, getContext().random()); // shuffle when which array entry is written
 		
 		
 		BasicBlock entryCheck = new BasicBlock();

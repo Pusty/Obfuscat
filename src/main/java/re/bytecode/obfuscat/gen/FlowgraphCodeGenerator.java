@@ -267,12 +267,6 @@ public class FlowgraphCodeGenerator extends CodeGenerator {
 	public int getNodeInstCount() {
 		return 0;
 	}
-	
-	@Override
-	public int getSwitchCaseCount() {
-		return 0;
-	}
-
 
 	@Override
 	protected int countProgramSize() {

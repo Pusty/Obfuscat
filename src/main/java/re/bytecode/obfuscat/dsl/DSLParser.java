@@ -107,7 +107,7 @@ public class DSLParser {
 					ido++;
 				}
 				
-				Function function = new Function(name, bbs, args, method.getCode().getLocalVariableTable().getTable().length, returnValue);
+				Function function = new Function(name, bbs, args, method.getCode().getMaxLocals(), returnValue);
 				
 				for(Entry<String, Object> entry:globalVariableMap.entrySet()) {
 					if(!entry.getKey().contains("[")) continue; // ignore non-array global variables

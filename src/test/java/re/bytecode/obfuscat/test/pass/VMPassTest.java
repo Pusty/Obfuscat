@@ -67,10 +67,14 @@ public class VMPassTest {
 		
 		List<List<int[]>> listOfList = new ArrayList<List<int[]>>();
 		
-		// 2 - is just super slow in the vm
-		// 6 - contains readInt which is native - need to somehow implement this? or ignore
-		for(int i=0;i<REPEAT_COUNT;i++)
-			listOfList.add(ThumbCodeGenerationTest.normalTestCases(passNames, Arrays.asList(2, 6)));
+		for(int i=0;i<REPEAT_COUNT;i++) {
+			List<int[]> tmp = new ArrayList<int[]>();
+			// 2 - is just super slow in the vm
+			// 6 - contains readInt which is native - need to somehow implement this? or ignore
+			tmp.addAll(ThumbCodeGenerationTest.normalTestCases(passNames, Arrays.asList(2, 6)));
+			//tmp.addAll(ThumbCodeGenerationTest.mergedTestCases(passNames));
+			listOfList.add(tmp);
+		}
 		
 		ThumbCodeGenerationTest.evaluteSizeAndSpeed(listOfList);
 		

@@ -771,11 +771,6 @@ public class ThumbCodeGenerator extends CodeGenerator {
 	}
 	
 	@Override
-	public int getSwitchCaseCount() {
-		return 8;
-	}
-	
-	@Override
 	protected int countProgramSize() {
 		int size = 0;
 		size += getNodeSize(); // entry point
@@ -788,9 +783,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			size += bb.isConditionalBlock()?getNodeSize():0; // conditional jumps
 			
 			if(bb.isSwitchCase()) { // switch cases
-				int swc = (bb.getSwitchBlocks().size()/getSwitchCaseCount());
-				if(bb.getSwitchBlocks().size() % getSwitchCaseCount() != 0)
-					swc++;
+				int swc = bb.getSwitchBlocks().size();
 				size += swc * getNodeSize();
 			}
 			size += getNodeSize(); // the size for a unconditional jump or return
@@ -817,9 +810,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 			curPos += cbb.getBlock().isConditionalBlock()?getNodeSize():0; // conditional jumps
 			
 			if(cbb.getBlock().isSwitchCase()) { // switch cases
-				int swc = (cbb.getBlock().getSwitchBlocks().size()/getSwitchCaseCount());
-				if(cbb.getBlock().getSwitchBlocks().size() % getSwitchCaseCount() != 0)
-					swc++;
+				int swc = cbb.getBlock().getSwitchBlocks().size();
 				curPos += swc * getNodeSize();
 			}
 			curPos += getNodeSize(); // the size for a unconditional jump or return
@@ -876,19 +867,19 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				// load switch jump value
 				loadNode(switchJump, 0, 0, cbb.getBlock().getSwitchNode());
 				
-				// LSL.W R0, R0, #1 - 4F EA 40 00
+				// LSL.W R0, R0, #2 - 4F EA 80 00
 				switchJump[2] = 0x4F;
 				switchJump[3] = 0xEA;
-				switchJump[4] = 0x40;
+				switchJump[4] = 0x80;
 				switchJump[5] = 0x00;
 				
 				// add r0, r0, pc - 78 44
 				switchJump[6] = 0x78;
 				switchJump[7] = 0x44;
 				
-				// LDRSH r0, [r0, #6] - B0 F9 06 00
-				switchJump[8] = 0xB0;
-				switchJump[9] = 0xF9;
+				// LDR r0, [r0, #6] - D0 F8 06 00
+				switchJump[8] = 0xD0;
+				switchJump[9] = 0xF8;
 				switchJump[10] = 0x06;
 				switchJump[11] = 0x00;
 				
@@ -913,8 +904,10 @@ public class ThumbCodeGenerator extends CodeGenerator {
 					int offset = (positionMap.get(cbb.getBlock().getSwitchBlocks().get(s)) - (position)) | 1;
 					switchEntry[switchEntryIndex] = offset & 0xFF;
 					switchEntry[switchEntryIndex+1] = (offset>>8) & 0xFF;
+					switchEntry[switchEntryIndex+2] = (offset>>16) & 0xFF;
+					switchEntry[switchEntryIndex+3] = (offset>>24) & 0xFF;
 					
-					switchEntryIndex+=2;
+					switchEntryIndex+=4;
 					if(switchEntryIndex % getNodeSize() == 0) {
 						((ThumbCompiledBasicBlock) cbb).appendBytes(switchEntry);
 						switchEntry = new int[getNodeSize()];
@@ -927,6 +920,11 @@ public class ThumbCodeGenerator extends CodeGenerator {
 				if(switchEntryIndex != 0) {
 					((ThumbCompiledBasicBlock) cbb).appendBytes(switchEntry);
 					switchEntryAppened++;
+				}
+				
+				while((switchEntryAppened++) != cbb.getBlock().getSwitchBlocks().size()) {
+					switchEntry = new int[getNodeSize()]; // fill these with random bytes
+					((ThumbCompiledBasicBlock) cbb).appendBytes(switchEntry);
 				}
 				
 				position += switchEntryAppened*getNodeSize();
@@ -1033,7 +1031,7 @@ public class ThumbCodeGenerator extends CodeGenerator {
 		// add r8, pc, 13 - 0F F2 0D 08
 		entrypoint[0] = 0x0F;
 		entrypoint[1] = 0xF2;
-		entrypoint[2] = 0x0D;
+		entrypoint[2] = 0x0D; // this depends on function alignment, if address%4 == 2 then this will cause crashes
 		entrypoint[3] = 0x08;
 
 		

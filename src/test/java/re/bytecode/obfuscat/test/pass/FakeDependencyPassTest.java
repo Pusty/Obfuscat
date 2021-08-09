@@ -68,8 +68,12 @@ public class FakeDependencyPassTest {
 		
 		List<List<int[]>> listOfList = new ArrayList<List<int[]>>();
 		
-		for(int i=0;i<REPEAT_COUNT;i++)
-			listOfList.add(ThumbCodeGenerationTest.normalTestCases(passNames));
+		for(int i=0;i<REPEAT_COUNT;i++) {
+			List<int[]> tmp = new ArrayList<int[]>();
+			tmp.addAll(ThumbCodeGenerationTest.normalTestCases(passNames));
+			tmp.addAll(ThumbCodeGenerationTest.mergedTestCases(passNames));
+			listOfList.add(tmp);
+		}
 		
 		ThumbCodeGenerationTest.evaluteSizeAndSpeed(listOfList);
 		

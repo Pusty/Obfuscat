@@ -538,13 +538,6 @@ public abstract class CodeGenerator {
 	public abstract int getNodeInstCount();
 	
 	/**
-	 * The fixed amount of switch case entries per node block size
-	 * @return the exact amount of switch case entries in one node size
-	 */
-	public abstract int getSwitchCaseCount();
-	
-	
-	/**
 	 * Return a map of supported arguments
 	 * @return a map of argument names and their associated types
 	 */

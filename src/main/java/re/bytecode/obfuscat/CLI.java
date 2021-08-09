@@ -515,7 +515,9 @@ public class CLI {
 		try {
 			f = builder.generate(args);
 		} catch (BuilderArgumentException bae) {
-			System.out.println("Failed to build: " + bae.getMessage());
+			System.out.println("Failed to build: " + bae);
+			if(bae.getCause() != null)
+				bae.getCause().printStackTrace();
 			return;
 		}
 

@@ -61,9 +61,7 @@ public class VMCodeGenerator extends CodeGenerator {
 			size += bb.isConditionalBlock()?getNodeSize():0;
 			
 			if(bb.isSwitchCase()) { // switch cases
-				int swc = (bb.getSwitchBlocks().size()/getSwitchCaseCount());
-				if(bb.getSwitchBlocks().size() % getSwitchCaseCount() != 0)
-					swc++;
+				int swc = bb.getSwitchBlocks().size();
 				size += swc * getNodeSize();
 			}
 			size += getNodeSize(); // the size for a unconditional jump or return
@@ -301,10 +299,6 @@ public class VMCodeGenerator extends CodeGenerator {
 		return 1;
 	}
 	
-	@Override
-	public int getSwitchCaseCount() {
-		return 3;
-	}
 	
 	@Override
 	protected int[] processAppendedData() {
@@ -337,9 +331,7 @@ public class VMCodeGenerator extends CodeGenerator {
 			curPos += cbb.getBlock().isConditionalBlock()?getNodeSize():0; // conditional jumps
 			
 			if(cbb.getBlock().isSwitchCase()) { // switch cases
-				int swc = (cbb.getBlock().getSwitchBlocks().size()/getSwitchCaseCount());
-				if(cbb.getBlock().getSwitchBlocks().size() % getSwitchCaseCount() != 0)
-					swc++;
+				int swc = cbb.getBlock().getSwitchBlocks().size();
 				curPos += swc * getNodeSize();
 			}
 			curPos += getNodeSize(); // the size for a unconditional jump or return
@@ -390,13 +382,14 @@ public class VMCodeGenerator extends CodeGenerator {
 				int[] switchEntry = new int[getNodeSize()];
 				int switchEntryIndex = 0;
 				int switchEntryAppened = 0;
+		
 				for(int s=0;s<cbb.getBlock().getSwitchBlocks().size();s++) {
 					
 					// jump offset
 					int offset = (positionMap.get(cbb.getBlock().getSwitchBlocks().get(s)) - (position));
 					switchEntry[switchEntryIndex] = offset & 0xFF;
 					switchEntry[switchEntryIndex+1] = (offset>>8) & 0xFF;
-
+					// maybe make this an integer
 					switchEntryIndex+=2;
 					if(switchEntryIndex % getNodeSize() == 0) {
 						((VMCompiledBasicBlock) cbb).appendBytes(switchEntry);
@@ -411,6 +404,12 @@ public class VMCodeGenerator extends CodeGenerator {
 					((VMCompiledBasicBlock) cbb).appendBytes(switchEntry);
 					switchEntryAppened++;
 				}
+				
+				while((switchEntryAppened++) != cbb.getBlock().getSwitchBlocks().size()) {
+					switchEntry = new int[getNodeSize()]; // fill these with random bytes
+					((VMCompiledBasicBlock) cbb).appendBytes(switchEntry);
+				}
+					
 				
 				position += switchEntryAppened*getNodeSize();
 				
