@@ -1,0 +1,397 @@
+<html>
+<head>
+	<title>Obfuscat Web Demo</title>
+
+    <script type="text/javascript" src="https://jgraph.github.io/mxgraph/javascript/mxClient.min.js"></script>
+    <script type="text/javascript" src="obfuscatgwt/obfuscatgwt.nocache.js"></script>
+    <script type="text/javascript">
+
+    globalGraphList = []
+    function onNodeHover(node, hover) {
+         globalGraphList.forEach(function(graph) {
+            var stateMap = graph.view.getCellStates();
+            var values = stateMap.getValues();
+            values.forEach(function(child) {
+                if(child.cell.value == node.cell.value) {
+                    //console.log(child.cell);
+                    updateStyle(child, hover, false);
+                }
+            });
+         });
+    }
+    
+    function updateStyle(state, hover, propagate=true)  {
+        
+        if(propagate) {
+            onNodeHover(state, hover);
+        }else {
+        
+            state.style[mxConstants.STYLE_FILLCOLOR] = (hover) ? '#ff0000' : '#C3D9FF';
+            state.style[mxConstants.STYLE_FONTSTYLE] = (hover) ? mxConstants.FONT_BOLD : '0';
+            
+            state.shape.apply(state);
+            state.shape.redraw();
+            
+
+            if (state.text != null) {
+                state.text.apply(state);
+                state.text.redraw();
+            }
+        }
+    };
+    
+    function addJump(o, blockName, connectedTo) {
+    
+        
+        if(!o.blockMap[blockName]) {
+            o.blockMap[blockName] = o.graph.insertVertex(o.path, null, blockName);
+        }
+        
+        if(!o.blockMap[connectedTo]) {
+            o.blockMap[connectedTo] = o.graph.insertVertex(o.path, null, connectedTo);
+        }
+    
+        o.graph.insertEdge(o.parent, null, '', o.blockMap[blockName], o.blockMap[connectedTo]);
+        
+    }
+    
+    function addNode(o, blockName, nodeName, desc) {
+        
+        /*
+        o.nodeMap[nodeName] = o.graph.insertVertex(o.parent, null, desc);
+        o.nodeConnected[nodeName] = [];
+        if(o.lastNode != null) {
+            //o.graph.insertEdge(o.parent, null, 'next', o.nodeMap[o.lastNode], o.nodeMap[nodeName]);
+            o.nodeConnected[nodeName].push(o.lastNode);
+        }
+        o.lastNode = nodeName;
+        return o.nodeMap[nodeName];*/
+        
+        
+        
+        if(!o.blockMap[blockName]) {
+            o.blockMap[blockName] = o.graph.insertVertex(o.path, null, blockName);
+        }
+        
+    }
+    
+    function addChild(o, blockName, nodeName, nodeChild) {
+        //if((o.nodeConnected[nodeName].indexOf(nodeChild)) != -1) return;
+        //o.graph.insertEdge(o.parent, null, '', o.nodeMap[nodeChild], o.nodeMap[nodeName]);
+        //o.nodeConnected[nodeChild].push(nodeName);
+    }
+    
+    // https://jgraph.github.io/mxgraph/docs/js-api/files/index-txt.html
+    // https://github.com/jgraph/mxgraph-js/blob/master/javascript/examples/hoverstyle.html
+    function process(container, processFunction)  {
+    
+         if (!mxClient.isBrowserSupported()) {
+            mxUtils.error('Browser is not supported!', 200, false);
+         }
+         else {
+            var graph = new mxGraph(container);
+            
+            // Adds rubberband selection
+            new mxRubberband(graph);
+            
+            graph.autoSizeCells = true;
+            graph.autoSizeCellsOnAdd = true;
+            graph.cellsLocked = true;
+            graph.centerZoom = true;
+            graph.cellsSelectable = false;
+            
+            
+            globalGraphList.push(graph);
+            
+            var style = graph.getStylesheet().getDefaultVertexStyle();
+            style[mxConstants.STYLE_PERIMETER] = mxPerimeter.RectanglePerimeter;
+            style[mxConstants.STYLE_GRADIENTCOLOR] = 'white';
+            //style[mxConstants.STYLE_PERIMETER_SPACING] = 6;
+            style[mxConstants.STYLE_ROUNDED] = true;
+            style[mxConstants.STYLE_SHADOW] = true;
+
+
+            
+            style = graph.getStylesheet().getDefaultEdgeStyle();
+            //style[mxConstants.STYLE_ROUNDED] = true;
+            style[mxConstants.STYLE_ROUNDED] = true;
+            
+            var parent = graph.getDefaultParent();
+            
+
+            graph.getModel().beginUpdate();
+            try {
+                o = new Object();
+                o.graph = graph;
+                o.parent = parent;
+                o.blockMap = {};
+                o.nodeMap = {};
+                o.nodeConnected = {};
+                o.lastNode = null;
+                processFunction(o);
+            } finally {
+               graph.getModel().endUpdate();
+            }
+            
+            
+
+                
+            graph.addMouseListener( {
+                currentState: null,
+                previousStyle: null,
+                mouseDown: function(sender, me) { },
+                mouseMove: function(sender, me)
+                {
+                    if (this.currentState != null && me.getState() == this.currentState) {
+                        return;
+                    }
+
+                    var tmp = graph.view.getState(me.getCell());
+
+                    // Ignores everything but vertices
+                    if (graph.isMouseDown || (tmp != null && !
+                        graph.getModel().isVertex(tmp.cell))) {
+                        tmp = null;
+                    }
+
+                    if (tmp != this.currentState)
+                    {
+                        if (this.currentState != null) {
+                            this.dragLeave(me.getEvent(), this.currentState);
+                        }
+
+                        this.currentState = tmp;
+
+                        if (this.currentState != null) {
+                            this.dragEnter(me.getEvent(), this.currentState);
+                        }
+                    }
+                },
+                mouseUp: function(sender, me) { },
+                dragEnter: function(evt, state) {
+                    if (state != null) {
+                        updateStyle(state, true);
+                    }
+                },
+                dragLeave: function(evt, state) {
+                    if (state != null) {
+                        updateStyle(state, false);
+                        
+                    }
+                }
+            });
+
+            
+            new mxHierarchicalLayout(graph).execute(graph.getDefaultParent());
+            // auto layout
+            //var layout = new mxHierarchicalLayout(graph, mxConstants.DIRECTION_NORTH);
+           // layout.execute(parent, v1);
+         }
+      };
+      
+      
+      function graph(o) {
+        addNode(o, "BB592179046", "N157456214", "28");
+        addNode(o, "BB592179046", "N1659791576", "Store32(0)"); addChild(o, "BB592179046", "N1659791576", "N157456214");
+        addNode(o, "BB592179046", "N1935365522", "0");
+        addNode(o, "BB592179046", "N1483022288", "Store32(1)"); addChild(o, "BB592179046", "N1483022288", "N1935365522");
+        addNode(o, "BB592179046", "N1159785389", "1");
+        addNode(o, "BB592179046", "N1410986873", "Store32(2)"); addChild(o, "BB592179046", "N1410986873", "N1159785389");
+        addNode(o, "BB592179046", "N2110245805", "0");
+        addNode(o, "BB592179046", "N221036634", "Store32(3)"); addChild(o, "BB592179046", "N221036634", "N2110245805");
+        addNode(o, "BB592179046", "N1335050193", "0");
+        addNode(o, "BB592179046", "N1418370913", "Load32(0)");
+        addNode(o, "BB201556483", "N214074868", "Load32(1)");
+        addNode(o, "BB391359742", "N2081853534", "2");
+        addNode(o, "BB391359742", "N707610042", "Store32(4)"); addChild(o, "BB391359742", "N707610042", "N2081853534");
+        addNode(o, "BB687780858", "N1734161410", "Load32(1)");
+        addNode(o, "BB687780858", "N1364614850", "Load32(2)");
+        addNode(o, "BB687780858", "N1211076369", "ADD"); addChild(o, "BB687780858", "N1211076369", "N1734161410"); addChild(o, "BB687780858", "N1211076369", "N1364614850");
+        addNode(o, "BB687780858", "N361993357", "Store32(3)"); addChild(o, "BB687780858", "N361993357", "N1211076369");
+        addNode(o, "BB687780858", "N459296537", "Load32(2)");
+        addNode(o, "BB687780858", "N2015601401", "Store32(1)"); addChild(o, "BB687780858", "N2015601401", "N459296537");
+        addNode(o, "BB687780858", "N1287712235", "Load32(3)");
+        addNode(o, "BB687780858", "N1165897474", "Store32(2)"); addChild(o, "BB687780858", "N1165897474", "N1287712235");
+        addNode(o, "BB687780858", "N1551870003", "Load32(4)");
+        addNode(o, "BB687780858", "N967765295", "1");
+        addNode(o, "BB687780858", "N1917513796", "ADD"); addChild(o, "BB687780858", "N1917513796", "N1551870003"); addChild(o, "BB687780858", "N1917513796", "N967765295");
+        addNode(o, "BB687780858", "N1182320432", "Store32(4)"); addChild(o, "BB687780858", "N1182320432", "N1917513796");
+        addNode(o, "BB710714889", "N551734240", "Load32(4)");
+        addNode(o, "BB710714889", "N1757293506", "Load32(0)");
+        addNode(o, "BB1734853116", "N703504298", "Load32(2)");
+        addJump(o, "BB592179046", "BB391359742"); addJump(o, "BB592179046", "BB201556483");
+
+        addJump(o, "BB391359742", "BB710714889");
+        addJump(o, "BB687780858", "BB710714889");
+        addJump(o, "BB710714889", "BB687780858"); addJump(o, "BB710714889", "BB1734853116");
+
+
+      }
+      
+      function graph2(o) {
+        addNode(o, "BB650023597", "N1282473384", "2");
+        addNode(o, "BB650023597", "N575593575", "Store32(5)"); addChild(o, "BB650023597", "N575593575", "N1282473384");
+        addNode(o, "BB346861221", "N1188392295", "Load32(5)");
+        addNode(o, "BB391359742", "N2081853534", "2");
+        addNode(o, "BB391359742", "N707610042", "Store32(4)"); addChild(o, "BB391359742", "N707610042", "N2081853534");
+        addNode(o, "BB391359742", "N226710952", "Load32(5)");
+        addNode(o, "BB391359742", "N1509563803", "4");
+        addNode(o, "BB391359742", "N684874119", "ADD"); addChild(o, "BB391359742", "N684874119", "N226710952"); addChild(o, "BB391359742", "N684874119", "N1509563803");
+        addNode(o, "BB391359742", "N1157740463", "Store32(5)"); addChild(o, "BB391359742", "N1157740463", "N684874119");
+        addNode(o, "BB687780858", "N1734161410", "Load32(1)");
+        addNode(o, "BB687780858", "N1364614850", "Load32(2)");
+        addNode(o, "BB687780858", "N1211076369", "ADD"); addChild(o, "BB687780858", "N1211076369", "N1734161410"); addChild(o, "BB687780858", "N1211076369", "N1364614850");
+        addNode(o, "BB687780858", "N361993357", "Store32(3)"); addChild(o, "BB687780858", "N361993357", "N1211076369");
+        addNode(o, "BB687780858", "N459296537", "Load32(2)");
+        addNode(o, "BB687780858", "N2015601401", "Store32(1)"); addChild(o, "BB687780858", "N2015601401", "N459296537");
+        addNode(o, "BB687780858", "N1287712235", "Load32(3)");
+        addNode(o, "BB687780858", "N1165897474", "Store32(2)"); addChild(o, "BB687780858", "N1165897474", "N1287712235");
+        addNode(o, "BB687780858", "N1551870003", "Load32(4)");
+        addNode(o, "BB687780858", "N967765295", "1");
+        addNode(o, "BB687780858", "N1917513796", "ADD"); addChild(o, "BB687780858", "N1917513796", "N1551870003"); addChild(o, "BB687780858", "N1917513796", "N967765295");
+        addNode(o, "BB687780858", "N1182320432", "Store32(4)"); addChild(o, "BB687780858", "N1182320432", "N1917513796");
+        addNode(o, "BB687780858", "N1379435698", "Load32(5)");
+        addNode(o, "BB687780858", "N1529306539", "3");
+        addNode(o, "BB687780858", "N1635985705", "ADD"); addChild(o, "BB687780858", "N1635985705", "N1379435698"); addChild(o, "BB687780858", "N1635985705", "N1529306539");
+        addNode(o, "BB687780858", "N695682681", "Store32(5)"); addChild(o, "BB687780858", "N695682681", "N1635985705");
+        addNode(o, "BB592179046", "N157456214", "28");
+        addNode(o, "BB592179046", "N1659791576", "Store32(0)"); addChild(o, "BB592179046", "N1659791576", "N157456214");
+        addNode(o, "BB592179046", "N1935365522", "0");
+        addNode(o, "BB592179046", "N1483022288", "Store32(1)"); addChild(o, "BB592179046", "N1483022288", "N1935365522");
+        addNode(o, "BB592179046", "N1159785389", "1");
+        addNode(o, "BB592179046", "N1410986873", "Store32(2)"); addChild(o, "BB592179046", "N1410986873", "N1159785389");
+        addNode(o, "BB592179046", "N2110245805", "0");
+        addNode(o, "BB592179046", "N221036634", "Store32(3)"); addChild(o, "BB592179046", "N221036634", "N2110245805");
+        addNode(o, "BB592179046", "N1335050193", "0");
+        addNode(o, "BB592179046", "N1418370913", "Load32(0)");
+        addNode(o, "BB592179046", "N1073502961", "Load32(5)");
+        addNode(o, "BB592179046", "N1582797472", "SUB"); addChild(o, "BB592179046", "N1582797472", "N1335050193"); addChild(o, "BB592179046", "N1582797472", "N1418370913");
+        addNode(o, "BB592179046", "N644166178", "SUB"); addChild(o, "BB592179046", "N644166178", "N1418370913"); addChild(o, "BB592179046", "N644166178", "N1335050193");
+        addNode(o, "BB592179046", "N892529689", "OR"); addChild(o, "BB592179046", "N892529689", "N1582797472"); addChild(o, "BB592179046", "N892529689", "N644166178");
+        addNode(o, "BB592179046", "N1757676444", "31");
+        addNode(o, "BB592179046", "N182738614", "USHR"); addChild(o, "BB592179046", "N182738614", "N892529689"); addChild(o, "BB592179046", "N182738614", "N1757676444");
+        addNode(o, "BB592179046", "N94345706", "1");
+        addNode(o, "BB592179046", "N670035812", "AND"); addChild(o, "BB592179046", "N670035812", "N182738614"); addChild(o, "BB592179046", "N670035812", "N94345706");
+        addNode(o, "BB592179046", "N1870647526", "NOP"); addChild(o, "BB592179046", "N1870647526", "N670035812");
+        addNode(o, "BB592179046", "N1204167249", "NOP"); addChild(o, "BB592179046", "N1204167249", "N1870647526");
+        addNode(o, "BB592179046", "N1047503754", "NOP"); addChild(o, "BB592179046", "N1047503754", "N1204167249");
+        addNode(o, "BB592179046", "N1722023916", "NOP"); addChild(o, "BB592179046", "N1722023916", "N1047503754");
+        addNode(o, "BB592179046", "N2009787198", "-5");
+        addNode(o, "BB592179046", "N32017212", "MUL"); addChild(o, "BB592179046", "N32017212", "N1722023916"); addChild(o, "BB592179046", "N32017212", "N2009787198");
+        addNode(o, "BB592179046", "N1121454968", "3");
+        addNode(o, "BB592179046", "N1006485584", "ADD"); addChild(o, "BB592179046", "N1006485584", "N32017212"); addChild(o, "BB592179046", "N1006485584", "N1121454968");
+        addNode(o, "BB592179046", "N466505482", "ADD"); addChild(o, "BB592179046", "N466505482", "N1073502961"); addChild(o, "BB592179046", "N466505482", "N1006485584");
+        addNode(o, "BB592179046", "N1580893732", "Store32(5)"); addChild(o, "BB592179046", "N1580893732", "N466505482");
+        addNode(o, "BB1734853116", "N703504298", "Load32(2)");
+        addNode(o, "BB710714889", "N551734240", "Load32(4)");
+        addNode(o, "BB710714889", "N1757293506", "Load32(0)");
+        addNode(o, "BB710714889", "N1547425104", "Load32(5)");
+        addNode(o, "BB710714889", "N152134087", "NOT"); addChild(o, "BB710714889", "N152134087", "N1757293506");
+        addNode(o, "BB710714889", "N1615780336", "OR"); addChild(o, "BB710714889", "N1615780336", "N551734240"); addChild(o, "BB710714889", "N1615780336", "N152134087");
+        addNode(o, "BB710714889", "N1783593083", "XOR"); addChild(o, "BB710714889", "N1783593083", "N551734240"); addChild(o, "BB710714889", "N1783593083", "N1757293506");
+        addNode(o, "BB710714889", "N1750905143", "SUB"); addChild(o, "BB710714889", "N1750905143", "N1757293506"); addChild(o, "BB710714889", "N1750905143", "N551734240");
+        addNode(o, "BB710714889", "N1782704802", "NOT"); addChild(o, "BB710714889", "N1782704802", "N1750905143");
+        addNode(o, "BB710714889", "N2094411587", "OR"); addChild(o, "BB710714889", "N2094411587", "N1783593083"); addChild(o, "BB710714889", "N2094411587", "N1782704802");
+        addNode(o, "BB710714889", "N1833638914", "AND"); addChild(o, "BB710714889", "N1833638914", "N1615780336"); addChild(o, "BB710714889", "N1833638914", "N2094411587");
+        addNode(o, "BB710714889", "N1620303253", "31");
+        addNode(o, "BB710714889", "N90320863", "USHR"); addChild(o, "BB710714889", "N90320863", "N1833638914"); addChild(o, "BB710714889", "N90320863", "N1620303253");
+        addNode(o, "BB710714889", "N1216590855", "1");
+        addNode(o, "BB710714889", "N2107447833", "AND"); addChild(o, "BB710714889", "N2107447833", "N90320863"); addChild(o, "BB710714889", "N2107447833", "N1216590855");
+        addNode(o, "BB710714889", "N60559178", "-2");
+        addNode(o, "BB710714889", "N395629617", "MUL"); addChild(o, "BB710714889", "N395629617", "N2107447833"); addChild(o, "BB710714889", "N395629617", "N60559178");
+        addNode(o, "BB710714889", "N1122134344", "-1");
+        addNode(o, "BB710714889", "N1471868639", "ADD"); addChild(o, "BB710714889", "N1471868639", "N395629617"); addChild(o, "BB710714889", "N1471868639", "N1122134344");
+        addNode(o, "BB710714889", "N876563773", "ADD"); addChild(o, "BB710714889", "N876563773", "N1547425104"); addChild(o, "BB710714889", "N876563773", "N1471868639");
+        addNode(o, "BB710714889", "N87765719", "Store32(5)"); addChild(o, "BB710714889", "N87765719", "N876563773");
+        addNode(o, "BB201556483", "N214074868", "Load32(1)");
+        addJump(o, "BB650023597", "BB346861221");
+        addJump(o, "BB346861221", "BB391359742"); addJump(o, "BB346861221", "BB687780858"); addJump(o, "BB346861221", "BB592179046"); addJump(o, "BB346861221", "BB1734853116"); addJump(o, "BB346861221", "BB710714889"); addJump(o, "BB346861221", "BB201556483"); 
+        addJump(o, "BB391359742", "BB346861221");
+        addJump(o, "BB687780858", "BB346861221");
+        addJump(o, "BB592179046", "BB346861221");
+
+        addJump(o, "BB710714889", "BB346861221");
+
+}
+
+
+function replace(graph, gen) {
+    graph.getModel().beginUpdate();
+    try {
+        graph.getModel().clear();
+
+        o = new Object();
+        o.graph = graph;
+        o.parent = graph.getDefaultParent();
+        o.blockMap = {};
+        o.nodeMap = {};
+        o.nodeConnected = {};
+        o.lastNode = null;
+        eval(gen);
+    } finally {
+       graph.getModel().endUpdate();
+    }
+     new mxHierarchicalLayout(graph).execute(graph.getDefaultParent()); 
+}
+
+function modify() {
+
+
+    var sample = JSON.parse(document.getElementById("sample").value);
+    var obfus = JSON.parse(document.getElementById("obfuscation").value);
+    var seed = JSON.parse(document.getElementById("seed").value);
+    
+    var kb = buildSample(sample[0], sample[1], sample[2]);
+    replace(globalGraphList[0], generate(seed, kb));
+    
+    for(var i=0;i<obfus.length;i++) {
+        kb = obfuscate(seed, obfus[i], kb);
+    }
+    replace(globalGraphList[1], generate(seed, kb));
+    
+    //var kb = buildSample("Sample4", "crc32", false); //buildKeyBuilder(0, "test");
+    //replace(globalGraphList[0], generate(0, kb));
+    //kb = obfuscate(0, "Flatten", kb);
+    //kb = obfuscate(0, "Flatten", kb);
+    //replace(globalGraphList[1], generate(0, kb));
+}
+
+    </script>
+</head>
+
+<body onload="process(document.getElementById('preProcessing'), graph); process(document.getElementById('postProcessing'), graph2)">
+
+   <div style="display: flex">
+        <div id="preProcessing"
+            style="position:relative;width:50%;cursor:default;">
+        </div>
+        <div id="postProcessing"
+            style="position:relative;width:50%;cursor:default;">
+        </div>
+    </div>
+    
+<select name="Sample" id="sample">
+<option value='["Sample1", "entry", false]'>Fibonacci</option>
+<option value='["Sample2", "entry", false]'>Prime</option>
+<option value='["Sample3", "entry", false]'>Math Test</option>
+<option value='["Sample4", "crc32", false]'>crc32</option>
+<option value='["Sample5", "entry", false]'>Switch</option>
+<option value='["Sample7", "rc4", true]'>RC4</option>
+</select>
+<select name="Filter" id="obfuscation">
+<option value='[]'>None</option>
+<option value='["Flatten"]'>Flatten</option>
+<option value='["Bogus"]'>Bogus</option>
+<option value='["Virtualize"]'>VM</option>
+<option value='["Virtualize", "Flatten"]'>VM Flatten</option>
+<option value='["Virtualize", "Bogus"]'>VM Bogus</option>
+<option value='["Flatten", "Bogus"]'>Flatten Bogus</option>
+<option value='["Bogus", "Flatten"]'>Bogus Flatten</option>
+</select>
+<button onclick="modify()">Process</button>
+<input type="number" id="seed" value="0">
+    
+
+</body>
+
+</html>
