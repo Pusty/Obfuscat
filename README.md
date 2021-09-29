@@ -28,7 +28,6 @@ Under these restrictions, programs look like normal Java programs:
  */
 public class Sample1 {
 
-	
 	public static int entry() {
 		
 		int n = 28; // 28th fib number
@@ -46,14 +45,13 @@ public class Sample1 {
 		}
 		
 		return n2;
-		
 	}
 	
 }
 ```
 
-See the [`util\example_programs`](util\example_programs) folder for compiled examples
-See the [`src\test\java\re\bytecode\obfuscat\samples`](src\test\java\re\bytecode\obfuscat\samples) folder for other examples and test cases
+See the [`util/example_programs`](util/example_programs) folder for compiled examples
+See the [`src/test/java/re/bytecode/obfuscat/samples`](src/test/java/re/bytecode/obfuscat/samples) folder for other examples and test cases
 - Sample1 : Fibonacci Number Calculation
 - Sample2 : Prime Number Calculation
 - Sample3 : Math Operation Test
@@ -71,19 +69,19 @@ The Intermediate Format for most Obfuscat Operations are `.fbin` files which are
 The supported Native Output Formats are `Thumb` (ARMv8 Thumb2), `Flowgraph`, `VM`.
 
 When compiling for `Thumb` the output is native code + static data - binary file.
-To see how to call the obfuscated call from C and link it together, see [`util\wrapper.c`](util\wrapper.c)
+To see how to call the obfuscated call from C and link it together, see [`util/wrapper.c`](util/wrapper.c)
 
 The `Flowgraph` target is used for rendering control flow graphs using [MxGraph](https://github.com/jgraph/mxgraph)
-For the code that uses it see the [`util\gwt_src`](util\gwt_src) folder, or [here for a Demo](https://pusty.github.io/Obfuscat/demo.html)
-Note that[`Base64Utils`](util\gwt_src\re\bytecode\obfuscat\gwt\client\Base64Utils.java), [`DataInput`](util\gwt_src\re\bytecode\obfuscat\gwt\emul\java\io\DataInput.java),
-[`DataInputStream`](util\gwt_src\re\bytecode\obfuscat\gwt\emul\java\io\DataInputStream.java), [`EOFException`](util\gwt_src\re\bytecode\obfuscat\gwt\emul\java\io\EOFException.java)
-and [`UTFDataFormatException`](util\gwt_src\re\bytecode\obfuscat\gwt\emul\java\io\UTFDataFormatException.java) are licensed by Google Inc. under the `Apache License, Version 2.0` license.
+For the code that uses it see the [`util/gwt_src`](util/gwt_src) folder, or [here for a Demo](https://pusty.github.io/Obfuscat/demo.html)
+Note that[`Base64Utils`](util/gwt_src/re/bytecode/obfuscat/gwt/client/Base64Utils.java), [`DataInput`](util/gwt_src/re/bytecode/obfuscat/gwt/emul/java/io/DataInput.java),
+[`DataInputStream`](util/gwt_src/re/bytecode/obfuscat/gwt/emul/java/io/DataInputStream.java), [`EOFException`](util/gwt_src/re/bytecode/obfuscat/gwt/emul/java/io/EOFException.java)
+and [`UTFDataFormatException`](util/gwt_src/re/bytecode/obfuscat/gwt/emul/java/io/UTFDataFormatException.java) are licensed by Google Inc. under the `Apache License, Version 2.0` license.
 The license for MxGraph can be found [here](https://github.com/jgraph/mxgraph/blob/master/LICENSE).
 
 
 The `VM` target generates a binary file of virtual machine code for the Virtual Machine used for the Virtualize obfuscation.
-See [`src\main\java\re\bytecode\obfuscat\pass\vm\VMRefImpl.java`](src\main\java\re\bytecode\obfuscat\pass\vm\VMRefImpl.java) for a reference implementation in Java.
-A C implementation can be found in [`util\vm.c`](util\vm.c). Note that the C implementation is missing some functionality (merged functions and static data).
+See [`src/main/java/re/bytecode/obfuscat/pass/vm/VMRefImpl.java`](src/main/java/re/bytecode/obfuscat/pass/vm/VMRefImpl.java) for a reference implementation in Java.
+A C implementation can be found in [`util/vm.c`](util/vm.c). Note that the C implementation is missing some functionality (merged functions and static data).
 
 # Usage
 
