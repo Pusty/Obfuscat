@@ -25,7 +25,7 @@ public class DSLCodeParsingTest {
 	
 	public static EmulateFunction runTest(String fileName, String functionName, String[] passes, Object... args) throws Exception {			
 		byte[] data = SampleLoader.loadFile(fileName);
-		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
+		Method m = JavaGenerationUtil.loadSample(data, fileName.replace('/', '.'), functionName, args);
 		Integer fun = (Integer) m.invoke(null, args);
 
 		EmulateFunction code = DSLGenerationUtil.generateCode(data, functionName, passes);

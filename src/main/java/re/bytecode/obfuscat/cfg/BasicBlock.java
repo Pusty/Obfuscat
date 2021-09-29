@@ -81,10 +81,23 @@ public class BasicBlock implements Serializable {
 		this.returnValue = returnValue;
 	}
 	
+	/**
+	 * Return the blocks this basic block can branch to if it is a switch block, null otherwise
+	 * @return the switch cases
+	 */
 	public List<BasicBlock> getSwitchBlocks() { return switchBlocks; }
 	
+	/**
+	 * Return the node that decides which switch case to take, null if not a switch case
+	 * @return the node that decides the next block
+	 */
 	public Node getSwitchNode() { return switchNode; }
 	
+	/**
+	 * Set the switch cases and node which decides the next block
+	 * @param bbs the list of possible switch cases
+	 * @param sN the node that controls which block to execute next
+	 */
 	public void setSwitchBlock(List<BasicBlock> bbs, Node sN) {
 		if(bbs == null) throw new IllegalArgumentException("Switch Blocks may not be null");
 		if(!getNodes().contains(sN)) throw new IllegalArgumentException("Switch Node must be in the basic block");
@@ -95,19 +108,40 @@ public class BasicBlock implements Serializable {
 		switchNode = sN;
 	}
 
+	/**
+	 * Return whether this basic block is a switch
+	 * @return whether this block is a switch 
+	 */
 	public boolean isSwitchCase() {
 		return switchNode != null;
 	}
 	
+	/**
+	 * Return the basic block this block conditionally branches to, null if not a conditional block
+	 * @return the next basic block if the branch condition is true
+	 */
 	public BasicBlock getConditionalBranch() { return conditionalJumpBlock; }
+	
+	/**
+	 * Return the condition this block branches to the conditional branch, null if not a conditional block
+	 * @return the condition of branching
+	 */
 	public BranchCondition getCondition() { return conditionalJumpCondition; }
 	
+	/**
+	 * Change this block to an unconditional block
+	 */
 	public void unsetConditionalBranch() {
 		if(!isConditionalBlock()) throw new IllegalArgumentException("Can't unset a block that isn't a Conditional Block");
 		conditionalJumpBlock = null;
 		conditionalJumpCondition = null;
 	}
 	
+	/**
+	 * Change this block to be a conditional block with a conditional branch and appropiate condition
+	 * @param b the new conditional basic block
+	 * @param bc the condition of branching to the new basic block
+	 */
 	public void setConditionalBranch(BasicBlock b, BranchCondition bc) {
 		if(b == null) throw new IllegalArgumentException("Conditional Block may not be null");
 		if(bc == null) throw new IllegalArgumentException("Conditio may not be null");
@@ -117,6 +151,10 @@ public class BasicBlock implements Serializable {
 		conditionalJumpCondition = bc;
 	}
 	
+	/**
+	 * Return whether this basic block ends with a conditional branch
+	 * @return whether this basic block is conditional
+	 */
 	public boolean isConditionalBlock() {
 		return conditionalJumpBlock != null;
 	}

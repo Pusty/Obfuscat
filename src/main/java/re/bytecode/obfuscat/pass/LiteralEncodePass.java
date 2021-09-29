@@ -14,6 +14,7 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 // Based on
 // Information Hiding in Software with Mixed Boolean-Arithmetic Transforms - https://doi.org/10.1007/978-3-540-77535-5_5
 
+/** Encode Literal Values (Constants) through reversible polynomial functions **/
 public class LiteralEncodePass extends Pass {
 
 	public LiteralEncodePass(Context context) {

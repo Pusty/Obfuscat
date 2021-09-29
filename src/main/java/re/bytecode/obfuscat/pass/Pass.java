@@ -10,20 +10,32 @@ import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.exception.PassArgumentException;
 
-// TODO: Not done yet
+/***
+ * A Pass is an Obfuscation Pass that can be applied to a function. The provided formulas describe the changes that it can produce.
+ */
 public abstract class Pass {
 	
 	private Context context;
 	
-	public Pass(Context context) {
+	protected Pass(Context context) {
 		this.context = context;
 	}
 	
+	/**
+	 * The Context of this obfuscation pass
+	 * @return the context of this instance
+	 */
 	public Context getContext() {
 		return context;
 	}
 	
 	
+	/**
+	 * Apply this obfuscation technique on the input function
+	 * @param inputFunction the input function
+	 * @param args the arguments given to the obfuscation pass
+	 * @return the output function with the pass applied
+	 */
 	public Function obfuscate(Function inputFunction, Map<String, Object> args) {
 		
 		// verify arguments
@@ -40,18 +52,38 @@ public abstract class Pass {
 		return processFunction(inputFunction, args);
 	}
 	
+	/**
+	 * Process a function
+	 * @param function the function to process
+	 * @param args the arguments given to the obfuscation pass
+	 * @return the processed output function
+	 */
 	protected Function processFunction(Function function, Map<String, Object> args) {
 		for(BasicBlock block:function.getBlocks())
 			processBlock(function, block, args);
 		return function;
 	}
 	
+	/**
+	 * Process a basic block of a given function
+	 * @param function the function the basic block to process is in
+	 * @param block the basic block to process
+	 * @param args the arguments given to the obfuscation pass
+	 */
 	protected void processBlock(Function function, BasicBlock block, Map<String, Object> args) {
 		
 	}
 	
+	/**
+	 * Return the size formulas of this obfuscation pass
+	 * @return the size formulas
+	 */
 	public abstract Map<String, Node> statistics();
 	
+	/**
+	 * Return the runtime formulas of this obfuscation pass
+	 * @return the runtime formulas
+	 */
 	public Map<String, Node> statisticsRuntime() {
 		return statistics();
 	}

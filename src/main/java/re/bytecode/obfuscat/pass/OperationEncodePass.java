@@ -26,6 +26,9 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 
 // Most Passes here are from Hacker’s Delight
 
+/**
+ * Encode mathematical operations through a list of hardcoded more complex expressions.
+ */
 public class OperationEncodePass extends Pass {
 
 	// Important here is that each operation always uses the same amount of nodes per operation

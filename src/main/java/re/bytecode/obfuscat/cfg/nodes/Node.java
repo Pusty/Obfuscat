@@ -99,5 +99,9 @@ public abstract class Node implements Serializable {
 		return nodes;
 	}
 	
+	/**
+	 * Return the node identifier which serves as identification for the counting properties
+	 * @return the properties name
+	 */
 	public abstract String getNodeIdentifier();
 }

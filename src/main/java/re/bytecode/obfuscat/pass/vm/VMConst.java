@@ -4,6 +4,9 @@ import re.bytecode.obfuscat.cfg.CompareOperation;
 import re.bytecode.obfuscat.cfg.MathOperation;
 import re.bytecode.obfuscat.cfg.MemorySize;
 
+/**
+ * Global Definitions for the SimpleVM in the VMPass
+ */
 public class VMConst {
 
 	public static final int OP_CONST   = 0x00; // CONST <X> - 00 XX XX XX RR XX

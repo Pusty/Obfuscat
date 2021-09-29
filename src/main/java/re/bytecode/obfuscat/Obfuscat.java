@@ -52,8 +52,7 @@ public class Obfuscat {
 		
 		registerGenerator("VM", (ctx, func) -> new VMCodeGenerator(ctx, func));
 		
-		// TODO: Reconnect adding custom nodes from Obfuscat again
-		
+
 		registerPass("OperationEncode", (ctx) -> new OperationEncodePass(ctx));
 		registerPass("LiteralEncode", (ctx) -> new LiteralEncodePass(ctx));
 		registerPass("VariableEncode", (ctx) -> new VariableEncodePass(ctx));
@@ -104,19 +103,43 @@ public class Obfuscat {
 		passes.put(name, cl);
 	}
 	
+	/**
+	 * Apply a pass by name on a function
+	 * @param f the input function
+	 * @param passName the pass to apply
+	 * @return the output function after the pass
+	 */
 	public static Function applyPass(Function f, String passName) {
 		return applyPass(f, passName, new HashMap<String, Object>());
 	}
 	
+	/**
+	 * Apply a pass by name on a function and provide arguments
+	 * @param f the input function
+	 * @param passName the pass to apply
+	 * @param args the arguments provided to the pass
+	 * @return the output function after the pass
+	 */
 	public static Function applyPass(Function f, String passName, Map<String, Object> args) {
 		if(f == null) throw new IllegalArgumentException("The function can't be null");
 		return getPass(passName).obfuscate(f, args);
 	}
 	
-	
+	/**
+	 * Return an instance of a pass by name
+	 * @param passName the pass to instantiate
+	 * @return a pass object
+	 */
 	public static Pass getPass(String passName) {
 		return getPass(passName, System.currentTimeMillis());
 	}
+	
+	/**
+	 * Return an instance of a pass by name and seed
+	 * @param passName the pass to instantiate
+	 * @param seed the seed of the pass
+	 * @return a pass object
+	 */
 	public static Pass getPass(String passName, long seed) {
 		if(passName == null) throw new IllegalArgumentException("The pass can't be null");
 		if(!passes.containsKey(passName)) throw new IllegalArgumentException("A Pass with the name '"+passName+"' is not registered");
@@ -131,20 +154,31 @@ public class Obfuscat {
 		return pass;
 	}
 	
+	
+	/**
+	 * Return the size formulas for a specific pass
+	 * @param passName the pass to get the formulas from
+	 * @return the formulas for the changes in IR statistics
+	 */
 	public static Map<String, Node> getPassStatistics(String passName) {
 		return getPass(passName).statistics();
 	}
 	
+	/**
+	 * Return the runtime formulas for a specific pass
+	 * @param passName the pass to get the formulas from
+	 * @return the formulas for the changes in IR statistics
+	 */
 	public static Map<String, Node> getPassRuntimeStatistics(String passName) {
 		return getPass(passName).statisticsRuntime();
 	}
 	
-	/**
-	 * Register a custom node implementation for a specific generator
-	 * @param generatorName generator to register the node implementation to
-	 * @param nodeName the custom node to to implement
-	 * @param customImpl the implementation
-	 */
+	///**
+	// * Register a custom node implementation for a specific generator
+	// * @param generatorName generator to register the node implementation to
+	// * @param nodeName the custom node to to implement
+	// * @param customImpl the implementation
+	// */
 	/*public static void registerCustomNode(String generatorName, String nodeName,  Class<? extends CustomNodeImpl> customImpl) {
 		if(generatorName == null) throw new IllegalArgumentException("The generator can't be null");
 		if(!generators.containsKey(generatorName))  throw new IllegalArgumentException("The generator with name '"+generatorName+"' isn't registered");
@@ -164,6 +198,13 @@ public class Obfuscat {
 		return getGenerator(generatorName, function, System.currentTimeMillis());
 	}
 	
+	/**
+	 * Create a generator instance for a given generator tag and function input and seed
+	 * @param generatorName the generate to generate code from
+	 * @param function the function to generate code from
+	 * @param seed the seed to apply
+	 * @return a processed code generator
+	 */
 	public static CodeGenerator getGenerator(String generatorName, Function function, long seed) {
 		
 		if(generatorName == null) throw new IllegalArgumentException("The generator can't be null");
@@ -192,14 +233,32 @@ public class Obfuscat {
 		return buildFunction(builderName, args, System.currentTimeMillis());
 	}
 	
+	/**
+	 * Create a function from a function builder with given arguments and seed
+	 * @param builderName the builder to use
+	 * @param args the arguments given to the builder
+	 * @param seed the seed to apply
+	 * @return the build function
+	 */
 	public static Function buildFunction(String builderName, Map<String, Object> args, long seed) {
 		return getBuilder(builderName, seed).generate(args);
 	}
 	
+	/**
+	 * Create a builder from the builder name
+	 * @param builderName the name of the builder to create
+	 * @return an instance of a builder
+	 */
 	public static Builder getBuilder(String builderName) {
 		return getBuilder(builderName, System.currentTimeMillis());
 	}
 	
+	/**
+	 * Create a builder from the builder name and a seed
+	 * @param builderName  the name of the builder to create
+	 * @param seed the seed to apply
+	 * @return an instance of a builder
+	 */
 	public static Builder getBuilder(String builderName, long seed) {
 		if(builderName == null) throw new IllegalArgumentException("The builder can't be null");
 		if(!builders.containsKey(builderName)) throw new IllegalArgumentException("The builder with name '"+builderName+"' isn't registered");
@@ -239,10 +298,12 @@ public class Obfuscat {
 	
 	private static  java.util.function.Function<String, byte[]> readFileFunction;
 
+	// used for utility
 	public static void setReadFileFunction(java.util.function.Function<String, byte[]> readFile) {
 		readFileFunction = readFile;
 	}
 	
+	// used for utility
 	public static byte[] readFile(String path) {
 		return readFileFunction.apply(path);
 	}

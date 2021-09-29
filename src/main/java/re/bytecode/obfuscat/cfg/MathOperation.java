@@ -40,7 +40,8 @@ public enum MathOperation {
 	/** DUMMY **/
 	ANY(0);
 	
-	
+
+	// Short forms to create operators
 	public static NodeMath add(Node a, Node b) { return new NodeMath(ADD, a, b); }
 	public static NodeMath sub(Node a, Node b) { return new NodeMath(SUB, a, b); }
 	public static NodeMath mul(Node a, Node b) { return new NodeMath(MUL, a, b); }

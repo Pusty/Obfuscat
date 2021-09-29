@@ -65,6 +65,12 @@ public class DSLParser {
 	public DSLParser() {
 	}
 
+	/**
+	 * Process a byte array of a java class file to a map of parsed functions
+	 * @param classFile the byte array to process
+	 * @return the parsed map of functions and their names
+	 * @throws Exception something during parsing went wrong
+	 */
 	public Map<String, Function> processFile(byte[] classFile) throws Exception {
 		// System.out.println(classFile.length);
 		ByteArrayInputStream bis = new ByteArrayInputStream(classFile);

@@ -21,7 +21,7 @@ import re.bytecode.obfuscat.exception.BuilderArgumentException;
  * This Builder creates a function that fills a provided array with a hardcoded key
  * <br>
  * Supported Arguments: <br>
- * data -> byte[]: The key to produce
+ * data -> byte[]: The key to produce <br>
  */
 public class KeyBuilder extends Builder {
 

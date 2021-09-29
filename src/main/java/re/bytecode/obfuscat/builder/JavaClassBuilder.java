@@ -10,10 +10,12 @@ import re.bytecode.obfuscat.dsl.DSLParser;
 import re.bytecode.obfuscat.exception.BuilderArgumentException;
 
 /**
- * This Builder creates a function that fills a provided array with a hardcoded key
+ * This Builder converts a Java Class File to a (Merged) Function
  * <br>
  * Supported Arguments: <br>
- * data -> byte[]: The key to produce
+ * path -> String: path to the class file to process <br>
+ * entry -> String: the name of the entry function <br>
+ * merge -> boolean: whether this program uses multiple functions <br>
  */
 public class JavaClassBuilder extends Builder {
 
@@ -34,19 +36,22 @@ public class JavaClassBuilder extends Builder {
 		
 		boolean merge = args.containsKey("merge") ? (Boolean)args.get("merge") : false;
 
-		byte[] data = Obfuscat.readFile(path);
+		
+		byte[] data = Obfuscat.readFile(path); // read the class file
 		DSLParser p = new DSLParser();
 		Map<String, Function> fs;
 		try {
-			fs = p.processFile(data);
+			fs = p.processFile(data); // parse the class file to the intermediate representation
 		} catch (Exception e) {
 			throw new BuilderArgumentException("Error processing class file", e);
 		}
 		
+		// check if the class contains the entry function
 		if(!fs.containsKey(entry)) {
 			throw new BuilderArgumentException(entry+" function is not in "+fs.keySet());
 		}
 		
+		// if the merge argument was provided, merge all functions together
 		if(!merge) {
 			return fs.get(entry);
 		}else {

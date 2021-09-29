@@ -98,7 +98,9 @@ public class EmulateFunction {
 
 		Object output = null;
 		
+		// log that this node has been executed (again)
 		runtimeStatistics.put(node.getNodeIdentifier(), runtimeStatistics.getOrDefault(node.getNodeIdentifier(), 0)+1);
+		
 		if (node instanceof NodeConst) {
 			// If the node is a constant node then convert it to an Integer
 			Object obj = ((NodeConst) node).getObj();
@@ -373,6 +375,12 @@ public class EmulateFunction {
 	
 	private int executedNodes;
 	
+	/**
+	 * Evaluate a node with a given map of constants
+	 * @param node the node to evaluate
+	 * @param constMap the map of constants
+	 * @return the return value of the evaluated node as an int
+	 */
 	public static int eval(Node node, Map<String, Integer> constMap) {
 		BasicBlock bb = new BasicBlock();
 		bb.getNodes().add(node);
@@ -722,6 +730,10 @@ public class EmulateFunction {
 
 	}
 	
+	/**
+	 * Return the runtime properties of this function as a map
+	 * @return the runtime properties of this function
+	 */
 	public Map<String, Integer> statistics() {
 		return runtimeStatistics;
 	}

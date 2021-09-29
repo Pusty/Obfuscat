@@ -21,6 +21,10 @@ public class NodeAlloc extends Node {
 		this.amount = amount;
 	}
 
+	/**
+	 * Return the unit this memory allocation operates on
+	 * @return the memory allocation unit
+	 */
 	public MemorySize getAllocationSize() {
 		return allocSize;
 	}

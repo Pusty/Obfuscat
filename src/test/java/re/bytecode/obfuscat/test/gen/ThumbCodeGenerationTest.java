@@ -65,8 +65,8 @@ public class ThumbCodeGenerationTest {
 		}
 	}
 
-	private static int INST_COUNT;
-	private static int INST_SIZE;
+	public static int INST_COUNT;
+	public static int INST_SIZE;
 
 	private static class InstructionCountHook implements CodeHook {
 		public void hook(Unicorn u, long address, int size, Object user_data) {
@@ -426,7 +426,7 @@ public class ThumbCodeGenerationTest {
 
 	public static void runTest(String fileName, String functionName, String[] passes, Object... args) throws Exception {
 		byte[] data = SampleLoader.loadFile(fileName);
-		Method m = JavaGenerationUtil.loadSample(data, fileName, functionName, args);
+		Method m = JavaGenerationUtil.loadSample(data, fileName.replace('/', '.'), functionName, args);
 		Integer fib = (Integer) m.invoke(null, args);
 
 		if(VERBOSE) System.out.println("Testing: "+fileName+"."+functionName+(passes==null?"":" with "+Arrays.toString(passes)));

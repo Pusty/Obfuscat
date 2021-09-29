@@ -17,6 +17,7 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 // Based on
 // Information Hiding in Software with Mixed Boolean-Arithmetic Transforms - https://doi.org/10.1007/978-3-540-77535-5_5
 
+/** Encode Variables before being stored and decode them right after being loaded **/
 public class VariableEncodePass extends Pass {
 
 	public VariableEncodePass(Context context) {

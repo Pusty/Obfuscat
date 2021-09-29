@@ -19,6 +19,12 @@ import re.bytecode.obfuscat.cfg.nodes.NodeConst;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.exception.BuilderArgumentException;
 
+/**
+ * This Builder creates a function that checks for a specific password and returns 1 if the first argument matches it and 0 otherwise
+ * <br>
+ * Supported Arguments: <br>
+ * data -> byte[]: The key to produce <br>
+ */
 public class VerifyBuilder extends Builder {
 
 	public VerifyBuilder(Context context) {
@@ -35,12 +41,14 @@ public class VerifyBuilder extends Builder {
 
 
 		List<Integer> intList = IntStream.rangeClosed(0, data.length-1).boxed().collect(Collectors.toList());
+		
 		//Collections.shuffle(intList, getContext().random()); // shuffle when which array entry is written
 		
 		
 		BasicBlock entryCheck = new BasicBlock();
 		blocks.add(entryCheck);
 		
+		// build the failed block
 		BasicBlock failed = new BasicBlock();
 		{
 			NodeConst retVal = new NodeConst(false);
@@ -54,13 +62,13 @@ public class VerifyBuilder extends Builder {
 		entryCheck.getNodes().add(varLen);
 		entryCheck.getNodes().add(constLen);
 		entryCheck.setConditionalBranch(failed, new BranchCondition(entryCheck, varLen, constLen, CompareOperation.NOTEQUAL));
-		
+		// check the length in the second argument
 		
 		BasicBlock curBlock;
 		BasicBlock nextBlock = new BasicBlock();
 		entryCheck.setUnconditionalBranch(nextBlock);
 		
-
+		// sequentially check each letter of the pass phrase
 		for(int i=0;i<data.length;i++) {
 			curBlock = nextBlock;
 			

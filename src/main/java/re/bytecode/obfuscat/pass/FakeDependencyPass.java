@@ -15,7 +15,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import static re.bytecode.obfuscat.cfg.MathOperation.*;
 
 
-// Inject fake dependencies between constants and parameters / variables
+/** Inject fake dependencies between constants and parameters / variables **/
 public class FakeDependencyPass extends Pass {
 
 	public FakeDependencyPass(Context context) {

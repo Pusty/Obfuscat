@@ -530,7 +530,7 @@ public class CLI {
 
 		if (!argsRaw.containsKey("arguments") || argsRaw.get("arguments").size() != 1) {
 			System.out.println(
-					"No Builder specified. Usage ./CLI compile <generator> [args]  [-input filename] [-output filename]");
+					"No Builder specified. Usage ./CLI obfuscate <pass> [args]  [-input filename] [-output filename]");
 			return;
 		}
 
@@ -816,7 +816,7 @@ public class CLI {
 		}else {
 			System.out.println("Supported commands:");
 			System.out.println(
-					"    builder <builder> [args] [-output filename] [-seed someseed]- Run a builder with the provided arguments");
+					"    builder <builder> [args] [-output filename] [-seed someseed] - Run a builder with the provided arguments");
 			System.out.println(
 					"    obfuscate <pass> [args]  [-input filename] [-output filename] [-seed someseed] - Run an obfuscation pass with the provided arguments");
 			System.out.println(

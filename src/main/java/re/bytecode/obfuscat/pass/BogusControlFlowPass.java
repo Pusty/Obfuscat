@@ -17,7 +17,11 @@ import re.bytecode.obfuscat.cfg.MemorySize;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 
-
+/** 
+ * Bogus Control Flow is an obfuscation pass
+ * that converts unconditional basic blocks to conditional basic blocks,
+ * with random conditional connections that are never taken
+ */
 public class BogusControlFlowPass extends Pass {
 
 	public BogusControlFlowPass(Context context) {

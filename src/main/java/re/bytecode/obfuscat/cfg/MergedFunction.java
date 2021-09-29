@@ -12,10 +12,21 @@ import re.bytecode.obfuscat.cfg.nodes.NodeCustom;
 import re.bytecode.obfuscat.cfg.nodes.NodeLoad;
 import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
+/**
+ * A merged function is a combination of multiple function with a specific entry point
+ */
 public class MergedFunction extends Function {
 	
 	private static final long serialVersionUID = 4854507091712950166L;
 
+	/**
+	 * Create a function based on a name, the basic blocks, their parameters, the used variables and whether it returns something
+	 * @param name the name of this function
+	 * @param blocks a list of basic blocks
+	 * @param argumentTypes the types of the parameters of this function
+	 * @param variableSlots the variables used in this basic block (must include arguments in this number)
+	 * @param returnsSomething if this function returns a value
+	 */
 	public MergedFunction(String name, List<BasicBlock> blocks, Class<?>[] argumentTypes, int variableSlots,
 			boolean returnsSomething) {
 		super(name, blocks, argumentTypes, variableSlots, returnsSomething);
@@ -38,6 +49,12 @@ public class MergedFunction extends Function {
 	// TODO
 	// see commit eec106263e520048c66094d864eda6ce5381b424 for "old" version
 	
+	/**
+	 * Merge multiple functions to a single function with a specific entry point
+	 * @param functions the functions to merge as a map
+	 * @param entryPoint the function to serve as the entry point
+	 * @return the merged function of the map of functions
+	 */
 	public static MergedFunction mergeFunctions(Map<String, Function> functions, String entryPoint) {
 		
 

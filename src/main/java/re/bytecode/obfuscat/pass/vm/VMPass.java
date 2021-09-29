@@ -22,6 +22,9 @@ import re.bytecode.obfuscat.pass.Pass;
 import static re.bytecode.obfuscat.cfg.MathOperation.*;
 import static re.bytecode.obfuscat.pass.vm.VMConst.*;
 
+/**
+ * Create a Virtual Machine, convert the program to static data used in the virtual machine.
+ */
 public class VMPass extends Pass {
 
 	private static final boolean DEBUG = false;

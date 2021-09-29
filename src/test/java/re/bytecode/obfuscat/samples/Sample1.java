@@ -8,7 +8,7 @@ public class Sample1 {
 	
 	public static int entry() {
 		
-		int n = 28; // 7th fib number
+		int n = 28; // 28th fib number
 		
 		int n1 = 0;
 		int n2 = 1;

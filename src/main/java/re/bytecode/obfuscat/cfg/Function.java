@@ -62,29 +62,57 @@ public class Function implements Serializable {
 	 * @return the amount of variables in this function
 	 */
 	public int getVariables() { return variableSlots; }
+	
+	/**
+	 * Return whether this function has a return value or is a void function
+	 * @return whether there is a explicit return value
+	 */
 	public boolean hasReturnValue() { return returnsSomething; }
 
-	
+	/**
+	 * Register static data to the function
+	 * @param data the static data to register
+	 */
 	public void registerData(boolean[] data) {
 		dataMap.put(Arrays.hashCode(data), data);
 	}
 	
+	/**
+	 * Register static data to the function
+	 * @param data the static data to register
+	 */
 	public void registerData(byte[] data) {
 		dataMap.put(Arrays.hashCode(data), data);
 	}
 	
+	/**
+	 * Register static data to the function
+	 * @param data the static data to register
+	 */
 	public void registerData(short[] data) {
 		dataMap.put(Arrays.hashCode(data), data);
 	}
 	
+	/**
+	 * Register static data to the function
+	 * @param data the static data to register
+	 */
 	public void registerData(char[] data) {
 		dataMap.put(Arrays.hashCode(data), data);
 	}
 	
+	/**
+	 * Register static data to the function
+	 * @param data the static data to register
+	 */
 	public void registerData(int[] data) {
 		dataMap.put(Arrays.hashCode(data), data);
 	}
 	
+	/**
+	 * Register an primitive data array as static data to the function
+	 * @param arr the array to add (boolean[], byte[], short[], char[] or int[])
+	 */
 	public void registerDataGeneric(Object arr) {
 		if(arr.getClass() == boolean[].class)
 			registerData((boolean[])arr);
@@ -100,7 +128,11 @@ public class Function implements Serializable {
 			throw new RuntimeException("Can't register generic object of type "+arr.getClass());
 	}
 	
-	
+	/**
+	 * Return the static data array object in this function, based on an array with equal content
+	 * @param key the array to search for the same content (boolean[], byte[], short[], char[] or int[])
+	 * @return the stored instance of the array with same content or null
+	 */
 	public Object getData(Object key) {
 		Class<?> keyClass = key.getClass();
 		if(keyClass == boolean[].class)
@@ -117,13 +149,31 @@ public class Function implements Serializable {
 		return null;
 	}
 	
+	/**
+	 * Return the internal static data map
+	 * @return the static data map
+	 */
 	public Map<Integer, Object> getDataMap() { return dataMap; }
+	
+	/**
+	 * Set the internal static data map
+	 * @param m the new static data map
+	 */
 	public void setDataMap(Map<Integer, Object> m) { dataMap = m; }
 	
+	/**
+	 * Read a static data entry based on the key
+	 * @param key the key of the static data (hash of the content)
+	 * @return the stored data or null if not in the map
+	 */
 	public Object getData(int key) {
 		return dataMap.get(key);
 	}
 	
+	/**
+	 * Return an array of all stored data
+	 * @return the stored data as an array
+	 */
 	public Object[] getData() {
 		Object[] data = new Object[dataMap.size()];
 		int index = 0;
@@ -145,6 +195,10 @@ public class Function implements Serializable {
 				traverseNode(already, children[i], map);
 	}
 	
+	/**
+	 * Return the size properties of this function as a map
+	 * @return the size properties of this function
+	 */
 	public Map<String, Integer> statistics() {
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		

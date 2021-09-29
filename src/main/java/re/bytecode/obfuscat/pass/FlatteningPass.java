@@ -19,7 +19,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeStore;
 
 import static re.bytecode.obfuscat.cfg.MathOperation.*;
 
-
+/** Flatten the control flow of the provided function. Use strenghenings suggested in J. Cappaert and B. Preneel, "A general model for hiding control flow" **/
 public class FlatteningPass extends Pass {
 	
 	public FlatteningPass(Context context) {

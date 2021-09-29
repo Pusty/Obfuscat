@@ -80,10 +80,21 @@ public abstract class CodeGenerator {
 	
 	private static Map<Class<?>, Map<String, CustomNodeImpl>> codegenMap = new HashMap<Class<?>, Map<String, CustomNodeImpl>>();
 	
+
+	/**
+	 * Register a code generator
+	 * @param codegenClass the code generator to register
+	 */
 	public static void registerCodegen(Class<?> codegenClass) {
 		codegenMap.put(codegenClass, new HashMap<String, CustomNodeImpl>());
 	}
 	
+	/**
+	 * Register a custom node implementation with a specific identifier to a code generator
+	 * @param codegenClass the code generator to register this custom node to
+	 * @param identifier the identifier of the custom node
+	 * @param customNode the custom node implementation handling nodes with the given identifier
+	 */
 	public static void registerCustomNode(Class<?> codegenClass, String identifier, CustomNodeImpl customNode) {
 		codegenMap.get(codegenClass).put(identifier, customNode);
 	}

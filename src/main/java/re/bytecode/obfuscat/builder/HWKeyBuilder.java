@@ -24,7 +24,7 @@ import re.bytecode.obfuscat.cfg.nodes.NodeMath;
  * This Builder creates a function that fills a provided array with randomized data and uses hardware specific registers to change them up
  * <br>
  * Supported Arguments: <br>
- * length -> Integer: The fixed length of the array to fill, default 4
+ * length -> Integer: The fixed length of the array to fill, default 4 <br>
  */
 public class HWKeyBuilder extends Builder {
 
