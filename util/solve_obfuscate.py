@@ -1,4 +1,6 @@
+# Proof of concept for using z3 to optimize obfuscation settings
 import subprocess
+from z3 import *
 
 SIZE_PER_BLOCK = 16
 SWITCH_PER_BLOCK = 8
@@ -59,7 +61,6 @@ m = loadInput(TARGET_FILE)
 print(m)
 print(calculateSize(m))
 
-from z3 import *
 
 def StoreTag(array, tag, node):
     return Store(array, hash(tag), node)
@@ -67,22 +68,25 @@ def StoreTag(array, tag, node):
 def LoadTag(array, tag):
     return Select(array, hash(tag))
 
-
+# operation encode
 def oe(prevArray):
     tmp = StoreTag(prevArray, "math", LoadTag(prevArray, "math") * 10)
     tmp = StoreTag(tmp, "const"     , LoadTag(prevArray, "const") + LoadTag(prevArray, "math"))
     return tmp
     
+# fake dependencies
 def fd(prevArray):
     tmp = StoreTag(prevArray, "math", LoadTag(prevArray, "math") + LoadTag(prevArray, "const") * 4)
     tmp = StoreTag(tmp, "load"      , LoadTag(prevArray, "load") + LoadTag(prevArray, "const"))
     return tmp
     
+# literal encoding
 def le(prevArray):
     tmp = StoreTag(prevArray, "math", LoadTag(prevArray, "math") + LoadTag(prevArray, "const") * 5)
     tmp = StoreTag(tmp, "const"     , LoadTag(prevArray, "const") * 4)
     return tmp
     
+# variable encode
 def ve(prevArray):
     tmp = StoreTag(prevArray, "math", LoadTag(prevArray, "math") + LoadTag(prevArray, "load") * 2 + LoadTag(prevArray, "store") * 2)
     tmp = StoreTag(tmp, "const"     , LoadTag(prevArray, "const") + LoadTag(prevArray, "load") * 2 + LoadTag(prevArray, "store") * 2)

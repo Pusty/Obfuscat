@@ -134,9 +134,13 @@ Flowgraph : A graph generator for Control Flow Graph diagrams
 Examples:
 
 Parse the `CRC32.class` file to the internal format. Use the `entry` method as the entry point:
-`> java -jar Obfuscat.jar builder Class -path CRC32.class -entry entry -output CRC32.fbin`
+
+```
+> java -jar Obfuscat.jar builder Class -path CRC32.class -entry entry -output CRC32.fbin
+```
 
 Emulate the generated file:
+
 ```
 > java -jar Obfuscat.jar emulate "'CHECKSUM THIS'" 4  -input CRC32.fbin
 Execution ended: -1263050787
@@ -146,9 +150,13 @@ Execution Statistics: {variables=6, const=197, exitBlocks=1, blocks=147, custom=
 ```
 
 Apply Virtualization Obfuscation on the generated file:
-`> java -jar Obfuscat.jar obfuscate Virtualize -input CRC32.fbin -output CRC32.VM.fbin`
+
+```
+> java -jar Obfuscat.jar obfuscate Virtualize -input CRC32.fbin -output CRC32.VM.fbin
+```
 
 Emulate the obfuscated file:
+
 ```
 > java -jar Obfuscat.jar emulate "'CHECKSUM THIS'" 4  -input CRC32.VM.fbin
 Execution ended: -1263050787
@@ -158,7 +166,10 @@ Execution Statistics: {variables=13, const=22526, exitBlocks=1, blocks=1555, cus
 ```
 
 Compile the obfuscated file to native ARMv8 Thumb2 code:
-`> java -jar Obfuscat.jar compile Thumb -input CRC32.VM.fbin -output CRC32.VM.bin`
+
+```
+> java -jar Obfuscat.jar compile Thumb -input CRC32.VM.fbin -output CRC32.VM.bin
+```
 
 
 
@@ -166,7 +177,7 @@ Compile the obfuscated file to native ARMv8 Thumb2 code:
 
 To build Obfuscat this project can be imported into eclipse as a gradle project.
 Alternatively it is possible to use gradle directy to build and test this project.
-For building it the [F0Cr](https://github.com/Pusty/F0Cr) Java Class File Parser is required (it is provided as a compiled jar file in the libs folder).
+For building it, the [F0Cr](https://github.com/Pusty/F0Cr) Java Class File Parser is required (it is provided as a compiled jar file in the libs folder).
 
 To run the tests an installation of the [Unicorn Framework](https://github.com/unicorn-engine/unicorn) is required, as well as the [Java Bindings](https://github.com/unicorn-engine/unicorn/tree/master/bindings/java).
 For license reasons no compiled files are provided, so it is required to install and build these dependencies yourself.
