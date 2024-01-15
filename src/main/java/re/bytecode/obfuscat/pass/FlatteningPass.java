@@ -35,7 +35,7 @@ public class FlatteningPass extends Pass {
 		Function nf = null;
 		
 		if(function instanceof MergedFunction)
-			nf = new MergedFunction(function.getName(), new ArrayList<BasicBlock>(), function.getArguments(), function.getVariables()+1, function.hasReturnValue());
+			nf = new MergedFunction(function.getName(), new ArrayList<BasicBlock>(), function.getArguments(), ((MergedFunction) function).getOriginalArguments(), function.getVariables()+1, function.hasReturnValue());
 		else
 			nf = new Function(function.getName(), new ArrayList<BasicBlock>(), function.getArguments(), function.getVariables()+1, function.hasReturnValue());
 		
@@ -194,7 +194,7 @@ public class FlatteningPass extends Pass {
 	}
 	
 	@Override
-	public Map<String, Node> statistics() {
+	public Map<String, Node> statistics(Map<String, Object> args) {
 		Map<String, Node> map = new HashMap<String, Node>();
 		
 		// store + const | jump - initial block
@@ -217,8 +217,8 @@ public class FlatteningPass extends Pass {
 	}
 	
 	@Override
-	public Map<String, Node> statisticsRuntime() {
-		Map<String, Node> map = statistics();
+	public Map<String, Node> statisticsRuntime(Map<String, Object> args) {
+		Map<String, Node> map = statistics(args);
 		// note for runtime behavior:
 		// each block jumps to the dispatcher, so the dispatcher is executed for each taken jump additionally ( + load + switch)
 		map.put("load", add(map.get("load"), add(cst("jumpBlocks"), cst("conditionalBlocks"))));

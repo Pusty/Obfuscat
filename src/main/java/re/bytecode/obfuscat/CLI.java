@@ -82,6 +82,9 @@ public class CLI {
 		case "info":
 			commandInfo(argumentMap);
 			return;
+		case "appended":
+			commandAppended(argumentMap);
+			return;
 		default:
 			System.out.println("Unknown command '" + command + "', try help for information");
 			return;
@@ -378,7 +381,7 @@ public class CLI {
 			System.out.println("The output path is a directory");
 			return false;
 		}
-		if (file.getParentFile() != null && !file.getParentFile().mkdirs()) {
+		if (file.getParentFile() != null && !file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
 			System.out.println("Creating the folders for the output failed");
 			return false;
 		}
@@ -387,9 +390,11 @@ public class CLI {
 			FileOutputStream fos = null;
 			try {
 				int[] inpdata = (int[]) data;
+				byte[] inpdataArray = new byte[inpdata.length];
+				for(int i=0;i<inpdata.length;i++)
+					inpdataArray[i] = (byte) inpdata[i];
 				fos = new FileOutputStream(file);
-				for (int i = 0; i < inpdata.length; i++)
-					fos.write(inpdata[i]);
+				fos.write(inpdataArray);
 				fos.close();
 			} catch (Exception ex) {
 				System.out.println("Saving output failed");
@@ -750,6 +755,31 @@ public class CLI {
 		System.out.println("Function Statistics: "+f.statistics());
 		
 	}
+	
+	private static void commandAppended(Map<String, List<String>> argsRaw) {
+
+		Object rI = readInput(argsRaw, "obfuscated.fbin");
+
+		if (rI == null) {
+			System.out.println("Reading the input file failed");
+			return;
+		}
+		
+		if(rI instanceof Boolean) {
+			return;
+		}
+
+		if (!(rI instanceof Function)) {
+			System.out.println("The read file object has the wrong type " + rI.getClass());
+			return;
+		}
+
+		Function f = (Function) rI;
+		System.out.println("Function Appended Information: "+Arrays.deepToString(f.getData()));
+		
+	}
+	
+	
 
 	private static void commandHelp(String[] args) {
 		if(args.length == 2 && args[1].equals("builder")) {
@@ -825,6 +855,8 @@ public class CLI {
 					"    emulate [args]  [-input filename] - Emulate the input function and print statistics");
 			System.out.println(
 					"    info [args] [-input filename] - Print statistics about the input function");
+			System.out.println(
+					"    appended [args] [-input filename] - Print statistics about the appended data of the input function");
 			System.out.println("    help - Provide an overview over supported commands");
 			System.out.println("    help builder - List all registered builders");
 			System.out.println("    help obfuscate - List all registered obfuscation passes");

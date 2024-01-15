@@ -689,8 +689,8 @@ public class DSLParser {
 							throw new RuntimeException("Not implemented: " + inst);
 						}
 
-						op2 = stack.pop();
-						op1 = new NodeConst(0);
+						op1 = stack.pop();
+						op2 = new NodeConst(0);
 						if (!currentBlock.getNodes().contains(op1))
 							currentBlock.getNodes().add(op1);
 						if (!currentBlock.getNodes().contains(op2))

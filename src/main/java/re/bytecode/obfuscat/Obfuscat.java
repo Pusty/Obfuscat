@@ -13,6 +13,7 @@ import re.bytecode.obfuscat.cfg.Function;
 import re.bytecode.obfuscat.cfg.nodes.Node;
 import re.bytecode.obfuscat.gen.CodeGenerator;
 import re.bytecode.obfuscat.gen.ThumbCodeGenerator;
+import re.bytecode.obfuscat.gen.llvm.LLVMCodeGenerator;
 import re.bytecode.obfuscat.pass.Pass;
 import re.bytecode.obfuscat.pass.VariableEncodePass;
 import re.bytecode.obfuscat.pass.vm.VMCodeGenerator;
@@ -51,6 +52,8 @@ public class Obfuscat {
 		//registerCustomNode("Flowgraph", "call", FlowgraphCodeGenerator.FlowgraphNodeCall.class);
 		
 		registerGenerator("VM", (ctx, func) -> new VMCodeGenerator(ctx, func));
+		
+		registerGenerator("LLVM", (ctx, func) -> new LLVMCodeGenerator(ctx, func));
 		
 
 		registerPass("OperationEncode", (ctx) -> new OperationEncodePass(ctx));
@@ -156,12 +159,32 @@ public class Obfuscat {
 	
 	
 	/**
+	 * Return the size formulas for a specific pass and given arguments
+	 * @param passName the pass to get the formulas from
+	 * @param args the arguments given to the obfuscation pass
+	 * @return the formulas for the changes in IR statistics
+	 */
+	public static Map<String, Node> getPassStatistics(String passName, Map<String, Object> args) {
+		return getPass(passName).statistics(args);
+	}
+	
+	/**
 	 * Return the size formulas for a specific pass
 	 * @param passName the pass to get the formulas from
 	 * @return the formulas for the changes in IR statistics
 	 */
 	public static Map<String, Node> getPassStatistics(String passName) {
-		return getPass(passName).statistics();
+		return getPassStatistics(passName, new HashMap<String, Object>());
+	}
+	
+	/**
+	 * Return the runtime formulas for a specific pass and given arguments
+	 * @param passName the pass to get the formulas from
+	 * @param args the arguments given to the obfuscation pass
+	 * @return the formulas for the changes in IR statistics
+	 */
+	public static Map<String, Node> getPassRuntimeStatistics(String passName, Map<String, Object> args) {
+		return getPass(passName).statisticsRuntime(args);
 	}
 	
 	/**
@@ -170,8 +193,9 @@ public class Obfuscat {
 	 * @return the formulas for the changes in IR statistics
 	 */
 	public static Map<String, Node> getPassRuntimeStatistics(String passName) {
-		return getPass(passName).statisticsRuntime();
+		return getPassRuntimeStatistics(passName, new HashMap<String, Object>());
 	}
+	
 	
 	///**
 	// * Register a custom node implementation for a specific generator

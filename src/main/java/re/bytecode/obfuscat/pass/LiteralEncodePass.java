@@ -135,7 +135,7 @@ public class LiteralEncodePass extends Pass {
 		
 	}
 	
-	public Map<String, Node> statistics() {
+	public Map<String, Node> statistics(Map<String, Object> args) {
 		
 		Map<String, Node> map = new HashMap<String, Node>();
 		
@@ -148,4 +148,5 @@ public class LiteralEncodePass extends Pass {
 	public String description() {
 		return "Replace all constants with an encoded version and the decoder";
 	}
+	
 }

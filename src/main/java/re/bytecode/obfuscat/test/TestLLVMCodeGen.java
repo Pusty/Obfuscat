@@ -5,7 +5,7 @@ import re.bytecode.obfuscat.dsl.api.ExcludeMethod;
 import re.bytecode.obfuscat.Obfuscat;
 import re.bytecode.obfuscat.cfg.Function;
 
-public class TestFlowgraph {
+public class TestLLVMCodeGen {
 	
 	@ExcludeMethod
     public static void main(String[] args) throws Exception {
@@ -23,7 +23,7 @@ public class TestFlowgraph {
     	
     	//Function f = functions.get("entry");
     	
-		int[] gen = Obfuscat.getGenerator("Flowgraph", f).generate();
+		int[] gen = Obfuscat.getGenerator("LLVM", f).generate();
 		
 		StringBuilder sb = new StringBuilder();
 		for(int i=0;i<gen.length;i++)
@@ -35,7 +35,7 @@ public class TestFlowgraph {
 		
 		f = Obfuscat.applyPass(f, "Flatten");
 		
-		gen = Obfuscat.getGenerator("Flowgraph", f).generate();
+		gen = Obfuscat.getGenerator("LLVM", f).generate();
 		
 		sb = new StringBuilder();
 		for(int i=0;i<gen.length;i++)

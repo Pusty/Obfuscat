@@ -19,9 +19,9 @@ public abstract class CodeGenerator {
 
 	protected Map<Class<? extends Node>, NodeCodeGenerator> codeMapping  = new HashMap<Class<? extends Node>, NodeCodeGenerator>();
 
-	private Map<BasicBlock, Integer> numberedBlocks;
-	private Map<BasicBlock, Integer> amountBlocks;
-	private Map<Node, Integer> numberedNodes;
+	protected Map<BasicBlock, Integer> numberedBlocks;
+	protected Map<BasicBlock, Integer> amountBlocks;
+	protected Map<Node, Integer> numberedNodes;
 	private int blockID;
 	private int maxNodeID;
 
@@ -236,7 +236,7 @@ public abstract class CodeGenerator {
 	
 	private HashMap<Integer, Node> slots;
 	// recursively give ids to the nodes and increase the count of nodes in the block
-	private void numberNodes(Node node) {
+	protected void numberNodes(Node node) {
 		
 		if(numberedNodes.containsKey(node)) return;
 		
@@ -433,7 +433,7 @@ public abstract class CodeGenerator {
 		}
 		
 		// padding at the end
-		if(size%getNodeSize() != 0)
+		if(getNodeSize() != 0 && size%getNodeSize() != 0)
 			size += getNodeSize()-(size%getNodeSize());
 		
 		

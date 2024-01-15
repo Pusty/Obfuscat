@@ -351,6 +351,9 @@ public class VMCodeGenerator extends CodeGenerator {
 
 				// calculate the actual offset to jump
 				int jumpOffsetConditonal = positionMap.get(cbb.getBlock().getConditionalBranch()) - (position);
+				
+				if(jumpOffsetConditonal > Short.MAX_VALUE || jumpOffsetConditonal < Short.MIN_VALUE)
+					throw new RuntimeException("Jump offset does not fit into short "+jumpOffsetConditonal);
 
 				branches[0] = OP_COMPARE_EQUAL + condition2value(cbb.getBlock().getCondition().getOperation());
 				branches[1] = getNodeID(cbb.getBlock().getCondition().getOperant1());
@@ -387,8 +390,13 @@ public class VMCodeGenerator extends CodeGenerator {
 					
 					// jump offset
 					int offset = (positionMap.get(cbb.getBlock().getSwitchBlocks().get(s)) - (position));
+					
+					if(offset > Short.MAX_VALUE || offset < Short.MIN_VALUE)
+						throw new RuntimeException("Switch offset does not fit into short "+offset);
+					
 					switchEntry[switchEntryIndex] = offset & 0xFF;
 					switchEntry[switchEntryIndex+1] = (offset>>8) & 0xFF;
+					
 					// maybe make this an integer
 					switchEntryIndex+=2;
 					if(switchEntryIndex % getNodeSize() == 0) {

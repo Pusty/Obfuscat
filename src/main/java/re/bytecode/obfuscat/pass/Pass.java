@@ -76,16 +76,18 @@ public abstract class Pass {
 	
 	/**
 	 * Return the size formulas of this obfuscation pass
+	 * @param args the arguments given to the obfuscation pass
 	 * @return the size formulas
 	 */
-	public abstract Map<String, Node> statistics();
+	public abstract Map<String, Node> statistics(Map<String, Object> args);
 	
 	/**
 	 * Return the runtime formulas of this obfuscation pass
+	 * @param args the arguments given to the obfuscation pass
 	 * @return the runtime formulas
 	 */
-	public Map<String, Node> statisticsRuntime() {
-		return statistics();
+	public Map<String, Node> statisticsRuntime(Map<String, Object> args) {
+		return statistics(args);
 	}
 	
 	

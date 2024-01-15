@@ -74,7 +74,7 @@ public class FakeDependencyPass extends Pass {
 		
 	}
 	
-	public Map<String, Node> statistics() {
+	public Map<String, Node> statistics(Map<String, Object> args) {
 		
 		Map<String, Node> map = new HashMap<String, Node>();
 		

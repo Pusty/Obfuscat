@@ -24,7 +24,7 @@ import static re.bytecode.obfuscat.cfg.MathOperation.*;
 // Has a nice list of MBA rewrite rules in Appendix
 
 
-// Most Passes here are from Hacker’s Delight
+// Most Passes here are from Hackers Delight
 
 /**
  * Encode mathematical operations through a list of hardcoded more complex expressions.
@@ -343,7 +343,7 @@ public class OperationEncodePass extends Pass {
 	}
 	
 	
-	public Map<String, Node> statistics() {
+	public Map<String, Node> statistics(Map<String, Object> args) {
 		
 		Map<String, Node> map = new HashMap<String, Node>();
 		

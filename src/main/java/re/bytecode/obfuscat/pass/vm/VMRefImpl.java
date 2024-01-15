@@ -255,7 +255,7 @@ public class VMRefImpl {
 				memory[stackslot] = native_obj2int(new Object[memory[op1]]);
 				break;
 			case OP_OCONST:
-				memory[stackslot] = native_obj2int(appendedData[memory[op1]]);
+				memory[stackslot] = native_obj2int(appendedData[memory[data]]);
 				break;
 			case OP_CUSTOM_PREPCALL:
 				memory[stackslot] = native_obj2int(new Object[] {native_int2obj(memory[op1]), native_int2obj(memory[op2]), native_int2obj(memory[op3]), native_int2obj(memory[op4])});

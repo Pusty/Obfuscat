@@ -109,7 +109,7 @@ public class BogusControlFlowPass extends Pass {
 		
 	}
 	
-	public Map<String, Node> statistics() {
+	public Map<String, Node> statistics(Map<String, Object> args) {
 		Map<String, Node> map = new HashMap<String, Node>();
 		map.put("math",  add(cst("math"),  mul(cst("jumpBlocks"), cst(3))));
 		map.put("const",  add(cst("const"),  mul(cst("jumpBlocks"), cst(1))));
@@ -121,8 +121,8 @@ public class BogusControlFlowPass extends Pass {
 	}
 	
 	@Override
-	public Map<String, Node> statisticsRuntime() {
-		Map<String, Node> map = statistics();
+	public Map<String, Node> statisticsRuntime(Map<String, Object> args) {
+		Map<String, Node> map = statistics(args);
 		map.put("conditionalBlocksFalse", add(cst("conditionalBlocksFalse"), cst("jumpBlocks")));
 		return map;
 	}

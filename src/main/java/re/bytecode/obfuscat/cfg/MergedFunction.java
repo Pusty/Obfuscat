@@ -19,6 +19,8 @@ public class MergedFunction extends Function {
 	
 	private static final long serialVersionUID = 4854507091712950166L;
 
+	private Class<?>[] originalArguments;
+	
 	/**
 	 * Create a function based on a name, the basic blocks, their parameters, the used variables and whether it returns something
 	 * @param name the name of this function
@@ -27,9 +29,10 @@ public class MergedFunction extends Function {
 	 * @param variableSlots the variables used in this basic block (must include arguments in this number)
 	 * @param returnsSomething if this function returns a value
 	 */
-	public MergedFunction(String name, List<BasicBlock> blocks, Class<?>[] argumentTypes, int variableSlots,
+	public MergedFunction(String name, List<BasicBlock> blocks, Class<?>[] argumentTypes, Class<?>[] originalArguments, int variableSlots,
 			boolean returnsSomething) {
 		super(name, blocks, argumentTypes, variableSlots, returnsSomething);
+		this.originalArguments = originalArguments;
 	}
 
 	/*
@@ -44,7 +47,7 @@ public class MergedFunction extends Function {
 	
 	
 	// Ironcily this merger is more efficient and was used to test the switch table
-	// But in practice it weakens Flattening as code paths are not predictable
+	// But in practice it weakens Flattening as code paths not predictable
 	// allowing both methods of merging would make sense
 	// TODO
 	// see commit eec106263e520048c66094d864eda6ce5381b424 for "old" version
@@ -165,7 +168,11 @@ public class MergedFunction extends Function {
 		
 		afterArgs[0] = int.class;
 		
-		MergedFunction mergedFunction = new MergedFunction(entryPoint+"_merged", blocks, afterArgs, variableSlots, returnSomething);
+		Class<?>[] origArgs = entryFunction.getArguments();
+		if(entryFunction instanceof MergedFunction)
+			origArgs = ((MergedFunction) entryFunction).getOriginalArguments();
+		
+		MergedFunction mergedFunction = new MergedFunction(entryPoint+"_merged", blocks, afterArgs, origArgs, variableSlots, returnSomething);
 		
 		// Add all static data
 		for(Entry<String, Function> e: functions.entrySet()) {
@@ -177,5 +184,8 @@ public class MergedFunction extends Function {
 	}
 	
 
+	public Class<?>[] getOriginalArguments() {
+		return originalArguments;
+	}
 	
 }
